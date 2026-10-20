@@ -286,7 +286,7 @@ func _recap_row(clash: Dictionary, viewer: String) -> PanelContainer:
 	line.add_child(_mini_badge(str(clash["attacker"].get("rank", ""))))
 	var text := AppTheme.vbox(0)
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var caption := AppTheme.label(ClashCutIn.caption_text(clash["attacker"], clash["defender"], str(clash.get("outcome")), viewer, true), "", 18)
+	var caption := AppTheme.label(BattleClip.caption_text(clash["attacker"], clash["defender"], str(clash.get("outcome")), viewer, true), "", 18)
 	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.add_child(caption)
 	text.add_child(AppTheme.label("Move %s" % AppTheme.num(clash.get("move_number", 0)), "MutedLabel", 15))

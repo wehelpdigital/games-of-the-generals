@@ -93,6 +93,10 @@ func _open() -> void:
 		"wss" if secure else "ws", _config.get("host", ""), port, _config.get("key", ""), PROTOCOL_VERSION,
 	]
 	_ws = WebSocketPeer.new()
+	# Browsers send the page's Origin themselves. Native builds send none, and Reverb on Laravel
+	# Cloud only accepts origins it allows, so present the API's origin (always allowed there).
+	if not OS.has_feature("web"):
+		_ws.handshake_headers = PackedStringArray(["Origin: " + ApiManager.base_url])
 	var err := _ws.connect_to_url(url)
 	if err != OK:
 		push_warning("Reverb: could not open %s (error %d)" % [url, err])

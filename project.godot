@@ -21,6 +21,7 @@ boot_splash/bg_color=Color(0.945, 0.839, 0.722, 1)
 
 ApiManager="*res://autoload/ApiManager.gd"
 ReverbManager="*res://autoload/ReverbManager.gd"
+ServerConfig="*res://autoload/ServerConfig.gd"
 GameSession="*res://autoload/GameSession.gd"
 Loadout="*res://autoload/Loadout.gd"
 Profile="*res://autoload/Profile.gd"

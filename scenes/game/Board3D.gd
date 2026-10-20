@@ -21,21 +21,22 @@ signal _wait_done(token: int)
 enum Mode { SPECTATE, SETUP, PLAY }
 
 const TILE := 1.0
-const TILE_GAP := 0.06
-const SLAB_MARGIN := 0.45
-const SLAB_HEIGHT := 0.3
+const TILE_GAP := 0.12        ## Wide gaps read as chunky inlaid grid lines.
+const SLAB_MARGIN := 0.5
+const SLAB_HEIGHT := 0.36
+const OUTLINE_WIDTH := 0.05
 const NO_CELL := Vector2i(-1, -1)
 const MARKER_COLORS := {
-	"move": Color(0.35, 1.0, 0.6, 0.6),
-	"attack": Color(1.0, 0.32, 0.25, 0.7),
-	"setup": Color(0.4, 0.75, 1.0, 0.4),
-	"hover": Color(1.0, 1.0, 1.0, 0.7),
-	"last": Color(1.0, 0.75, 0.3, 0.35),
+	"move": Color("4dffb0", 0.9),
+	"attack": Color("ff4d6d", 0.95),
+	"setup": Color("6fc3ff", 0.7),
+	"hover": Color("ffffff", 0.95),
+	"last": Color("ffd45c", 0.65),
 }
 const CLASH_COLORS := {
-	"attacker": Color(1.0, 0.62, 0.25),
-	"defender": Color(0.45, 0.7, 1.0),
-	"both": Color(1.0, 0.95, 0.85),
+	"attacker": Color("ffb020"),
+	"defender": Color("4fc3ff"),
+	"both": Color("ff6fd8"),
 }
 
 @export var camera: Camera3D
@@ -49,12 +50,13 @@ var board_theme := CosmeticLibrary.DEFAULT_BOARD
 var piece_skins := {Ranks.WHITE: CosmeticLibrary.DEFAULT_PIECES, Ranks.BLACK: CosmeticLibrary.DEFAULT_PIECES}
 
 var _cells: Dictionary = {}    # Vector2i -> Piece3D
-var _tiles: Dictionary = {}    # Vector2i -> MeshInstance3D
+var _tile_sets: Array[MeshInstance3D] = []  # Two merged meshes: light and dark tiles.
 var _markers: Dictionary = {}  # Vector2i -> MeshInstance3D
 var _marker_materials: Dictionary = {}
-var _lines: Array[MeshInstance3D] = []
-var _slab: MeshInstance3D
-var _table: MeshInstance3D
+var _frame: MeshInstance3D
+var _frame_hull: MeshInstance3D
+var _bed: MeshInstance3D
+var _floor: MeshInstance3D
 var _divider: MeshInstance3D
 var _pieces_root: Node3D
 
@@ -167,14 +169,14 @@ func cancel_pending() -> void:
 
 func set_board_theme(slug: String) -> void:
 	board_theme = slug
-	for cell: Vector2i in _tiles:
-		var part := "tile_a" if (cell.x + cell.y) % 2 == 0 else "tile_b"
-		_tiles[cell].material_override = CosmeticLibrary.board_material(slug, part)
-	_slab.material_override = CosmeticLibrary.board_material(slug, "slab")
-	_table.material_override = CosmeticLibrary.board_material(slug, "table")
+	_tile_sets[0].material_override = CosmeticLibrary.board_material(slug, "tile_a")
+	_tile_sets[1].material_override = CosmeticLibrary.board_material(slug, "tile_b")
+	_frame.material_override = CosmeticLibrary.board_material(slug, "frame")
+	_frame_hull.material_override = CosmeticLibrary.board_material(slug, "outline")
+	_bed.material_override = CosmeticLibrary.board_material(slug, "bed")
 	_divider.material_override = CosmeticLibrary.board_material(slug, "divider")
-	for line in _lines:
-		line.material_override = CosmeticLibrary.board_material(slug, "line")
+	_floor.material_override = CosmeticLibrary.board_material(slug, "floor")
+	_apply_backdrop(CosmeticLibrary.board_environment(slug))
 
 
 func set_piece_skin(side: String, slug: String) -> void:
@@ -558,59 +560,84 @@ func _show_marker(cell: Vector2i, kind: String) -> void:
 		marker.visible = true
 
 
+
+
 # --- Construction -----------------------------------------------------------------------------
 
+## A layered toy board: outlined platform, a grid-coloured bed, beveled tiles on top, a bright
+## centre line, all on a soft ground that fades into the sky.
 func _build_board() -> void:
 	var width := Ranks.COLS * TILE
 	var depth := Ranks.ROWS * TILE
+	var flat := Basis(Vector3.RIGHT, -PI / 2.0)  # Slab outlines lie on XZ; thickness points up.
+	var top_of_frame := -0.07
 
-	_table = _mesh_instance(_plane(Vector2(60.0, 60.0)), Vector3(0.0, -SLAB_HEIGHT - 0.02, 0.0))
-	_table.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_floor = _mesh_instance(_plane(Vector2(120.0, 120.0)), Vector3(0.0, top_of_frame - SLAB_HEIGHT - 0.06, 0.0))
+	_floor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var blob := _mesh_instance(_plane(Vector2(width + 3.0, depth + 3.0)), _floor.position + Vector3(0.0, 0.01, 0.0))
+	blob.material_override = CosmeticLibrary.contact_shadow_material()
+	blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	var slab := BoxMesh.new()
-	slab.size = Vector3(width + SLAB_MARGIN * 2.0, SLAB_HEIGHT, depth + SLAB_MARGIN * 2.0)
-	_slab = _mesh_instance(slab, Vector3(0.0, -SLAB_HEIGHT * 0.5 - 0.02, 0.0))
+	var frame_size := Vector3(width + SLAB_MARGIN * 2.0, depth + SLAB_MARGIN * 2.0, SLAB_HEIGHT)
+	var frame_at := Vector3(0.0, top_of_frame - SLAB_HEIGHT * 0.5, 0.0)
+	_frame = _mesh_instance(InsigniaFactory.get_slab_mesh(frame_size, 0.5, 0.09), frame_at, flat)
+	_frame_hull = _mesh_instance(InsigniaFactory.get_slab_mesh(frame_size, 0.5, 0.09, OUTLINE_WIDTH), frame_at, flat)
+	_frame_hull.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	var tile := BoxMesh.new()
-	tile.size = Vector3(TILE - TILE_GAP, 0.04, TILE - TILE_GAP)
-	var marker_mesh := _plane(Vector2(TILE - TILE_GAP - 0.04, TILE - TILE_GAP - 0.04))
+	var bed_size := Vector3(width + TILE_GAP * 1.5, depth + TILE_GAP * 1.5, 0.06)
+	_bed = _mesh_instance(InsigniaFactory.get_slab_mesh(bed_size, 0.18, 0.02), Vector3(0.0, -0.035 - bed_size.z * 0.5, 0.0), flat)
+
+	# Tiles are static, so each colour is merged into a single mesh (2 draw calls for 72 tiles).
+	var tile := InsigniaFactory.get_slab_mesh(Vector3(TILE - TILE_GAP, TILE - TILE_GAP, 0.07), 0.13, 0.03)
+	for parity in 2:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for y in Ranks.ROWS:
+			for x in Ranks.COLS:
+				if (x + y) % 2 == parity:
+					st.append_from(tile, 0, Transform3D(flat, cell_to_local(Vector2i(x, y)) + Vector3(0.0, -0.035, 0.0)))
+		var tiles := _mesh_instance(st.commit(), Vector3.ZERO)
+		tiles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_tile_sets.append(tiles)
+
+	var divider_size := Vector3(width + 0.2, TILE_GAP * 1.5, 0.06)
+	_divider = _mesh_instance(InsigniaFactory.get_slab_mesh(divider_size, divider_size.y * 0.45, 0.015), Vector3(0.0, -0.01, 0.0), flat)
+	_divider.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var marker_mesh := _plane(Vector2(TILE - TILE_GAP + 0.02, TILE - TILE_GAP + 0.02))
 	for y in Ranks.ROWS:
 		for x in Ranks.COLS:
 			var cell := Vector2i(x, y)
-			var center := cell_to_local(cell)
-			var tile_instance := _mesh_instance(tile, center + Vector3(0.0, -0.02, 0.0))
-			tile_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			_tiles[cell] = tile_instance
-			var marker := _mesh_instance(marker_mesh, center + Vector3(0.0, 0.004, 0.0))
+			var marker := _mesh_instance(marker_mesh, cell_to_local(cell) + Vector3(0.0, 0.01, 0.0))
 			marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			marker.visible = false
 			_markers[cell] = marker
 
-	# Inlaid grid lines in the gaps between tiles.
-	var line_z := BoxMesh.new()
-	line_z.size = Vector3(TILE_GAP, 0.02, depth + TILE_GAP)
-	for x in Ranks.COLS + 1:
-		_lines.append(_mesh_instance(line_z, Vector3((x - Ranks.COLS * 0.5) * TILE, -0.015, 0.0)))
-	var line_x := BoxMesh.new()
-	line_x.size = Vector3(width + TILE_GAP, 0.02, TILE_GAP)
-	for y in Ranks.ROWS + 1:
-		if y * 2 == Ranks.ROWS:
-			continue
-		_lines.append(_mesh_instance(line_x, Vector3(0.0, -0.015, (Ranks.ROWS * 0.5 - y) * TILE)))
-
-	# The centre line between the two armies.
-	var divider := BoxMesh.new()
-	divider.size = Vector3(width + TILE_GAP, 0.026, TILE_GAP * 1.4)
-	_divider = _mesh_instance(divider, Vector3(0.0, -0.012, 0.0))
-
+	var marker_texture := _marker_texture()
 	for kind: String in MARKER_COLORS:
-		_marker_materials[kind] = _marker_material(MARKER_COLORS[kind])
+		_marker_materials[kind] = _marker_material(MARKER_COLORS[kind], marker_texture)
 
 
-func _mesh_instance(mesh: Mesh, at: Vector3) -> MeshInstance3D:
+## Retints the sky and ambient light (which colours every shadow) to suit the board theme.
+func _apply_backdrop(colors: Dictionary) -> void:
+	if not is_inside_tree():
+		return
+	var env := get_world_3d().environment
+	if env == null:
+		return
+	env.ambient_light_color = colors["ambient"]
+	if env.sky != null and env.sky.sky_material is ProceduralSkyMaterial:
+		var sky: ProceduralSkyMaterial = env.sky.sky_material
+		sky.sky_top_color = colors["sky_top"]
+		sky.sky_horizon_color = colors["sky_horizon"]
+		sky.ground_horizon_color = colors["sky_horizon"]
+		sky.ground_bottom_color = colors["sky_horizon"].darkened(0.08)
+
+
+func _mesh_instance(mesh: Mesh, at: Vector3, orientation := Basis.IDENTITY) -> MeshInstance3D:
 	var instance := MeshInstance3D.new()
 	instance.mesh = mesh
-	instance.position = at
+	instance.transform = Transform3D(orientation, at)
 	add_child(instance)
 	return instance
 
@@ -621,19 +648,31 @@ func _plane(size: Vector2) -> PlaneMesh:
 	return plane
 
 
-## Glowing rounded-square outline: transparent centre fading to a bright edge.
-func _marker_material(color: Color) -> StandardMaterial3D:
-	var gradient := Gradient.new()
-	gradient.offsets = PackedFloat32Array([0.0, 0.62, 1.0])
-	gradient.colors = PackedColorArray([Color(1, 1, 1, 0.18), Color(1, 1, 1, 0.3), Color(1, 1, 1, 1.0)])
-	var tex := GradientTexture2D.new()
-	tex.gradient = gradient
-	tex.fill = GradientTexture2D.FILL_SQUARE
-	tex.fill_from = Vector2(0.5, 0.5)
-	tex.fill_to = Vector2(0.5, 0.0)
+func _marker_material(color: Color, texture: Texture2D) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.albedo_texture = tex
+	m.albedo_texture = texture
 	m.albedo_color = color
+	m.render_priority = 1
 	return m
+
+
+## Rounded-square highlight: a bold bright rim around a lightly tinted fill.
+static func _marker_texture() -> ImageTexture:
+	const SIZE := 128
+	const RADIUS := 26.0
+	const INSET := 3.0
+	const RIM := 11.0
+	var image := Image.create_empty(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+	var half := SIZE * 0.5
+	var box := half - INSET - RADIUS
+	for y in SIZE:
+		for x in SIZE:
+			var q := Vector2(absf(x + 0.5 - half) - box, absf(y + 0.5 - half) - box)
+			var d := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - RADIUS
+			var alpha := lerpf(0.3, 1.0, smoothstep(-RIM - 2.0, -RIM + 1.0, d))
+			alpha *= 1.0 - smoothstep(-1.5, 0.5, d)
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	image.generate_mipmaps()
+	return ImageTexture.create_from_image(image)

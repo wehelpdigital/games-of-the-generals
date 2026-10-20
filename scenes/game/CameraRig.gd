@@ -11,9 +11,9 @@ extends Node3D
 @export var min_pitch_deg := -82.0
 @export var max_pitch_deg := -32.0
 @export var yaw_limit_deg := 30.0          ## Orbit range around the player's own side.
-@export var distance := 11.0
+@export var distance := 12.6
 @export var min_distance := 6.5
-@export var max_distance := 17.0
+@export var max_distance := 19.0
 @export var pan_limit := Vector2(3.0, 2.5)
 @export var orbit_sensitivity := 0.25      ## Degrees per pixel.
 @export var smoothing := 12.0
@@ -31,6 +31,14 @@ var _orbiting := false
 var _panning := false
 var _touches: Dictionary = {}  # index -> position
 var _trauma := 0.0
+
+## Menu backdrop: a slow cinematic orbit that ignores player input.
+var attract := false:
+	set(value):
+		attract = value
+		if not value:
+			_yaw = wrapf(_yaw, -180.0, 180.0)
+			reset_view()
 
 
 func _ready() -> void:
@@ -66,6 +74,11 @@ func shake(strength := 0.5) -> void:
 
 
 func _process(delta: float) -> void:
+	if attract:
+		_target_yaw += delta * 7.0
+		_target_pitch = -40.0
+		_target_distance = distance * 1.12
+		_target_pan = Vector2.ZERO
 	_apply(delta)
 
 
@@ -96,6 +109,8 @@ func _fit_aspect() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if attract:
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_touches[event.index] = event.position

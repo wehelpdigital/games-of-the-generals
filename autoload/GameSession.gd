@@ -18,9 +18,10 @@ enum Kind { NONE, ONLINE, PRACTICE }
 
 const POLL_FAST := 2.5      ## Seconds between polls when realtime is unavailable.
 const POLL_SAFETY := 20.0   ## Background resync even when realtime is healthy.
-const BOT_DELAY := 0.9
+const AI_MIN_THINK := 0.7  ## Seconds the practice AI appears to think, at least.
 
 var kind := Kind.NONE
+var practice_level := SalpakanAI.Difficulty.MEDIUM  ## Last AI difficulty, for "Play again".
 var match_view: Dictionary = {}
 var version := 0
 
@@ -29,7 +30,8 @@ var _realtime_ok := false
 var _poll_timer: Timer
 var _busy := false
 var _finished_emitted := false
-var _practice: Dictionary = {}  # Full-information state for offline practice.
+var _arbiter: LocalArbiter  # Offline practice: full-information referee.
+var _ai: SalpakanAI         # Offline practice: the opponent.
 
 
 func _ready() -> void:
@@ -73,24 +75,50 @@ func has_match() -> bool:
 
 # --- Commands ---------------------------------------------------------------------------------
 
-func find_match() -> void:
+## Quick match: resume your open match, join the oldest waiting one, or host a new one.
+func find_match() -> Dictionary:
+	return await _online_request(ApiManager.find_match)
+
+
+## Host a match that shows up in the lobby. A 409 carries `match_id` of the match you're already in.
+func create_match() -> Dictionary:
+	return await _online_request(ApiManager.create_match)
+
+
+func join_match(id: int) -> Dictionary:
+	return await _online_request(ApiManager.join_match.bind(id))
+
+
+## Re-enter a match you're already part of (from the lobby's "Resume").
+func open_match(id: int) -> Dictionary:
+	return await _online_request(ApiManager.get_match.bind(id))
+
+
+## Connects to Reverb if the server has it configured. False means "use polling".
+func ensure_realtime() -> bool:
+	if ReverbManager.is_connected_to_server():
+		return true
+	var res := await ApiManager.realtime_config()
+	if not res.ok or res.data.get("key") == null:
+		return false
+	ReverbManager.connect_to_server(res.data)
+	return true
+
+
+func _online_request(request_fn: Callable) -> Dictionary:
 	if _busy:
-		return
+		return {"ok": false, "status": 0, "data": {}, "error": "Busy, try again."}
 	if not ApiManager.is_logged_in():
-		status_message.emit("Log in to play online.")
-		return
-	leave()
+		return {"ok": false, "status": 401, "data": {}, "error": "Log in to play online."}
 	_busy = true
-	status_message.emit("Finding a match...")
-	var res := await ApiManager.find_match()
+	var res: Dictionary = await request_fn.call()
 	_busy = false
-	if not res.ok:
-		status_message.emit(res.error)
-		return
-	kind = Kind.ONLINE
-	_finished_emitted = false
-	_load_view(res.data.get("match", {}))
-	_start_realtime()
+	if res.ok:
+		leave()
+		kind = Kind.ONLINE
+		_load_view(res.data.get("match", {}))
+		_start_realtime()
+	return res
 
 
 func submit_setup(placements: Array) -> void:
@@ -133,7 +161,7 @@ func request_move(piece_id: String, from: Vector2i, to: Vector2i) -> void:
 
 func resign() -> void:
 	if kind == Kind.PRACTICE:
-		_practice_finish(Ranks.opponent(my_side()), "resignation")
+		_practice_resign()
 		return
 	if kind != Kind.ONLINE:
 		return
@@ -161,7 +189,8 @@ func leave() -> void:
 	kind = Kind.NONE
 	match_view = {}
 	version = 0
-	_practice = {}
+	_arbiter = null
+	_ai = null
 	_finished_emitted = false
 
 
@@ -276,13 +305,8 @@ func _start_realtime() -> void:
 	_channel = "private-game.%d" % match_id()
 	_realtime_ok = ReverbManager.is_subscribed(_channel)
 	_restart_poll()
-	if not ReverbManager.is_connected_to_server():
-		var res := await ApiManager.realtime_config()
-		if not res.ok or res.data.get("key") == null:
-			status_message.emit("Realtime unavailable; syncing by polling.")
-			return
-		ReverbManager.connect_to_server(res.data)
-	ReverbManager.subscribe(_channel)
+	if await ensure_realtime():
+		ReverbManager.subscribe(_channel)
 
 
 func _on_subscribed(channel: String) -> void:
@@ -341,169 +365,80 @@ func _announce_status() -> void:
 		status_message.emit(text)
 
 
-# --- Offline practice (local arbiter + random bot) --------------------------------------------
+# --- Offline practice against the AI (local arbiter, no server) -------------------------------
 
-func start_practice() -> void:
+## The player is white and moves first; the AI plays black.
+func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM) -> void:
 	leave()
 	kind = Kind.PRACTICE
-	_finished_emitted = false
-	_practice = {"pieces": {}, "pending_flag": {}}
-	_practice_load({"status": "setup", "turn": null, "version": 1})
+	practice_level = level
+	_ai = SalpakanAI.new(Ranks.BLACK, level)
+	_arbiter = LocalArbiter.new()
+	_practice_load("setup", 1)
 
 
 func _practice_start(placements: Array) -> void:
-	var pieces: Dictionary = {}
-	var next_id := 0
-	for side: String in [Ranks.WHITE, Ranks.BLACK]:
-		var formation: Array = placements if side == Ranks.WHITE else Ranks.random_formation(side)
-		for p: Dictionary in formation:
-			var id := "pc%02d" % next_id
-			next_id += 1
-			pieces[id] = {"id": id, "side": side, "rank": p["rank"], "x": int(p["x"]), "y": int(p["y"])}
-	_practice["pieces"] = pieces
-	_practice_load({"status": "active", "turn": Ranks.WHITE, "version": version + 1})
+	_arbiter.deploy(Ranks.WHITE, placements)
+	_arbiter.deploy(Ranks.BLACK, _ai.choose_formation())
+	_ai.begin(_arbiter.observation(Ranks.BLACK))
+	_practice_load("active", version + 1)
 
 
-func _practice_load(fields: Dictionary) -> void:
-	var finished: bool = fields["status"] == "finished"
-	var pieces: Array = []
-	for p: Dictionary in _practice["pieces"].values():
-		var shown := p.duplicate()
-		if p["side"] != Ranks.WHITE and not finished:
-			shown["rank"] = null
-		pieces.append(shown)
+func _practice_load(practice_status: String, new_version: int) -> void:
 	var view := {
-		"id": 0, "status": fields["status"], "your_side": Ranks.WHITE, "turn": fields["turn"],
-		"is_your_turn": fields["turn"] == Ranks.WHITE, "move_number": 0, "version": fields["version"],
-		"players": {"white": {"username": "You"}, "black": {"username": "Practice Bot"}},
-		"setup_ready": {"white": fields["status"] != "setup", "black": true},
-		"pieces": pieces, "winner": fields.get("winner"), "end_reason": fields.get("end_reason"),
+		"id": 0, "status": practice_status, "your_side": Ranks.WHITE,
+		"turn": _arbiter.turn if practice_status == "active" else null,
+		"move_number": _arbiter.move_number, "version": new_version,
+		"players": {"white": {"username": "You"}, "black": {"username": "AI (%s)" % SalpakanAI.label(_ai.difficulty)}},
+		"setup_ready": {"white": practice_status != "setup", "black": true},
+		"pieces": _arbiter.view_pieces(Ranks.WHITE),
+		"winner": _arbiter.winner if _arbiter.is_over() else null,
+		"end_reason": _arbiter.end_reason if _arbiter.is_over() else null,
 	}
 	_load_view(view)
 
 
 func _practice_player_move(piece_id: String, from: Vector2i, to: Vector2i) -> void:
-	var error := _practice_validate(Ranks.WHITE, piece_id, from, to)
+	var error := _arbiter.validate(Ranks.WHITE, piece_id, from, to)
 	if error != "":
 		move_rejected.emit(piece_id, error)
 		status_message.emit(error)
 		return
-	if _practice_apply(piece_id, to):
+	if _practice_play(piece_id, to):
 		return
-	await get_tree().create_timer(BOT_DELAY).timeout
-	if kind != Kind.PRACTICE or status() != "active":
+
+	# The AI thinks in frame-sized slices; pad short searches so its reply doesn't feel instant.
+	var ai := _ai
+	var started := Time.get_ticks_msec()
+	var choice: Dictionary = await ai.choose_move(_arbiter.observation(Ranks.BLACK))
+	var remaining := AI_MIN_THINK - (Time.get_ticks_msec() - started) / 1000.0
+	if remaining > 0.0:
+		await get_tree().create_timer(remaining).timeout
+	if kind != Kind.PRACTICE or _ai != ai or _arbiter.is_over():
+		return  # The player resigned or left while the AI was thinking.
+	if choice.is_empty() or _arbiter.validate(Ranks.BLACK, choice["id"], choice["from"], choice["to"]) != "":
+		push_warning("AI produced no legal move: %s" % choice)
+		_arbiter.resign(Ranks.BLACK)
+		_practice_load("finished", version + 1)
 		return
-	var bot_move := _practice_bot_choice()
-	if bot_move.is_empty():
-		_practice_finish(Ranks.WHITE, "no_moves")
-		return
-	_practice_apply(bot_move["id"], bot_move["to"])
+	_practice_play(choice["id"], choice["to"])
 
 
-func _practice_validate(side: String, piece_id: String, from: Vector2i, to: Vector2i) -> String:
-	if status() != "active" or match_view.get("turn") != side:
-		return "Not your turn."
-	var piece: Dictionary = _practice["pieces"].get(piece_id, {})
-	if piece.is_empty() or piece["side"] != side or Vector2i(piece["x"], piece["y"]) != from:
-		return "That piece can't move."
-	if not Ranks.in_bounds(to) or absi(to.x - from.x) + absi(to.y - from.y) != 1:
-		return "Pieces move one square forward, back or sideways."
-	var target := _practice_piece_at(to)
-	if not target.is_empty() and target["side"] == side:
-		return "You can't capture your own piece."
-	return ""
-
-
-## Applies a validated move, emits its MoveResult, and returns true if the game ended.
-func _practice_apply(piece_id: String, to: Vector2i) -> bool:
-	var pieces: Dictionary = _practice["pieces"]
-	var piece: Dictionary = pieces[piece_id]
-	var side: String = piece["side"]
-	var from := Vector2i(piece["x"], piece["y"])
-	var defender := _practice_piece_at(to)
-	var result := {
-		"match_id": 0, "version": version + 1, "move_number": int(match_view.get("move_number", 0)) + 1,
-		"type": "move", "side": side, "piece_id": piece_id,
-		"from": {"x": from.x, "y": from.y}, "to": {"x": to.x, "y": to.y},
-		"clash": null, "turn": Ranks.opponent(side),
-	}
-	var winner := ""
-	var reason := ""
-	if defender.is_empty():
-		piece["x"] = to.x
-		piece["y"] = to.y
-	else:
-		var outcome := Ranks.resolve_clash(piece["rank"], defender["rank"])
-		var eliminated: Array = []
-		if outcome != "attacker":
-			eliminated.append(piece_id)
-		if outcome != "defender":
-			eliminated.append(defender["id"])
-		for id: String in eliminated:
-			if pieces[id]["rank"] == "FLG":
-				winner = Ranks.opponent(pieces[id]["side"])
-				reason = "flag_captured"
-			pieces.erase(id)
-		if outcome == "attacker":
-			piece["x"] = to.x
-			piece["y"] = to.y
-		result["type"] = "clash"
-		result["clash"] = {"defender_id": defender["id"], "outcome": outcome, "eliminated": eliminated}
-
-	# A pending flag that survived the opponent's reply wins.
-	var pending: Dictionary = _practice["pending_flag"]
-	if winner == "" and not pending.is_empty() and pending["side"] != side:
-		if pieces.has(pending["id"]):
-			winner = pending["side"]
-			reason = "flag_reached"
-		_practice["pending_flag"] = {}
-	if winner == "" and pieces.has(piece_id) and piece["rank"] == "FLG" and piece["y"] == Ranks.goal_row(side):
-		if _practice_enemy_adjacent(to, side):
-			_practice["pending_flag"] = {"id": piece_id, "side": side}
-		else:
-			winner = side
-			reason = "flag_reached"
-
-	if winner != "":
-		result["turn"] = null
+## Applies a move through the local arbiter, tells the AI, animates it. True if the game ended.
+func _practice_play(piece_id: String, to: Vector2i) -> bool:
+	var result := _arbiter.apply(piece_id, to)
+	result["version"] = version + 1
+	_ai.observe(result)
 	_accept_result(result)
-	if winner != "":
-		_practice_finish(winner, reason)
+	if _arbiter.is_over():
+		_practice_load("finished", version + 1)
 		return true
 	return false
 
 
-func _practice_finish(winner: String, reason: String) -> void:
-	_practice_load({"status": "finished", "turn": null, "version": version + 1, "winner": winner, "end_reason": reason})
+func _practice_resign() -> void:
+	if _arbiter == null or _arbiter.is_over():
+		return
+	_arbiter.resign(Ranks.WHITE)
+	_practice_load("finished", version + 1)
 
-
-func _practice_bot_choice() -> Dictionary:
-	var attacks: Array = []
-	var moves: Array = []
-	for p: Dictionary in _practice["pieces"].values():
-		if p["side"] != Ranks.BLACK:
-			continue
-		for cell in Ranks.neighbors(Vector2i(p["x"], p["y"])):
-			var target := _practice_piece_at(cell)
-			if target.is_empty():
-				moves.append({"id": p["id"], "to": cell})
-			elif target["side"] != Ranks.BLACK:
-				attacks.append({"id": p["id"], "to": cell})
-	if not attacks.is_empty() and (moves.is_empty() or randf() < 0.45):
-		return attacks.pick_random()
-	return moves.pick_random() if not moves.is_empty() else {}
-
-
-func _practice_piece_at(cell: Vector2i) -> Dictionary:
-	for p: Dictionary in _practice["pieces"].values():
-		if p["x"] == cell.x and p["y"] == cell.y:
-			return p
-	return {}
-
-
-func _practice_enemy_adjacent(cell: Vector2i, side: String) -> bool:
-	for n in Ranks.neighbors(cell):
-		var p := _practice_piece_at(n)
-		if not p.is_empty() and p["side"] != side:
-			return true
-	return false

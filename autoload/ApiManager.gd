@@ -127,6 +127,21 @@ func find_match() -> Dictionary:
 	return await request(HTTPClient.METHOD_POST, "/api/games")
 
 
+## Open matches hosted by others ({data: [{id, host, created_at}]}) plus your own unfinished match
+## (`your_match`, a MatchView or null).
+func lobby() -> Dictionary:
+	return await request(HTTPClient.METHOD_GET, "/api/lobby")
+
+
+## Hosts a new lobby match. 409 with data.match_id when you're already in one.
+func create_match() -> Dictionary:
+	return await request(HTTPClient.METHOD_POST, "/api/games/create")
+
+
+func join_match(match_id: int) -> Dictionary:
+	return await request(HTTPClient.METHOD_POST, "/api/games/%d/join" % match_id)
+
+
 func get_match(match_id: int) -> Dictionary:
 	return await request(HTTPClient.METHOD_GET, "/api/games/%d" % match_id)
 

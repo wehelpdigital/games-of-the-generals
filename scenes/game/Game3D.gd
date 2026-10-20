@@ -24,7 +24,17 @@ func _ready() -> void:
 	GameSession.turn_changed.connect(_refresh_mode)
 	GameSession.game_over.connect(_on_game_over)
 	ApiManager.user_updated.connect(_on_user_updated)
+	show_attract()
+
+
+## Menu backdrop: both armies on display (enemy ranks hidden) and a slow orbiting camera.
+func show_attract() -> void:
+	_formation_match = -1
+	board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
+	rig.set_side(Ranks.WHITE)
+	rig.attract = true
 	_on_user_updated(ApiManager.user)
+	board.set_piece_skin(Ranks.BLACK, CosmeticLibrary.DEFAULT_PIECES)
 	_show_attract_board()
 
 
@@ -41,6 +51,7 @@ func preview_piece_skin(slug: String) -> void:
 func _on_match_loaded(view: Dictionary) -> void:
 	var side := GameSession.my_side()
 	board.set_mode(Board3D.Mode.SPECTATE, side, false)
+	rig.attract = false
 	rig.set_side(side)
 	_apply_player_skins(view)
 
@@ -114,16 +125,12 @@ func _show_attract_board() -> void:
 	board.sync_pieces(pieces)
 
 
-## SSAO/SSR exist only on the Forward+/Mobile renderers. On Compatibility (WebGL 2) the pieces'
-## blob contact shadows and the tonemapped sky lighting stand in for them.
+## The look is flat cel shading (toon materials, ink outlines, tinted ambient shadows), so SSAO and
+## SSR stay off on every renderer: they would muddy the clean colour bands. That keeps web, Android,
+## iOS and desktop looking identical on the Compatibility renderer.
 func _apply_render_quality() -> void:
 	var env := world_env.environment
-	var compatibility := RenderingServer.get_current_rendering_method() == "gl_compatibility"
-	env.ssao_enabled = not compatibility
-	env.ssr_enabled = not compatibility
-	if not compatibility:
-		env.ssao_radius = 0.6
-		env.ssao_intensity = 1.6
-		env.ssr_max_steps = 48
+	env.ssao_enabled = false
+	env.ssr_enabled = false
 	if OS.has_feature("web") or OS.has_feature("mobile"):
 		key_light.directional_shadow_max_distance = 18.0

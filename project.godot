@@ -15,6 +15,7 @@ config/description="Real-time 3D Salpakan with a server-side arbiter."
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.945, 0.839, 0.722, 1)
 
 [autoload]
 

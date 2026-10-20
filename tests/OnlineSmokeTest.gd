@@ -28,16 +28,32 @@ func _ready() -> void:
 	check(b.ok, "register player B over raw HTTP")
 	_token_b = b.data.get("token", "")
 
-	GameSession.find_match()
-	await wait_until(func() -> bool: return GameSession.status() == "waiting")
-	check(GameSession.status() == "waiting" and GameSession.my_side() == Ranks.WHITE, "A creates a waiting match as white")
+	# A watches the public lobby channel, then hosts a match from the lobby.
+	var lobby_events: Array = []
+	ReverbManager.event_received.connect(func(channel: String, event: String, data: Dictionary) -> void:
+		if channel == "lobby":
+			lobby_events.append([event, data]))
+	check(await GameSession.ensure_realtime(), "realtime configured")
+	ReverbManager.subscribe("lobby")
+	check(await wait_until(func() -> bool: return ReverbManager.is_subscribed("lobby")), "A subscribed to the public lobby channel")
+
+	var created := await GameSession.create_match()
+	check(created.ok and GameSession.status() == "waiting" and GameSession.my_side() == Ranks.WHITE, "A hosts a waiting match as white")
 	var match_id := GameSession.match_id()
+	check(await wait_until(func() -> bool: return lobby_events.any(func(e: Array) -> bool: return e[1].get("match_id") == match_id), REALTIME_BUDGET),
+		"LobbyUpdated broadcast for the new match")
+	var again := await GameSession.create_match()
+	check(not again.ok and again.status == 409 and int(again.data.get("match_id", 0)) == match_id, "hosting twice is refused with the open match id")
 	var subscribed := await wait_until(func() -> bool: return ReverbManager.is_subscribed(GameSession._channel), 8.0)
 	check(subscribed, "A subscribed to %s via /api/broadcasting/auth" % GameSession._channel)
 
+	var lobby_b := await _as_b(HTTPClient.METHOD_GET, "/api/lobby")
+	var listed: Array = lobby_b.data.get("data", []).filter(func(m: Dictionary) -> bool: return int(m["id"]) == match_id)
+	check(lobby_b.ok and listed.size() == 1 and listed[0]["host"]["username"] == ApiManager.user["username"], "B sees A's match in the lobby")
+
 	var started := Time.get_ticks_msec()
-	var join := await _as_b(HTTPClient.METHOD_POST, "/api/games")
-	check(join.ok and join.data["match"]["id"] == match_id and join.data["match"]["your_side"] == Ranks.BLACK, "B joins the same match as black")
+	var join := await _as_b(HTTPClient.METHOD_POST, "/api/games/%d/join" % match_id)
+	check(join.ok and join.data["match"]["id"] == match_id and join.data["match"]["your_side"] == Ranks.BLACK, "B joins that match as black")
 	var saw_join := await wait_until(func() -> bool: return GameSession.status() == "setup", REALTIME_BUDGET)
 	check(saw_join, "A saw PlayerJoined in %d ms" % (Time.get_ticks_msec() - started))
 
@@ -91,8 +107,16 @@ func _ready() -> void:
 	finish()
 
 
-## Plain HTTP as player B, so the client's own session (player A) is never touched.
+## Plain HTTP as player B, so the client's own session (player A) is never touched. Retries once
+## on a dropped connection (PHP's single-threaded dev server on Windows occasionally drops one).
 func _as_b(method: int, path: String, body: Variant = null) -> Dictionary:
+	var res := await _as_b_once(method, path, body)
+	if res.status == 0:
+		res = await _as_b_once(method, path, body)
+	return res
+
+
+func _as_b_once(method: int, path: String, body: Variant = null) -> Dictionary:
 	var http := HTTPRequest.new()
 	add_child(http)
 	var headers := PackedStringArray(["Accept: application/json", "Content-Type: application/json"])
@@ -101,7 +125,8 @@ func _as_b(method: int, path: String, body: Variant = null) -> Dictionary:
 	http.request(ApiManager.base_url + path, headers, method, "" if body == null else JSON.stringify(body))
 	var response: Array = await http.request_completed
 	http.queue_free()
-	var parsed: Variant = JSON.parse_string((response[3] as PackedByteArray).get_string_from_utf8())
+	var text := (response[3] as PackedByteArray).get_string_from_utf8()
+	var parsed: Variant = JSON.parse_string(text) if text != "" else null
 	var data: Dictionary = parsed if parsed is Dictionary else {}
 	var status: int = response[1]
 	return {"ok": status >= 200 and status < 300, "status": status, "data": data, "error": str(data.get("message", ""))}

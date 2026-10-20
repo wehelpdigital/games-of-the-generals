@@ -1,6 +1,7 @@
 class_name Piece3D
 extends Node3D
-## One Salpakan piece: an upright plaque on a base with raised rank insignia on its face.
+## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with sticker-style rank
+## insignia and a label on its face, drawn cel-shaded with an ink outline.
 ##
 ## The face points toward the piece's owner, so the opponent only ever sees the neutral back. During
 ## play the server never sends enemy ranks, so enemy pieces are built with rank "" (blank face).
@@ -14,9 +15,15 @@ enum Highlight { NONE, HOVER, SELECTED, PENDING }
 
 const PICK_LAYER := 2  ## Physics layer bit used only for pointer raycasts.
 const LIFT_HEIGHT := 0.34
-const BASE_SIZE := Vector3(0.84, 0.44, 0.07)   ## Outline x/z, thickness.
-const PLAQUE_SIZE := Vector3(0.74, 0.62, 0.12)
+const BASE_SIZE := Vector3(0.86, 0.48, 0.1)    ## Outline x/z, thickness.
+const PLAQUE_SIZE := Vector3(0.74, 0.62, 0.16)
 const PLAQUE_TILT := -0.28  ## Radians; leans the face back toward the owner's camera.
+const OUTLINE_WIDTH := 0.03
+const HIGHLIGHT_INK := {
+	Highlight.HOVER: Color("ffffff"),
+	Highlight.SELECTED: Color("ffd23f"),
+	Highlight.PENDING: Color("52e5ff"),
+}
 
 var piece_id := ""
 var side := Ranks.WHITE
@@ -26,16 +33,19 @@ var is_mine := false
 
 var _skin := CosmeticLibrary.DEFAULT_PIECES
 var _rig: Node3D
-var _base: MeshInstance3D
-var _plaque: MeshInstance3D
+var _body_mesh: MeshInstance3D   # Surface 0: plaque, surface 1: stand.
+var _hull: MeshInstance3D        # Inverted-hull ink outline around both.
 var _face: Node3D
 var _emblem: MeshInstance3D
 var _shadow: MeshInstance3D
-var _body: StaticBody3D
+var _pick_body: StaticBody3D
 var _tween: Tween
 var _highlight := Highlight.NONE
 
 static var _overlays: Dictionary = {}
+static var _shared_body: ArrayMesh
+static var _shared_hull: ArrayMesh
+static var _badges: Dictionary = {}
 
 
 func setup(id: String, piece_side: String, piece_rank: String, mine: bool, skin: String) -> Piece3D:
@@ -66,9 +76,11 @@ func set_rank(new_rank: String) -> void:
 
 func set_skin(slug: String) -> void:
 	_skin = slug
-	_base.material_override = CosmeticLibrary.piece_material(_skin, side, "base")
-	_plaque.material_override = CosmeticLibrary.piece_material(_skin, side, "body")
-	_emblem.material_override = CosmeticLibrary.piece_material(_skin, side, "emblem")
+	_body_mesh.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "body"))
+	_body_mesh.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "base"))
+	_emblem.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "emblem"))
+	_emblem.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "outline"))
+	_apply_outline()
 	_rebuild_face()
 
 
@@ -76,13 +88,12 @@ func set_highlight(value: Highlight) -> void:
 	if value == _highlight:
 		return
 	_highlight = value
-	var overlay := _overlay_material(value)
-	_plaque.material_overlay = overlay
-	_base.material_overlay = overlay
+	_body_mesh.material_overlay = _overlay_material(value)
+	_apply_outline()
 
 
 func set_pickable(enabled: bool) -> void:
-	_body.collision_layer = PICK_LAYER if enabled else 0
+	_pick_body.collision_layer = PICK_LAYER if enabled else 0
 
 
 func is_lifted() -> bool:
@@ -183,7 +194,7 @@ func _new_tween() -> Tween:
 func _build() -> void:
 	_shadow = MeshInstance3D.new()
 	var shadow_mesh := PlaneMesh.new()
-	shadow_mesh.size = Vector2(1.05, 0.7)
+	shadow_mesh.size = Vector2(1.1, 0.75)
 	_shadow.mesh = shadow_mesh
 	_shadow.material_override = CosmeticLibrary.contact_shadow_material()
 	_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -193,21 +204,18 @@ func _build() -> void:
 	_rig = Node3D.new()
 	add_child(_rig)
 
-	_base = MeshInstance3D.new()
-	_base.mesh = InsigniaFactory.get_slab_mesh(BASE_SIZE, 0.08)
-	_base.rotation.x = -PI / 2.0  # Outline lies on the board; thickness points up.
-	_base.position.y = BASE_SIZE.z * 0.5
-	_rig.add_child(_base)
+	_build_shared_meshes()
+	_body_mesh = MeshInstance3D.new()
+	_body_mesh.mesh = _shared_body
+	_rig.add_child(_body_mesh)
+	_hull = MeshInstance3D.new()
+	_hull.mesh = _shared_hull
+	_hull.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_rig.add_child(_hull)
 
 	var pivot := Node3D.new()
-	pivot.position.y = BASE_SIZE.z * 0.6
-	pivot.rotation.x = PLAQUE_TILT
+	pivot.transform = _plaque_pivot()
 	_rig.add_child(pivot)
-
-	_plaque = MeshInstance3D.new()
-	_plaque.mesh = InsigniaFactory.get_slab_mesh(PLAQUE_SIZE, 0.1)
-	_plaque.position.y = PLAQUE_SIZE.y * 0.5
-	pivot.add_child(_plaque)
 
 	_face = Node3D.new()
 	_face.position = Vector3(0.0, PLAQUE_SIZE.y * 0.5, PLAQUE_SIZE.z * 0.5)
@@ -215,23 +223,23 @@ func _build() -> void:
 
 	# Every back is identical, so the opponent learns nothing from it.
 	_emblem = MeshInstance3D.new()
-	_emblem.mesh = InsigniaFactory.get_mesh("sun")
-	_emblem.scale = Vector3.ONE * 0.26
+	_emblem.mesh = InsigniaFactory.get_sticker_mesh("sun")
+	_emblem.scale = Vector3.ONE * 0.34
 	_emblem.position = Vector3(0.0, PLAQUE_SIZE.y * 0.52, -PLAQUE_SIZE.z * 0.5)
 	_emblem.rotation.y = PI
 	_emblem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	pivot.add_child(_emblem)
 
-	_body = StaticBody3D.new()
-	_body.collision_mask = 0
-	_body.set_meta("piece", self)
+	_pick_body = StaticBody3D.new()
+	_pick_body.collision_mask = 0
+	_pick_body.set_meta("piece", self)
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(0.86, 0.8, 0.52)
+	box.size = Vector3(0.88, 0.82, 0.54)
 	shape.shape = box
-	shape.position.y = 0.4
-	_body.add_child(shape)
-	_rig.add_child(_body)
+	shape.position.y = 0.41
+	_pick_body.add_child(shape)
+	_rig.add_child(_pick_body)
 	set_pickable(true)
 
 	set_skin(_skin)
@@ -245,33 +253,102 @@ func _rebuild_face() -> void:
 	if rank == "" or not Ranks.INFO.has(rank):
 		return
 
-	var data := Ranks.info(rank)
-	var shape: String = data["insignia"]
-	var marks: int = data["marks"]
-	var material := CosmeticLibrary.piece_material(_skin, side, "insignia")
-	var single := shape == "eye" or shape == "flag"
-	var size := 0.3 if single else (0.13 if marks >= 4 else 0.16)
-	var gap := size * 1.12
-	for i in marks:
-		var mark := MeshInstance3D.new()
-		mark.mesh = InsigniaFactory.get_mesh(shape)
-		mark.material_override = material
-		mark.scale = Vector3.ONE * size
-		mark.position = Vector3((i - (marks - 1) / 2.0) * gap, 0.07, 0.0)
-		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_face.add_child(mark)
+	var badge := MeshInstance3D.new()
+	badge.mesh = _badge_mesh(rank)
+	badge.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "insignia"))
+	badge.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "outline"))
+	badge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_face.add_child(badge)
 
-	var text := TextMesh.new()
-	text.text = data["label"]
-	text.font_size = 14
-	text.pixel_size = 0.0055
-	text.depth = 0.012
-	var label := MeshInstance3D.new()
-	label.mesh = text
-	label.material_override = material
-	label.position = Vector3(0.0, -0.19, 0.004)
+	var colors := CosmeticLibrary.piece_label_colors(_skin, side)
+	var label := Label3D.new()
+	label.text = Ranks.info(rank)["label"]
+	label.font = CosmeticLibrary.display_font()
+	label.font_size = 64
+	label.pixel_size = 0.0024
+	label.outline_size = 18
+	label.modulate = colors["color"]
+	label.outline_modulate = colors["outline"]
+	label.double_sided = false
+	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	label.position = Vector3(0.0, -0.19, 0.012)
 	label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_face.add_child(label)
+
+
+## The ink outline brightens to show hover/selection, like an anime UI highlight.
+func _apply_outline() -> void:
+	if _highlight == Highlight.NONE:
+		_hull.material_override = CosmeticLibrary.piece_material(_skin, side, "outline")
+	else:
+		_hull.material_override = CosmeticLibrary.outline_material(HIGHLIGHT_INK[_highlight])
+
+
+static func _plaque_pivot() -> Transform3D:
+	return Transform3D(Basis(Vector3.RIGHT, PLAQUE_TILT), Vector3(0.0, BASE_SIZE.z * 0.6, 0.0))
+
+
+## One body mesh (plaque + stand, two surfaces) and one outline hull, shared by every piece.
+static func _build_shared_meshes() -> void:
+	if _shared_body != null:
+		return
+	var stand := Transform3D(Basis(Vector3.RIGHT, -PI / 2.0), Vector3(0.0, BASE_SIZE.z * 0.5, 0.0))
+	var plaque := _plaque_pivot() * Transform3D(Basis(), Vector3(0.0, PLAQUE_SIZE.y * 0.5, 0.0))
+	_shared_body = ArrayMesh.new()
+	for part: Array in [[PLAQUE_SIZE, 0.14, 0.05, plaque], [BASE_SIZE, 0.13, 0.035, stand]]:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		st.append_from(InsigniaFactory.get_slab_mesh(part[0], part[1], part[2]), 0, part[3])
+		st.commit(_shared_body)
+	var hull := SurfaceTool.new()
+	hull.begin(Mesh.PRIMITIVE_TRIANGLES)
+	hull.append_from(InsigniaFactory.get_slab_mesh(PLAQUE_SIZE, 0.14, 0.05, OUTLINE_WIDTH), 0, plaque)
+	hull.append_from(InsigniaFactory.get_slab_mesh(BASE_SIZE, 0.13, 0.035, OUTLINE_WIDTH), 0, stand)
+	_shared_hull = hull.commit()
+
+
+## All insignia marks of a rank merged into one mesh: surface 0 fill, surface 1 ink outline.
+## Up to three marks sit in a row; four and five stack into two rows so they stay big and bold.
+static func _badge_mesh(code: String) -> ArrayMesh:
+	if _badges.has(code):
+		return _badges[code]
+	var data := Ranks.info(code)
+	var shape: String = data["insignia"]
+	var marks: int = data["marks"]
+	var rows: Array = [marks]
+	var size := 0.24
+	match marks:
+		2:
+			size = 0.22
+		3:
+			size = 0.2
+		4:
+			rows = [2, 2]
+			size = 0.17
+		5:
+			rows = [3, 2]
+			size = 0.17
+	if shape == "eye" or shape == "flag":
+		size = 0.34
+	var sticker := InsigniaFactory.get_sticker_mesh(shape)
+	var fill := SurfaceTool.new()
+	fill.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var ink := SurfaceTool.new()
+	ink.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var gap := size * 1.12
+	var top := 0.08 + (rows.size() - 1) * gap * 0.5
+	for r in rows.size():
+		var count: int = rows[r]
+		for i in count:
+			var at := Vector3((i - (count - 1) / 2.0) * gap, top - r * gap, 0.0)
+			var xf := Transform3D(Basis().scaled(Vector3.ONE * size), at)
+			fill.append_from(sticker, 0, xf)
+			ink.append_from(sticker, 1, xf)
+	var mesh := fill.commit()
+	ink.commit(mesh)
+	_badges[code] = mesh
+	return mesh
+
 
 
 static func _overlay_material(value: Highlight) -> Material:
@@ -282,12 +359,7 @@ static func _overlay_material(value: Highlight) -> Material:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		match value:
-			Highlight.HOVER:
-				m.albedo_color = Color(1.0, 1.0, 1.0, 0.14)
-			Highlight.SELECTED:
-				m.albedo_color = Color(1.0, 0.82, 0.35, 0.32)
-			Highlight.PENDING:
-				m.albedo_color = Color(0.4, 0.8, 1.0, 0.28)
+		var tint: Color = HIGHLIGHT_INK[value]
+		m.albedo_color = Color(tint, 0.12 if value == Highlight.HOVER else 0.22)
 		_overlays[value] = m
 	return _overlays[value]

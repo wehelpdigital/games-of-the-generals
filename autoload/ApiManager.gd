@@ -113,6 +113,14 @@ func purchase(slug: String) -> Dictionary:
 	return res
 
 
+## Stores the equipped cosmetics on the account so opponents see them (test mode: no ownership check).
+func save_loadout(loadout: Dictionary) -> Dictionary:
+	var res := await request(HTTPClient.METHOD_PUT, "/api/user/loadout", {"loadout": loadout})
+	if res.ok and res.data.get("user") is Dictionary:
+		_update_user(res.data["user"])
+	return res
+
+
 func equip(slug: String) -> Dictionary:
 	var res := await request(HTTPClient.METHOD_POST, "/api/shop/equip", {"slug": slug})
 	if res.ok:
@@ -156,6 +164,11 @@ func send_move(match_id: int, from: Vector2i, to: Vector2i) -> Dictionary:
 		"from": {"x": from.x, "y": from.y},
 		"to": {"x": to.x, "y": to.y},
 	})
+
+
+## Throws a cosmetic taunt at the opponent's side; broadcast as `Taunt` (not game state).
+func taunt(match_id: int, slug: String) -> Dictionary:
+	return await request(HTTPClient.METHOD_POST, "/api/games/%d/taunt" % match_id, {"taunt": slug})
 
 
 func resign(match_id: int) -> Dictionary:

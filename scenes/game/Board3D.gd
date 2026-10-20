@@ -25,6 +25,9 @@ const TILE_GAP := 0.12        ## Wide gaps read as chunky inlaid grid lines.
 const SLAB_MARGIN := 0.5
 const SLAB_HEIGHT := 0.36
 const OUTLINE_WIDTH := 0.05
+const FRAME_TOP := -0.07
+## Where the board's underside rests (board-local y). Arenas put their ground at or below this.
+const GROUND_Y := FRAME_TOP - SLAB_HEIGHT - 0.06
 const NO_CELL := Vector2i(-1, -1)
 const MARKER_COLORS := {
 	"move": Color("4dffb0", 0.9),
@@ -51,16 +54,25 @@ var my_side := Ranks.WHITE
 var can_act := false
 var pieces: Dictionary = {}  # piece_id -> Piece3D
 var board_theme := CosmeticLibrary.DEFAULT_BOARD
+## Per-side cosmetics; they also apply to pieces spawned later.
 var piece_skins := {Ranks.WHITE: CosmeticLibrary.DEFAULT_PIECES, Ranks.BLACK: CosmeticLibrary.DEFAULT_PIECES}
+var territories := {Ranks.WHITE: CosmeticLibrary.DEFAULT_TERRITORY, Ranks.BLACK: CosmeticLibrary.DEFAULT_TERRITORY}
+var icon_packs := {Ranks.WHITE: "classic", Ranks.BLACK: "classic"}
+var auras := {Ranks.WHITE: AuraFX.NONE, Ranks.BLACK: AuraFX.NONE}
+var trails := {Ranks.WHITE: TrailFX.NONE, Ranks.BLACK: TrailFX.NONE}
+var kill_effects := {Ranks.WHITE: "classic", Ranks.BLACK: "classic"}
+var board_glows := {Ranks.WHITE: BoardGlowFX.NONE, Ranks.BLACK: BoardGlowFX.NONE}
+var _glow_nodes: Dictionary = {}  # side -> Node3D
 
 var _cells: Dictionary = {}    # Vector2i -> Piece3D
-var _tile_sets: Array[MeshInstance3D] = []  # Two merged meshes: light and dark tiles.
+## Merged tile meshes keyed "<side>/<part>": each half (white rows 0–3, black rows 4–7) has a light
+## (tile_a) and a dark (tile_b) set, so each half can wear its own territory.
+var _tile_sets: Dictionary = {}
 var _markers: Dictionary = {}  # Vector2i -> MeshInstance3D
 var _marker_materials: Dictionary = {}
 var _frame: MeshInstance3D
 var _frame_hull: MeshInstance3D
 var _bed: MeshInstance3D
-var _floor: MeshInstance3D
 var _divider: MeshInstance3D
 var _pieces_root: Node3D
 
@@ -171,16 +183,15 @@ func cancel_pending() -> void:
 	_refresh_markers()
 
 
+## The board itself (frame, grid lines, centre line and any half left on "default" territory).
+## The world around the board (sky, light, ground) belongs to the arena, not the board.
 func set_board_theme(slug: String) -> void:
 	board_theme = slug
-	_tile_sets[0].material_override = CosmeticLibrary.board_material(slug, "tile_a")
-	_tile_sets[1].material_override = CosmeticLibrary.board_material(slug, "tile_b")
 	_frame.material_override = CosmeticLibrary.board_material(slug, "frame")
 	_frame_hull.material_override = CosmeticLibrary.board_material(slug, "outline")
 	_bed.material_override = CosmeticLibrary.board_material(slug, "bed")
 	_divider.material_override = CosmeticLibrary.board_material(slug, "divider")
-	_floor.material_override = CosmeticLibrary.board_material(slug, "floor")
-	_apply_backdrop(CosmeticLibrary.board_environment(slug))
+	_apply_tiles()
 
 
 func set_piece_skin(side: String, slug: String) -> void:
@@ -188,6 +199,90 @@ func set_piece_skin(side: String, slug: String) -> void:
 	for piece: Piece3D in pieces.values():
 		if piece.side == side:
 			piece.set_skin(slug)
+
+
+## How `side`'s half of the board looks (CosmeticLibrary.TERRITORIES; "default" = board theme).
+func set_territory(side: String, slug: String) -> void:
+	territories[side] = slug
+	_apply_tiles()
+
+
+## Which icon pack draws the rank symbols on `side`'s pieces.
+func set_icon_pack(side: String, pack: String) -> void:
+	icon_packs[side] = pack
+	for piece: Piece3D in pieces.values():
+		if piece.side == side:
+			piece.set_icon_pack(pack)
+
+
+## Persistent effect around every piece of `side` (AuraFX.STYLES).
+func set_aura(side: String, slug: String) -> void:
+	auras[side] = slug
+	for piece: Piece3D in pieces.values():
+		if piece.side == side:
+			piece.set_aura(slug)
+
+
+## Particles left behind when `side`'s pieces slide (TrailFX.STYLES).
+func set_trail(side: String, slug: String) -> void:
+	trails[side] = slug
+	for piece: Piece3D in pieces.values():
+		if piece.side == side:
+			piece.set_trail(slug)
+
+
+## What plays where a piece falls when `side` wins a clash (KillFX.STYLES).
+func set_kill_effect(side: String, slug: String) -> void:
+	kill_effects[side] = slug
+
+
+## Glow along the frame edge of `side`'s half of the board (BoardGlowFX.STYLES).
+func set_board_glow(side: String, slug: String) -> void:
+	board_glows[side] = slug
+	var old: Node3D = _glow_nodes.get(side)
+	if old != null and is_instance_valid(old):
+		old.queue_free()
+	_glow_nodes.erase(side)
+	var glow := BoardGlowFX.create(side, slug, FRAME_TOP)
+	if glow != null:
+		add_child(glow)
+		_glow_nodes[side] = glow
+
+
+## Shop preview: one of `side`'s pieces hops to a neighbouring free tile and back, showing its trail.
+func preview_trail(side: String) -> void:
+	if _busy:
+		return
+	for piece: Piece3D in pieces.values():
+		if piece.side != side:
+			continue
+		for cell in Ranks.neighbors(piece.cell):
+			if not _cells.has(cell):
+				var home := cell_to_local(piece.cell)
+				var t := piece.slide_to(cell_to_local(cell))
+				t.finished.connect(_slide_back.bind(piece, home), CONNECT_ONE_SHOT)
+				return
+
+
+## Shop preview: plays `side`'s kill effect in the middle of the board.
+func preview_kill(side: String) -> void:
+	KillFX.play(self, Vector3(0.0, 0.45, 0.0), kill_effects.get(side, "classic"), CLASH_COLORS["attacker"], 1.0)
+	clash_impact.emit(0.5)
+
+
+func _slide_back(piece: Piece3D, home: Vector3) -> void:
+	if is_instance_valid(piece) and not _busy:
+		piece.slide_to(home)
+
+
+func _apply_tiles() -> void:
+	for side: String in [Ranks.WHITE, Ranks.BLACK]:
+		for part: String in ["tile_a", "tile_b"]:
+			var m := CosmeticLibrary.territory_material(territories.get(side, CosmeticLibrary.DEFAULT_TERRITORY), part)
+			if m == null:
+				m = CosmeticLibrary.board_material(board_theme, part)
+			var tiles: MeshInstance3D = _tile_sets["%s/%s" % [side, part]]
+			tiles.material_override = m
 
 
 func piece_at(cell: Vector2i) -> Piece3D:
@@ -235,7 +330,11 @@ func _sync_now(list: Array) -> void:
 		keep[id] = true
 		var piece: Piece3D = pieces.get(id)
 		if piece == null:
-			piece = Piece3D.new().setup(id, side, rank, side == my_side, piece_skins[side])
+			piece = Piece3D.new()
+			piece.icon_pack = icon_packs.get(side, "classic")
+			piece.aura_style = auras.get(side, AuraFX.NONE)
+			piece.trail_style = trails.get(side, TrailFX.NONE)
+			piece.setup(id, side, rank, side == my_side, piece_skins[side])
 			_pieces_root.add_child(piece)
 			pieces[id] = piece
 		elif piece.rank != rank:
@@ -296,8 +395,17 @@ func _play_result(result: Dictionary) -> void:
 			"defender": {"side": defender.side if defender else Ranks.opponent(mover.side), "rank": defender.rank if defender else ""},
 			"outcome": outcome,
 		})
-	ClashFX.burst(self, from_pos.lerp(to_pos, 0.7) + Vector3(0.0, 0.45, 0.0), CLASH_COLORS.get(outcome, Color.WHITE),
-		1.25 if outcome == "both" else 1.0)
+	# The winning side's kill effect plays where the loser falls; a tie uses the attacker's style.
+	var winner_side := mover.side
+	var fall_at := from_pos.lerp(to_pos, 0.7)
+	match outcome:
+		"attacker":
+			fall_at = to_pos
+		"defender":
+			winner_side = defender.side if defender else Ranks.opponent(mover.side)
+			fall_at = Vector3(mover.position.x, 0.0, mover.position.z)
+	KillFX.play(self, fall_at + Vector3(0.0, 0.45, 0.0), kill_effects.get(winner_side, "classic"),
+		CLASH_COLORS.get(outcome, Color.WHITE), 1.25 if outcome == "both" else 1.0)
 	clash_impact.emit(0.9 if outcome == "both" else 0.6)
 	for id: Variant in clash.get("eliminated", []):
 		var victim: Piece3D = pieces.get(str(id))
@@ -581,22 +689,15 @@ func _show_marker(cell: Vector2i, kind: String) -> void:
 
 # --- Construction -----------------------------------------------------------------------------
 
-## A layered toy board: outlined platform, a grid-coloured bed, beveled tiles on top, a bright
-## centre line, all on a soft ground that fades into the sky.
+## A layered toy board: outlined platform, a grid-coloured bed, beveled tiles on top and a bright
+## centre line. The ground, sky and lighting around it come from the arena.
 func _build_board() -> void:
 	var width := Ranks.COLS * TILE
 	var depth := Ranks.ROWS * TILE
 	var flat := Basis(Vector3.RIGHT, -PI / 2.0)  # Slab outlines lie on XZ; thickness points up.
-	var top_of_frame := -0.07
-
-	_floor = _mesh_instance(_plane(Vector2(120.0, 120.0)), Vector3(0.0, top_of_frame - SLAB_HEIGHT - 0.06, 0.0))
-	_floor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var blob := _mesh_instance(_plane(Vector2(width + 3.0, depth + 3.0)), _floor.position + Vector3(0.0, 0.01, 0.0))
-	blob.material_override = CosmeticLibrary.contact_shadow_material()
-	blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	var frame_size := Vector3(width + SLAB_MARGIN * 2.0, depth + SLAB_MARGIN * 2.0, SLAB_HEIGHT)
-	var frame_at := Vector3(0.0, top_of_frame - SLAB_HEIGHT * 0.5, 0.0)
+	var frame_at := Vector3(0.0, FRAME_TOP - SLAB_HEIGHT * 0.5, 0.0)
 	_frame = _mesh_instance(InsigniaFactory.get_slab_mesh(frame_size, 0.5, 0.09), frame_at, flat)
 	_frame_hull = _mesh_instance(InsigniaFactory.get_slab_mesh(frame_size, 0.5, 0.09, OUTLINE_WIDTH), frame_at, flat)
 	_frame_hull.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -604,18 +705,23 @@ func _build_board() -> void:
 	var bed_size := Vector3(width + TILE_GAP * 1.5, depth + TILE_GAP * 1.5, 0.06)
 	_bed = _mesh_instance(InsigniaFactory.get_slab_mesh(bed_size, 0.18, 0.02), Vector3(0.0, -0.035 - bed_size.z * 0.5, 0.0), flat)
 
-	# Tiles are static, so each colour is merged into a single mesh (2 draw calls for 72 tiles).
+	# Tiles are static, so they're merged per half and colour: 4 draw calls for 72 tiles, and each
+	# half can carry its own territory.
 	var tile := InsigniaFactory.get_slab_mesh(Vector3(TILE - TILE_GAP, TILE - TILE_GAP, 0.07), 0.13, 0.03)
-	for parity in 2:
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for y in Ranks.ROWS:
-			for x in Ranks.COLS:
-				if (x + y) % 2 == parity:
-					st.append_from(tile, 0, Transform3D(flat, cell_to_local(Vector2i(x, y)) + Vector3(0.0, -0.035, 0.0)))
-		var tiles := _mesh_instance(st.commit(), Vector3.ZERO)
-		tiles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_tile_sets.append(tiles)
+	for side: String in [Ranks.WHITE, Ranks.BLACK]:
+		for parity in 2:
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			for y in Ranks.ROWS:
+				var half := Ranks.WHITE if y * 2 < Ranks.ROWS else Ranks.BLACK
+				if half != side:
+					continue
+				for x in Ranks.COLS:
+					if (x + y) % 2 == parity:
+						st.append_from(tile, 0, Transform3D(flat, cell_to_local(Vector2i(x, y)) + Vector3(0.0, -0.035, 0.0)))
+			var tiles := _mesh_instance(st.commit(), Vector3.ZERO)
+			tiles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_tile_sets["%s/%s" % [side, "tile_a" if parity == 0 else "tile_b"]] = tiles
 
 	var divider_size := Vector3(width + 0.2, TILE_GAP * 1.5, 0.06)
 	_divider = _mesh_instance(InsigniaFactory.get_slab_mesh(divider_size, divider_size.y * 0.45, 0.015), Vector3(0.0, -0.01, 0.0), flat)
@@ -633,22 +739,6 @@ func _build_board() -> void:
 	var marker_texture := _marker_texture()
 	for kind: String in MARKER_COLORS:
 		_marker_materials[kind] = _marker_material(MARKER_COLORS[kind], marker_texture)
-
-
-## Retints the sky and ambient light (which colours every shadow) to suit the board theme.
-func _apply_backdrop(colors: Dictionary) -> void:
-	if not is_inside_tree():
-		return
-	var env := get_world_3d().environment
-	if env == null:
-		return
-	env.ambient_light_color = colors["ambient"]
-	if env.sky != null and env.sky.sky_material is ProceduralSkyMaterial:
-		var sky: ProceduralSkyMaterial = env.sky.sky_material
-		sky.sky_top_color = colors["sky_top"]
-		sky.sky_horizon_color = colors["sky_horizon"]
-		sky.ground_horizon_color = colors["sky_horizon"]
-		sky.ground_bottom_color = colors["sky_horizon"].darkened(0.08)
 
 
 func _mesh_instance(mesh: Mesh, at: Vector3, orientation := Basis.IDENTITY) -> MeshInstance3D:

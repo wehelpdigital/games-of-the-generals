@@ -13,15 +13,19 @@ signal move_rejected(piece_id: String, message: String)
 signal turn_changed
 signal game_over(info: Dictionary)             ## {winner, end_reason, you_won, pieces}
 signal status_message(text: String)
+signal taunt_received(side: String, slug: String)  ## Animate a taunt thrown by `side` (either player).
 
 enum Kind { NONE, ONLINE, PRACTICE }
 
 const POLL_FAST := 2.5      ## Seconds between polls when realtime is unavailable.
 const POLL_SAFETY := 20.0   ## Background resync even when realtime is healthy.
 const AI_MIN_THINK := 0.7  ## Seconds the practice AI appears to think, at least.
+const TAUNT_COOLDOWN := 3.0  ## Seconds between taunts (the server enforces the same).
 
 var kind := Kind.NONE
 var practice_level := SalpakanAI.Difficulty.MEDIUM  ## Last AI difficulty, for "Play again".
+var ai_loadout: Dictionary = {}  ## The practice AI's random cosmetics, so you see what opponents see.
+var _last_taunt_ms := -100000
 var match_view: Dictionary = {}
 var version := 0
 
@@ -258,6 +262,10 @@ func _on_realtime_event(channel: String, event: String, data: Dictionary) -> voi
 		return
 	var v := int(data.get("version", 0))
 	match event:
+		"Taunt":
+			# Our own throws were already shown when sent.
+			if str(data.get("side", "")) != my_side():
+				taunt_received.emit(str(data.get("side", "")), str(data.get("taunt", "")))
 		"PieceMoved", "ClashResolved":
 			_accept_result(data)
 		"GameOver":
@@ -374,6 +382,7 @@ func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM)
 	leave()
 	kind = Kind.PRACTICE
 	practice_level = level
+	ai_loadout = Loadout.random_loadout()
 	_ai = SalpakanAI.new(Ranks.BLACK, level)
 	_arbiter = LocalArbiter.new()
 	_practice_load("setup", 1)
@@ -391,7 +400,7 @@ func _practice_load(practice_status: String, new_version: int) -> void:
 		"id": 0, "status": practice_status, "your_side": Ranks.WHITE,
 		"turn": _arbiter.turn if practice_status == "active" else null,
 		"move_number": _arbiter.move_number, "version": new_version,
-		"players": {"white": {"username": "You"}, "black": {"username": "AI (%s)" % SalpakanAI.label(_ai.difficulty)}},
+		"players": {"white": {"username": "You"}, "black": {"username": "AI (%s)" % SalpakanAI.label(_ai.difficulty), "loadout": ai_loadout}},
 		"setup_ready": {"white": practice_status != "setup", "black": true},
 		"pieces": _arbiter.view_pieces(Ranks.WHITE),
 		"winner": _arbiter.winner if _arbiter.is_over() else null,
@@ -432,6 +441,8 @@ func _practice_play(piece_id: String, to: Vector2i) -> bool:
 	var result := _arbiter.apply(piece_id, to)
 	result["version"] = version + 1
 	_ai.observe(result)
+	if _ai_won_clash(result) and randf() < 0.25:
+		_ai_taunt(1.4)
 	_accept_result(result)
 	if _arbiter.is_over():
 		_practice_load("finished", version + 1)
@@ -445,3 +456,48 @@ func _practice_resign() -> void:
 	_arbiter.resign(Ranks.WHITE)
 	_practice_load("finished", version + 1)
 
+
+
+# --- Taunts (cosmetic, not game state) ----------------------------------------------------------
+
+## Throws a taunt at the opponent's half. Returns "" when thrown, otherwise why not.
+func send_taunt(slug: String) -> String:
+	if not has_match() or not (status() in ["setup", "active"]):
+		return "Taunts work during a match."
+	var wait := TAUNT_COOLDOWN - (Time.get_ticks_msec() - _last_taunt_ms) / 1000.0
+	if wait > 0.0:
+		return "Wait %d s" % ceili(wait)
+	_last_taunt_ms = Time.get_ticks_msec()
+	taunt_received.emit(my_side(), slug)  # Show our own throw at once.
+	if kind == Kind.ONLINE:
+		var res := await ApiManager.taunt(match_id(), slug)
+		return "" if res.ok else res.error
+	if kind == Kind.PRACTICE and randf() < 0.4:
+		_ai_taunt(randf_range(1.0, 2.0))  # The AI sometimes throws one back.
+	return ""
+
+
+func taunt_cooldown_left() -> float:
+	return maxf(0.0, TAUNT_COOLDOWN - (Time.get_ticks_msec() - _last_taunt_ms) / 1000.0)
+
+
+func _ai_taunt(delay: float) -> void:
+	await get_tree().create_timer(delay).timeout
+	if kind != Kind.PRACTICE or not (status() in ["setup", "active"]):
+		return
+	var options: Array = CosmeticCatalog.items("taunt").keys()
+	if not options.is_empty():
+		taunt_received.emit(Ranks.opponent(my_side()), options.pick_random())
+
+
+func _ai_won_clash(result: Dictionary) -> bool:
+	var clash: Variant = result.get("clash")
+	if not clash is Dictionary:
+		return false
+	var ai_side := Ranks.opponent(my_side())
+	match str(clash.get("outcome")):
+		"attacker":
+			return result.get("side") == ai_side
+		"defender":
+			return result.get("side") != ai_side
+	return false

@@ -31,8 +31,13 @@ var side := Ranks.WHITE
 var rank := ""
 var cell := Vector2i(-1, -1)
 var is_mine := false
+## Cosmetics. Set them before setup() to build the piece with them, or later through the setters.
+var icon_pack := "classic"
+var aura_style := AuraFX.NONE
+var trail_style := TrailFX.NONE
 
 var _skin := CosmeticLibrary.DEFAULT_PIECES
+var _aura: Node3D
 var _rig: Node3D
 var _body_mesh: MeshInstance3D   # Surface 0: plaque, surface 1: stand.
 var _hull: MeshInstance3D        # Inverted-hull ink outline around both.
@@ -84,6 +89,31 @@ func set_skin(slug: String) -> void:
 	_rebuild_face()
 
 
+## Which icon pack draws the rank symbol on the face (PieceIcons packs; "classic" by default).
+func set_icon_pack(pack: String) -> void:
+	if pack == icon_pack:
+		return
+	icon_pack = pack
+	_rebuild_face()
+
+
+## Persistent effect around the piece (AuraFX style, or "none").
+func set_aura(style: String) -> void:
+	aura_style = style
+	if _rig == null:
+		return
+	if _aura != null and is_instance_valid(_aura):
+		_aura.queue_free()
+	_aura = AuraFX.create(style)
+	if _aura != null:
+		_rig.add_child(_aura)
+
+
+## Particles left behind when the piece slides (TrailFX style, or "none").
+func set_trail(style: String) -> void:
+	trail_style = style
+
+
 func set_highlight(value: Highlight) -> void:
 	if value == _highlight:
 		return
@@ -121,9 +151,12 @@ func slide_to(target: Vector3) -> Tween:
 	if not is_lifted():
 		t.tween_property(_rig, "position:y", LIFT_HEIGHT, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	var distance := Vector2(target.x - position.x, target.z - position.z).length()
-	t.tween_property(self, "position", Vector3(target.x, 0.0, target.z), clampf(0.16 + distance * 0.14, 0.18, 0.5)) \
+	var glide := clampf(0.16 + distance * 0.14, 0.18, 0.5)
+	t.tween_property(self, "position", Vector3(target.x, 0.0, target.z), glide) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_append_landing(t)
+	if distance > 0.2:
+		_trail(glide + 0.12)
 	return t
 
 
@@ -133,6 +166,8 @@ func hover_to(target: Vector3) -> Tween:
 	t.tween_property(_rig, "position:y", LIFT_HEIGHT, 0.12)
 	t.tween_property(_rig, "scale", Vector3.ONE * 1.06, 0.12)
 	t.tween_property(self, "position", Vector3(target.x, 0.0, target.z), 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if Vector2(target.x - position.x, target.z - position.z).length() > 0.2:
+		_trail(0.25)
 	return t
 
 
@@ -142,7 +177,13 @@ func lunge_to(target: Vector3) -> Tween:
 	if not is_lifted():
 		t.tween_property(_rig, "position:y", LIFT_HEIGHT, 0.1)
 	t.tween_property(self, "position", Vector3(target.x, 0.0, target.z), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	_trail(0.32)
 	return t
+
+
+func _trail(duration: float) -> void:
+	if trail_style != TrailFX.NONE and _rig != null:
+		TrailFX.emit(_rig, trail_style, duration)
 
 
 ## Stop any animation and stand on `target` immediately (used when resyncing from the server).
@@ -243,6 +284,7 @@ func _build() -> void:
 	set_pickable(true)
 
 	set_skin(_skin)
+	set_aura(aura_style)
 
 
 func _rebuild_face() -> void:
@@ -256,7 +298,7 @@ func _rebuild_face() -> void:
 	# Rank badge, stuck on the face like an enamel pin just above the label.
 	var badge := MeshInstance3D.new()
 	badge.mesh = PieceIcons.quad()
-	badge.material_override = PieceIcons.face_material(rank)
+	badge.material_override = _face_material(rank, icon_pack)
 	badge.scale = Vector3(ICON_SIZE, ICON_SIZE, 1.0)
 	badge.position = Vector3(0.0, 0.074, 0.006)
 	badge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -284,6 +326,10 @@ func _apply_outline() -> void:
 		_hull.material_override = CosmeticLibrary.piece_material(_skin, side, "outline")
 	else:
 		_hull.material_override = CosmeticLibrary.outline_material(HIGHLIGHT_INK[_highlight])
+
+
+static func _face_material(for_rank: String, pack: String) -> Material:
+	return PieceIcons.face_material(for_rank, pack)
 
 
 static func _plaque_pivot() -> Transform3D:

@@ -1,6 +1,6 @@
 // Generates the rank badges shown on each piece's face.
 //   node tools/icons/generate_piece_badges.js
-// Writes assets/icons/pieces/<RANK>.svg (256 viewBox, 512 px), then let Godot reimport.
+// Writes assets/icons/src/classic/<RANK>.svg (256 viewBox, 512 px); run bundle_icons.js afterwards.
 //
 // All artwork here is drawn from scratch for this game: enamel-pin style medallions with faceted
 // gold insignia. The rank symbols follow public Philippine Army conventions (stars for generals,
@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const OUT = path.join(__dirname, '..', '..', 'assets', 'icons', 'pieces');
+const OUT = path.join(__dirname, '..', '..', 'assets', 'icons', 'src', 'classic');
 const INK = '#1d1736';
 const METAL = { light: '#ffe680', mid: '#ffc93c', dark: '#ef9f0f' };
 const SILVER = { light: '#ffffff', mid: '#e9e6f5', dark: '#bdb8d6' };
@@ -47,7 +47,7 @@ function star(cx, cy, r, metal = METAL) {
   for (let i = 0; i < 10; i++) {
     s += fill(poly([[cx, cy], pts[i], pts[(i + 1) % 10]]), i % 2 === 0 ? metal.light : metal.dark);
   }
-  return s + outline(poly(pts), Math.max(5, r * 0.16));
+  return s + outline(poly(pts), Math.max(6, r * 0.18));
 }
 
 // Eight broad rays, each split into a lit and a shaded facet, around a domed hub.
@@ -63,7 +63,7 @@ function sun(cx, cy, r) {
   for (let i = 0; i < 16; i++) {
     s += fill(poly([[cx, cy], pts[i], pts[(i + 1) % 16]]), i % 2 === 0 ? METAL.dark : METAL.light);
   }
-  s += outline(poly(pts), Math.max(5, r * 0.13));
+  s += outline(poly(pts), Math.max(6, r * 0.15));
   const hub = r * 0.38;
   s += `<circle cx="${fmt(cx)}" cy="${fmt(cy)}" r="${fmt(hub)}" fill="${METAL.mid}" stroke="${INK}" stroke-width="${fmt(Math.max(4.5, r * 0.11))}"/>`;
   s += `<circle cx="${fmt(cx - hub * 0.28)}" cy="${fmt(cy - hub * 0.28)}" r="${fmt(hub * 0.34)}" fill="#ffffff" opacity="0.75"/>`;
@@ -80,7 +80,7 @@ function triangle(cx, cy, r) {
     fill(poly([a, b, g]), METAL.dark) +
     fill(poly([b, c, g]), METAL.mid) +
     fill(poly([c, a, g]), METAL.light) +
-    outline(poly([a, b, c]), Math.max(5, r * 0.15))
+    outline(poly([a, b, c]), Math.max(6, r * 0.17))
   );
 }
 

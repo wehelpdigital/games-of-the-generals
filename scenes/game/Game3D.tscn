@@ -1,8 +1,9 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/game/Game3D.gd" id="1_game"]
 [ext_resource type="Script" path="res://scenes/game/CameraRig.gd" id="2_rig"]
 [ext_resource type="Script" path="res://scenes/game/Board3D.gd" id="3_board"]
+[ext_resource type="Script" path="res://scenes/game/Arena3D.gd" id="4_arena"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_anime"]
 sky_top_color = Color(0.247, 0.549, 1, 1)
@@ -44,6 +45,11 @@ shadow_enabled = true
 shadow_opacity = 0.85
 shadow_blur = 0.4
 directional_shadow_max_distance = 30.0
+
+[node name="Arena3D" type="Node3D" parent="."]
+script = ExtResource("4_arena")
+environment_path = NodePath("../WorldEnvironment")
+key_light_path = NodePath("../KeyLight")
 
 [node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("2_rig")

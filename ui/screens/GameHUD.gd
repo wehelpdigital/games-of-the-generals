@@ -7,12 +7,14 @@ var _you: PanelContainer
 var _them: PanelContainer
 var _turn: PanelContainer
 var _status: Label
-var _setup_row: HBoxContainer
+var _setup_row: VBoxContainer
 var _resign: Button
 var _hint: PanelContainer
 var _pulse: Tween
 var _actions: VBoxContainer
 var _clips_button: Button
+var _taunt_button: Button
+var _taunt_menu: VBoxContainer
 var _last_info: Dictionary = {}  # The finished match's game-over info (result card and recap).
 var _recap_run := 0  # Bumped to cancel a running "Watch all".
 
@@ -48,12 +50,19 @@ func _ready() -> void:
 	var corner := AppTheme.vbox(10)
 	_actions = corner
 	add_child(corner)
-	_setup_row = AppTheme.hbox(10)
+	_setup_row = AppTheme.vbox(8)
 	_setup_row.add_child(AppTheme.button("Shuffle", "Accent", func() -> void: ui.game.shuffle_formation(), 54))
 	_setup_row.add_child(AppTheme.button("Ready!", "Primary", _ready_up, 54))
 	corner.add_child(_setup_row)
 	_resign = AppTheme.button("Resign", "Danger", _ask_resign, 46)
 	corner.add_child(_resign)
+	_taunt_button = AppTheme.button("Taunt!", "Accent", _toggle_taunt_menu, 50)
+	corner.add_child(_taunt_button)
+	corner.move_child(_taunt_button, 0)
+	_taunt_menu = AppTheme.vbox(6)
+	_taunt_menu.visible = false
+	corner.add_child(_taunt_menu)
+	corner.move_child(_taunt_menu, 1)
 
 	_hint = AppTheme.pill("", AppTheme.INK)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 18)
@@ -70,6 +79,7 @@ func _ready() -> void:
 	GameSession.status_message.connect(func(text: String) -> void: _status.text = text)
 	GameSession.move_rejected.connect(func(_id: String, message: String) -> void: ui.toast(message, AppTheme.RED))
 	GameSession.game_over.connect(_on_game_over)
+	GameSession.taunt_received.connect(_on_taunt)
 
 
 func open(_args: Dictionary) -> void:
@@ -99,6 +109,9 @@ func _refresh() -> void:
 	var status := GameSession.status()
 	_setup_row.visible = status in ["waiting", "setup"]
 	_resign.visible = status in ["waiting", "setup", "active"]
+	_taunt_button.visible = status in ["setup", "active"]
+	if not _taunt_button.visible:
+		_taunt_menu.visible = false
 	_resign.text = "Leave" if status in ["waiting", "setup"] else "Resign"
 	match status:
 		"waiting":
@@ -122,15 +135,19 @@ func _refresh() -> void:
 func _layout() -> void:
 	var screen := get_viewport().get_visible_rect().size
 	var portrait := screen.x < screen.y
-	_actions.alignment = BoxContainer.ALIGNMENT_END if portrait else BoxContainer.ALIGNMENT_CENTER
+	_actions.custom_minimum_size.x = 0.0 if portrait else 150.0
 	if portrait:
+		_actions.alignment = BoxContainer.ALIGNMENT_END
 		_actions.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 16)
 		_actions.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		_actions.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	else:
-		_actions.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+		# A narrow column in the top-right corner, beside the board's far (narrower) rows.
+		_actions.alignment = BoxContainer.ALIGNMENT_BEGIN
+		_actions.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+		_actions.offset_top = 84.0
 		_actions.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		_actions.grow_vertical = Control.GROW_DIRECTION_BOTH
+		_actions.grow_vertical = Control.GROW_DIRECTION_END
 
 
 func _player_label(player: Variant, fallback: String) -> String:
@@ -361,3 +378,58 @@ func _reason_text(reason: String, won: bool) -> String:
 		"no_moves":
 			return "Your opponent ran out of moves." if won else "You ran out of moves."
 	return ""
+
+
+# --- Taunts ---------------------------------------------------------------------------------------
+
+func _on_taunt(side: String, slug: String) -> void:
+	if not visible:
+		return
+	if side != GameSession.my_side() and ui.setting("mute_taunts", false):
+		return
+	ui.game.throw_taunt(side, slug)
+
+
+func _toggle_taunt_menu() -> void:
+	_taunt_menu.visible = not _taunt_menu.visible
+	if _taunt_menu.visible:
+		_build_taunt_menu()
+
+
+func _build_taunt_menu() -> void:
+	for child in _taunt_menu.get_children():
+		child.queue_free()
+	var panel := AppTheme.card("Row")
+	var box := AppTheme.vbox(6)
+	panel.add_child(box)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	var taunts := CosmeticCatalog.items("taunt")
+	for slug: String in CosmeticCatalog.slugs("taunt"):
+		var b := AppTheme.button(str(taunts[slug].get("name", slug)), "Ghost", _throw.bind(slug), 40)
+		b.add_theme_font_size_override("font_size", 16)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(b)
+	box.add_child(grid)
+	var muted: bool = ui.setting("mute_taunts", false)
+	var mute := AppTheme.button("Unmute their taunts" if muted else "Mute their taunts", "Ghost", _toggle_mute, 38)
+	mute.add_theme_font_size_override("font_size", 15)
+	box.add_child(mute)
+	_taunt_menu.add_child(panel)
+
+
+func _throw(slug: String) -> void:
+	var problem: String = await GameSession.send_taunt(slug)
+	if problem != "":
+		ui.toast(problem, AppTheme.BLUE)
+	else:
+		_taunt_menu.visible = false
+
+
+func _toggle_mute() -> void:
+	var muted: bool = not ui.setting("mute_taunts", false)
+	ui.set_setting("mute_taunts", muted)
+	ui.toast("Opponent taunts muted" if muted else "Opponent taunts on")
+	_build_taunt_menu()

@@ -7,8 +7,10 @@ extends Node3D
 @onready var rig: CameraRig = $CameraRig
 @onready var world_env: WorldEnvironment = $WorldEnvironment
 @onready var key_light: DirectionalLight3D = $KeyLight
+@onready var arena: Arena3D = $Arena3D
 
 var _formation_match := -1  # Match the local setup formation belongs to.
+var _opponent_loadout: Dictionary = {}  # Cosmetics shown on the other side of the board.
 
 
 func _ready() -> void:
@@ -23,7 +25,7 @@ func _ready() -> void:
 	GameSession.move_rejected.connect(_on_move_rejected)
 	GameSession.turn_changed.connect(_refresh_mode)
 	GameSession.game_over.connect(_on_game_over)
-	ApiManager.user_updated.connect(_on_user_updated)
+	Loadout.changed.connect(func(_category: String, _slug: String) -> void: refresh_cosmetics())
 	show_attract()
 
 
@@ -33,9 +35,69 @@ func show_attract() -> void:
 	board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
 	rig.set_side(Ranks.WHITE)
 	rig.attract = true
-	_on_user_updated(ApiManager.user)
-	board.set_piece_skin(Ranks.BLACK, CosmeticLibrary.DEFAULT_PIECES)
+	_opponent_loadout = Loadout.random_loadout()  # A random "rival" so menus show combos.
+	refresh_cosmetics()
 	_show_attract_board()
+
+
+## Applies every equipped cosmetic: the player's loadout on their side (plus the arena and board,
+## which only the viewer sees), and the opponent's loadout on the other side.
+func refresh_cosmetics() -> void:
+	var mine := Loadout.complete(Loadout.items)
+	var theirs := Loadout.complete(_opponent_loadout)
+	board.set_board_theme(mine["board"])
+	arena.set_arena(mine["arena"])  # After the board theme: the arena owns sky, light and ground.
+	_apply_side(board.my_side, mine)
+	_apply_side(Ranks.opponent(board.my_side), theirs)
+
+
+func _apply_side(side: String, loadout: Dictionary) -> void:
+	board.set_piece_skin(side, loadout["chip"])
+	board.set_territory(side, loadout["territory"])
+	board.set_icon_pack(side, loadout["icons"])
+	board.set_aura(side, loadout["aura"])
+	board.set_board_glow(side, loadout["glow"])
+	board.set_trail(side, loadout["trail"])
+	board.set_kill_effect(side, loadout["kill"])
+
+
+## Shop preview for effects that only show during play: a demo move (trail) or a demo knockout
+## (kill effect) by one of the player's pieces on the menu board.
+func preview_effect(category: String) -> void:
+	if board.is_animating() or GameSession.has_match():
+		return
+	var mine: Array = board.pieces.values().filter(func(p: Piece3D) -> bool: return p.side == board.my_side)
+	var theirs: Array = board.pieces.values().filter(func(p: Piece3D) -> bool: return p.side != board.my_side)
+	if mine.is_empty():
+		return
+	var forward := Vector2i(0, 1) if board.my_side == Ranks.WHITE else Vector2i(0, -1)
+	if category == "kill" and not theirs.is_empty():
+		var hero: Piece3D = mine.pick_random()
+		var victim: Piece3D = theirs.pick_random()
+		board.apply_move_result({"piece_id": hero.piece_id, "from": _cell(hero.cell), "to": _cell(victim.cell),
+			"clash": {"defender_id": victim.piece_id, "outcome": "attacker", "eliminated": [victim.piece_id]}})
+		await board.animations_idle
+		await get_tree().create_timer(1.2).timeout
+		if not GameSession.has_match():
+			_show_attract_board()
+		return
+	# Trail: step forward onto a free tile, then back.
+	for piece: Piece3D in mine:
+		var to := piece.cell + forward
+		if Ranks.in_bounds(to) and board.piece_at(to) == null:
+			var from := piece.cell
+			board.apply_move_result({"piece_id": piece.piece_id, "from": _cell(from), "to": _cell(to), "clash": null})
+			board.apply_move_result({"piece_id": piece.piece_id, "from": _cell(to), "to": _cell(from), "clash": null})
+			return
+
+
+## Throws a taunt from `from_side` at the other half of the board (shop preview or in-match).
+func throw_taunt(from_side: String, slug: String) -> void:
+	TauntFX.throw(board, from_side, slug)
+
+
+func _cell(cell: Vector2i) -> Dictionary:
+	return {"x": cell.x, "y": cell.y}
 
 
 ## New random formation during setup.
@@ -44,16 +106,15 @@ func shuffle_formation() -> void:
 		board.load_formation(Ranks.random_formation(GameSession.my_side()))
 
 
-func preview_piece_skin(slug: String) -> void:
-	board.set_piece_skin(board.my_side, slug)
-
-
 func _on_match_loaded(view: Dictionary) -> void:
 	var side := GameSession.my_side()
 	board.set_mode(Board3D.Mode.SPECTATE, side, false)
 	rig.attract = false
 	rig.set_side(side)
-	_apply_player_skins(view)
+	var players: Variant = view.get("players")
+	var rival: Variant = players.get(Ranks.opponent(side)) if players is Dictionary else null
+	_opponent_loadout = rival.get("loadout", {}) if rival is Dictionary and rival.get("loadout") is Dictionary else {}
+	refresh_cosmetics()
 
 	var pieces: Array = view.get("pieces", [])
 	var own := pieces.filter(func(p: Dictionary) -> bool: return p.get("side") == side)
@@ -89,28 +150,6 @@ func _on_game_over(info: Dictionary) -> void:
 	board.reveal_ranks(info.get("pieces", []))
 	rig.shake(0.35)
 	_refresh_mode()
-
-
-func _on_user_updated(user: Dictionary) -> void:
-	var equipped: Variant = user.get("equipped")
-	if not equipped is Dictionary:
-		equipped = {}
-	var theme: Variant = equipped.get("board_theme")
-	board.set_board_theme(theme if theme is String else CosmeticLibrary.DEFAULT_BOARD)
-	var skin: Variant = equipped.get("piece_skin")
-	board.set_piece_skin(board.my_side, skin if skin is String else CosmeticLibrary.DEFAULT_PIECES)
-
-
-## Each side wears its owner's equipped piece skin.
-func _apply_player_skins(view: Dictionary) -> void:
-	var players: Variant = view.get("players")
-	for side: String in [Ranks.WHITE, Ranks.BLACK]:
-		var skin := CosmeticLibrary.DEFAULT_PIECES
-		if players is Dictionary and players.get(side) is Dictionary:
-			var equipped: Variant = players[side].get("piece_skin")
-			if equipped is String:
-				skin = equipped
-		board.set_piece_skin(side, skin)
 
 
 ## Before any match: a dressed board with hidden enemy pieces, purely decorative.

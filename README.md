@@ -16,8 +16,13 @@ controls. The Laravel API in `wehelpdigital/games-of-the-generals-web` is the on
   - **Battle clips:** every clash plays a short "VS" cut-in. You only see what you know (enemy
     ranks stay "?"); after the match, **Battle recap** replays every clash with both ranks revealed.
     Toggle with "Clips" in the HUD.
-  - **Leaderboard** (all-time or monthly) and **Shop** (cosmetic boards and piece skins, previewed
-    live on the 3D board).
+  - **Leaderboard** (all-time or monthly).
+  - **Shop** (test mode: everything free, no login): 136 cosmetics in 9 categories, previewed live
+    on the board behind the shop. Arenas (12), boards (13), territory for your half (12), chips (14),
+    icon packs (20), piece auras (13), board glow (12), move trails (10), kill effects (10), and
+    taunts (16) you throw at your opponent's half during a match. Your loadout is saved on the
+    device and synced to your account so opponents see the visible items; the practice AI wears a
+    random loadout.
 
 The client talks to production by default. To use a local backend, pass
 `-- --api-url=http://127.0.0.1:8000` or set `GOTG_API_URL`.

@@ -13,11 +13,8 @@ controls. The Laravel API in `wehelpdigital/games-of-the-generals-web` is the on
   - **Play vs AI**: offline practice against Rookie, Officer or General difficulty.
   - **Play Online**: log in, then use the global lobby: quick match, host a match, join one from
     the list, or resume your open match.
-  - **Battle clips:** every clash plays a short cartoon fight: both soldiers march onto a little
-    battlefield and the attacker tries their signature move (the Spy sneaks in for a chop, Generals
-    blast a megaphone shockwave, Privates swing a rifle...) until someone is KO'd. You only see what
-    you know (a hidden enemy is a "?" shadow soldier; ties reveal it);
-    after the match, **Battle recap** replays every clash with both soldiers revealed.
+  - **Battle clips:** every clash plays a short "VS" cut-in. You only see what you know (enemy
+    ranks stay "?"); after the match, **Battle recap** replays every clash with both ranks revealed.
     Toggle with "Clips" in the HUD.
   - **Leaderboard** (all-time or monthly) and **Shop** (cosmetic boards and piece skins, previewed
     live on the 3D board).
@@ -51,7 +48,7 @@ res://
 │   ├── UIRoot.gd            Screen manager, toasts, confirm dialogs
 │   ├── theme/AppTheme.gd    Candy buttons, cards, fonts, colours
 │   ├── screens/             Title, AiSetup, Auth, Lobby, Leaderboard, Shop, GameHUD (+ recap)
-│   └── clips/               BattleClip (the cartoon fight), CartoonFighter, FighterLooks
+│   └── widgets/ClashCutIn   The "VS" battle clip
 ├── assets/fonts/            Lilita One + Fredoka (SIL OFL, licences alongside)
 ├── assets/icons/pieces/     One original badge SVG per rank (generated, see tools/)
 ├── tools/icons/             generate_piece_badges.js: node tools/icons/generate_piece_badges.js
@@ -99,6 +96,3 @@ from the physical board game or other apps. Rank symbols follow public Philippin
 (stars, suns, triangles, chevrons). The Spy is a faceless fedora agent and the Flag a custom banner,
 deliberately unlike the classic "eyes" and national flag. Fonts are SIL OFL (licences in
 `assets/fonts/`).
-
-The battle-clip soldiers are drawn and animated entirely in code (`ui/clips/CartoonFighter.gd`,
-paper-cutout style); `tests/FighterLineup.gd` and `tests/ClipFrames.tscn` render them for review.

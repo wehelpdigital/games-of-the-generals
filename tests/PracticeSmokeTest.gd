@@ -32,7 +32,7 @@ func _ready() -> void:
 
 	var start_pieces := board.pieces.size()
 	for turn in 24:
-		var ready := await wait_until(func() -> bool: return GameSession.is_my_turn() and board._can_interact(), 25.0)
+		var ready := await wait_until(func() -> bool: return GameSession.is_my_turn() and board._can_interact(), 10.0)
 		if not ready:
 			check(GameSession.status() == "finished", "turn %d: board ready for input" % turn)
 			break

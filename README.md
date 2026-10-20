@@ -13,6 +13,9 @@ controls. The Laravel API in `wehelpdigital/games-of-the-generals-web` is the on
   - **Play vs AI**: offline practice against Rookie, Officer or General difficulty.
   - **Play Online**: log in, then use the global lobby: quick match, host a match, join one from
     the list, or resume your open match.
+  - **Battle clips:** every clash plays a short "VS" cut-in. You only see what you know (enemy
+    ranks stay "?"); after the match, **Battle recap** replays every clash with both ranks revealed.
+    Toggle with "Clips" in the HUD.
   - **Leaderboard** (all-time or monthly) and **Shop** (cosmetic boards and piece skins, previewed
     live on the 3D board).
 
@@ -44,7 +47,8 @@ res://
 ├── ui/
 │   ├── UIRoot.gd            Screen manager, toasts, confirm dialogs
 │   ├── theme/AppTheme.gd    Candy buttons, cards, fonts, colours
-│   └── screens/             Title, AiSetup, Auth, Lobby, Leaderboard, Shop, GameHUD
+│   ├── screens/             Title, AiSetup, Auth, Lobby, Leaderboard, Shop, GameHUD (+ recap)
+│   └── widgets/ClashCutIn   The "VS" battle clip
 ├── assets/fonts/            Lilita One + Fredoka (SIL OFL, licences alongside)
 ├── assets/icons/pieces/     One original badge SVG per rank (generated, see tools/)
 ├── tools/icons/             generate_piece_badges.js: node tools/icons/generate_piece_badges.js

@@ -14,6 +14,8 @@ const SCREENS := {
 	"hud": preload("res://ui/screens/GameHUD.gd"),
 }
 
+const SETTINGS_FILE := "user://settings.cfg"
+
 var game: Game3D
 var current_name := ""
 
@@ -21,6 +23,8 @@ var _root: Control
 var _screens: Dictionary = {}
 var _overlay: Control
 var _toast_box: VBoxContainer
+var _cut_in: ClashCutIn
+var _settings := ConfigFile.new()
 
 
 func _ready() -> void:
@@ -47,7 +51,10 @@ func _ready() -> void:
 	_toast_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_toast_box.alignment = BoxContainer.ALIGNMENT_END
 	_root.add_child(_toast_box)
+	_cut_in = ClashCutIn.new()
+	_root.add_child(_cut_in)  # Last, so battle clips draw over dialogs too.
 
+	_settings.load(SETTINGS_FILE)
 	GameSession.match_loaded.connect(_on_match_loaded)
 
 
@@ -80,6 +87,21 @@ func require_login(next: String) -> void:
 		show_screen(next)
 	else:
 		show_screen("auth", {"next": next})
+
+
+## Coroutine: plays a battle clip (see ClashCutIn.play) and returns when it ends or is skipped.
+func play_clash(data: Dictionary) -> void:
+	await _cut_in.play(data)
+
+
+## Player preferences stored in user://settings.cfg.
+func setting(key: String, default: Variant) -> Variant:
+	return _settings.get_value("ui", key, default)
+
+
+func set_setting(key: String, value: Variant) -> void:
+	_settings.set_value("ui", key, value)
+	_settings.save(SETTINGS_FILE)
 
 
 func toast(text: String, color := AppTheme.INK) -> void:

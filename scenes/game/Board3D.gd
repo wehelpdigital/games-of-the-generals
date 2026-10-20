@@ -42,6 +42,10 @@ const CLASH_COLORS := {
 @export var camera: Camera3D
 @export var drag_threshold_px := 10.0
 
+## Optional coroutine awaited at the moment of each clash (the UI's battle clip). Receives
+## {attacker: {side, rank}, defender: {side, rank}, outcome}.
+var clash_presenter: Callable
+
 var mode := Mode.SPECTATE
 var my_side := Ranks.WHITE
 var can_act := false
@@ -190,6 +194,11 @@ func piece_at(cell: Vector2i) -> Piece3D:
 	return _cells.get(cell)
 
 
+## True while queued moves, clashes or resyncs are still playing out.
+func is_animating() -> bool:
+	return _busy
+
+
 # --- Animation queue --------------------------------------------------------------------------
 
 func _enqueue(job: Dictionary) -> void:
@@ -278,7 +287,15 @@ func _play_result(result: Dictionary) -> void:
 
 	var outcome := str(clash.get("outcome", "both"))
 	var from_pos := cell_to_local(from)
+	var defender: Piece3D = pieces.get(str(clash.get("defender_id", "")), _cells.get(to))
 	await _wait(mover.lunge_to(from_pos.lerp(to_pos, 0.42)))
+	if clash_presenter.is_valid():
+		# Ranks here are only what this client knows: enemy pieces carry "" during play.
+		await clash_presenter.call({
+			"attacker": {"side": mover.side, "rank": mover.rank},
+			"defender": {"side": defender.side if defender else Ranks.opponent(mover.side), "rank": defender.rank if defender else ""},
+			"outcome": outcome,
+		})
 	ClashFX.burst(self, from_pos.lerp(to_pos, 0.7) + Vector3(0.0, 0.45, 0.0), CLASH_COLORS.get(outcome, Color.WHITE),
 		1.25 if outcome == "both" else 1.0)
 	clash_impact.emit(0.9 if outcome == "both" else 0.6)

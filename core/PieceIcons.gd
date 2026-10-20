@@ -5,6 +5,12 @@ extends RefCounted
 ## textures. Textures and materials are loaded once and shared.
 
 const PATH := "res://assets/icons/pieces/%s.svg"
+const UNKNOWN := "UNKNOWN"  ## The "?" badge for a piece whose rank the viewer doesn't know.
+
+
+## Badge for `rank`, falling back to the "?" badge when the rank is hidden ("").
+static func badge_or_mystery(rank: String) -> Texture2D:
+	return icon_texture(rank if Ranks.INFO.has(rank) else UNKNOWN)
 
 static var _textures: Dictionary = {}
 static var _materials: Dictionary = {}
@@ -13,7 +19,7 @@ static var _quad: QuadMesh
 
 ## The badge for a rank code (G5 … FLG), or null for an unknown/hidden rank.
 static func icon_texture(rank: String) -> Texture2D:
-	if not Ranks.INFO.has(rank):
+	if not Ranks.INFO.has(rank) and rank != UNKNOWN:
 		return null
 	if not _textures.has(rank):
 		_textures[rank] = load(PATH % rank)

@@ -24,6 +24,7 @@ const TIERS = {
   enlisted: ['#52c47a', '#1f6b3a'],
   spy: ['#5a5672', '#1b1a28'],
   flag: ['#fffaf0', '#f0d6a2'],
+  unknown: ['#8b84a8', '#3a3552'],
 };
 
 const fmt = (n) => Number(n.toFixed(2));
@@ -137,6 +138,17 @@ function banner() {
   );
 }
 
+// A hidden enemy piece in battle clips: a big gold question mark.
+function mystery() {
+  const hook = 'M98 96 C98 62 158 60 158 96 C158 120 128 122 128 150';
+  return (
+    `<path d="${hook}" fill="none" stroke="${INK}" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="${hook}" fill="none" stroke="${METAL.mid}" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<path d="M104 88 C108 74 124 70 136 72" fill="none" stroke="${METAL.light}" stroke-width="7" stroke-linecap="round"/>` +
+    `<circle cx="128" cy="190" r="17" fill="${METAL.mid}" stroke="${INK}" stroke-width="8"/>`
+  );
+}
+
 // --- Badge ------------------------------------------------------------------------------------
 
 function medallion(tier) {
@@ -190,6 +202,7 @@ const BADGES = {
   PVT: ['enlisted', () => chevron(128, 112, 150, 62, 28)],
   SPY: ['spy', agent],
   FLG: ['flag', banner],
+  UNKNOWN: ['unknown', mystery],
 };
 
 fs.mkdirSync(OUT, { recursive: true });

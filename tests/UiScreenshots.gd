@@ -26,8 +26,26 @@ func _ready() -> void:
 	await _shot("06_hud_setup", 1.0)
 	GameSession.submit_setup(board.get_setup_placements())
 	await _shot("07_hud_play", 1.0)
+	# A live battle clip as the defender sees it: their attacker stays a "?".
+	ui.play_clash({"attacker": {"side": Ranks.BLACK, "rank": ""}, "defender": {"side": Ranks.WHITE, "rank": "G5"},
+		"outcome": "attacker", "viewer": Ranks.WHITE, "reveal": false})
+	await _shot("07b_clip_live", 1.25)
+	await get_tree().create_timer(1.5).timeout
 	GameSession.resign()
 	await _shot("08_game_over", 2.5)
+	# Battle recap with every rank revealed, and one replayed clip.
+	var hud: Screen = ui.screen("hud")
+	hud._last_info = {"you_won": false, "end_reason": "flag_captured", "clashes": [
+		{"move_number": 9, "outcome": "attacker", "attacker": {"side": Ranks.WHITE, "rank": "SPY"}, "defender": {"side": Ranks.BLACK, "rank": "G5"}},
+		{"move_number": 12, "outcome": "attacker", "attacker": {"side": Ranks.BLACK, "rank": "PVT"}, "defender": {"side": Ranks.WHITE, "rank": "SPY"}},
+		{"move_number": 15, "outcome": "both", "attacker": {"side": Ranks.WHITE, "rank": "CPT"}, "defender": {"side": Ranks.BLACK, "rank": "CPT"}},
+		{"move_number": 20, "outcome": "defender", "attacker": {"side": Ranks.BLACK, "rank": "MAJ"}, "defender": {"side": Ranks.WHITE, "rank": "COL"}},
+	]}
+	hud._show_recap()
+	await _shot("08b_recap", 0.8)
+	ui.play_clash(hud._recap_clip(hud._last_info["clashes"][0]))
+	await _shot("08c_recap_clip", 1.3)
+	await get_tree().create_timer(1.5).timeout
 	if ApiManager.base_url != ApiManager.DEFAULT_BASE_URL:
 		await _lobby_shot(ui)
 	get_tree().quit()

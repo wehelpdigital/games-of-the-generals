@@ -8,6 +8,8 @@ var turn := Ranks.WHITE
 var move_number := 0
 var winner := ""
 var end_reason := ""
+## Every clash with both ranks, for the post-game Battle Recap. Never shown during play.
+var clash_log: Array = []
 
 var _pending_flag: Dictionary = {}  # {id, side} while a flag waits out the reply on the goal row
 var _next_id := 0
@@ -97,6 +99,11 @@ func apply(piece_id: String, to: Vector2i) -> Dictionary:
 		piece["y"] = to.y
 	else:
 		var outcome := Ranks.resolve_clash(piece["rank"], defender["rank"])
+		clash_log.append({
+			"move_number": move_number, "outcome": outcome,
+			"attacker": {"id": piece_id, "side": side, "rank": piece["rank"]},
+			"defender": {"id": defender["id"], "side": defender["side"], "rank": defender["rank"]},
+		})
 		var eliminated: Array = []
 		if outcome != "attacker":
 			eliminated.append(piece_id)

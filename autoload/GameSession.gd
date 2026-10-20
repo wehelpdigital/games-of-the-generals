@@ -279,7 +279,8 @@ func _on_realtime_event(channel: String, event: String, data: Dictionary) -> voi
 
 
 func _emit_finished_from_view(view: Dictionary) -> void:
-	_emit_finished({"winner": view.get("winner"), "end_reason": view.get("end_reason"), "pieces": view.get("pieces", [])})
+	_emit_finished({"winner": view.get("winner"), "end_reason": view.get("end_reason"), "pieces": view.get("pieces", []),
+		"clashes": view.get("clashes", [])})
 
 
 func _emit_finished(data: Dictionary) -> void:
@@ -294,6 +295,7 @@ func _emit_finished(data: Dictionary) -> void:
 		"you_won": winner == my_side(),
 		"pieces": data.get("pieces", []),
 		"rating": data.get("rating", {}),
+		"clashes": data.get("clashes", []),
 	}
 	game_over.emit(info)
 	_announce_status()
@@ -394,6 +396,7 @@ func _practice_load(practice_status: String, new_version: int) -> void:
 		"pieces": _arbiter.view_pieces(Ranks.WHITE),
 		"winner": _arbiter.winner if _arbiter.is_over() else null,
 		"end_reason": _arbiter.end_reason if _arbiter.is_over() else null,
+		"clashes": _arbiter.clash_log if _arbiter.is_over() else [],
 	}
 	_load_view(view)
 

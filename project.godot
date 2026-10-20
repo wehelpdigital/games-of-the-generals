@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="Game of the Generals"
-config/description="Real-time 3D Salpakan with a server-side arbiter."
+config/name="Salpakan Tactics!"
+config/description="Salpakan Tactics! A 3D Salpakan strategy game with a server-side arbiter."
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"

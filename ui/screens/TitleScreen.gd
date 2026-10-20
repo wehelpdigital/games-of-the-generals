@@ -12,18 +12,21 @@ func _ready() -> void:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	_logo = AppTheme.vbox(0)
-	var small := AppTheme.label("GAME OF THE", "TitleLabel", 36)
-	small.add_theme_constant_override("outline_size", 10)
-	small.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var big := AppTheme.label("GENERALS", "TitleLabel", 84)
-	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	big.add_theme_color_override("font_color", AppTheme.YELLOW)
-	_logo.add_child(small)
-	_logo.add_child(big)
+	var word := AppTheme.label("SALPAKAN", "TitleLabel", 84)
+	word.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	word.add_theme_color_override("font_color", AppTheme.YELLOW)
+	var tactics := AppTheme.label("TACTICS!", "TitleLabel", 60)
+	tactics.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tactics.add_theme_color_override("font_color", AppTheme.PINK)
+	tactics.add_theme_constant_override("outline_size", 14)
+	tactics.resized.connect(func() -> void: tactics.pivot_offset = tactics.size * 0.5)
+	tactics.rotation = deg_to_rad(-4.0)
+	_logo.add_child(word)
+	_logo.add_child(tactics)
 	var tag_row := AppTheme.hbox()
 	tag_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	tag_row.add_child(AppTheme.pill("SALPAKAN", AppTheme.PINK))
-	tag_row.add_child(AppTheme.pill("3D", AppTheme.BLUE))
+	tag_row.add_child(AppTheme.pill("3D STRATEGY", AppTheme.BLUE))
+	tag_row.add_child(AppTheme.pill("ONLINE + AI", AppTheme.PURPLE))
 	_logo.add_child(tag_row)
 	column.add_child(_logo)
 

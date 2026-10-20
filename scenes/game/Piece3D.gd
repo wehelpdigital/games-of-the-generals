@@ -1,7 +1,7 @@
 class_name Piece3D
 extends Node3D
-## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with sticker-style rank
-## insignia and a label on its face, drawn cel-shaded with an ink outline.
+## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with a chibi rank portrait
+## (PieceIcons) and a label on its face, drawn cel-shaded with an ink outline.
 ##
 ## The face points toward the piece's owner, so the opponent only ever sees the neutral back. During
 ## play the server never sends enemy ranks, so enemy pieces are built with rank "" (blank face).
@@ -17,8 +17,9 @@ const PICK_LAYER := 2  ## Physics layer bit used only for pointer raycasts.
 const LIFT_HEIGHT := 0.34
 const BASE_SIZE := Vector3(0.86, 0.48, 0.1)    ## Outline x/z, thickness.
 const PLAQUE_SIZE := Vector3(0.74, 0.62, 0.16)
-const PLAQUE_TILT := -0.28  ## Radians; leans the face back toward the owner's camera.
+const PLAQUE_TILT := -0.52  ## Radians; leans the face back toward the owner's camera so ranks read from above.
 const OUTLINE_WIDTH := 0.03
+const ICON_SIZE := 0.48  ## Side of the rank portrait on the face (the plaque is 0.74 × 0.62).
 const HIGHLIGHT_INK := {
 	Highlight.HOVER: Color("ffffff"),
 	Highlight.SELECTED: Color("ffd23f"),
@@ -45,7 +46,6 @@ var _highlight := Highlight.NONE
 static var _overlays: Dictionary = {}
 static var _shared_body: ArrayMesh
 static var _shared_hull: ArrayMesh
-static var _badges: Dictionary = {}
 
 
 func setup(id: String, piece_side: String, piece_rank: String, mine: bool, skin: String) -> Piece3D:
@@ -253,25 +253,27 @@ func _rebuild_face() -> void:
 	if rank == "" or not Ranks.INFO.has(rank):
 		return
 
-	var badge := MeshInstance3D.new()
-	badge.mesh = _badge_mesh(rank)
-	badge.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "insignia"))
-	badge.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "outline"))
-	badge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_face.add_child(badge)
+	# Chibi rank portrait, stuck on the face like a sticker just above the label.
+	var portrait := MeshInstance3D.new()
+	portrait.mesh = PieceIcons.quad()
+	portrait.material_override = PieceIcons.face_material(rank)
+	portrait.scale = Vector3(ICON_SIZE, ICON_SIZE, 1.0)
+	portrait.position = Vector3(0.0, 0.074, 0.006)
+	portrait.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_face.add_child(portrait)
 
 	var colors := CosmeticLibrary.piece_label_colors(_skin, side)
 	var label := Label3D.new()
 	label.text = Ranks.info(rank)["label"]
 	label.font = CosmeticLibrary.display_font()
 	label.font_size = 64
-	label.pixel_size = 0.0024
+	label.pixel_size = 0.0021
 	label.outline_size = 18
 	label.modulate = colors["color"]
 	label.outline_modulate = colors["outline"]
 	label.double_sided = false
 	label.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	label.position = Vector3(0.0, -0.19, 0.012)
+	label.position = Vector3(0.0, -0.212, 0.012)
 	label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_face.add_child(label)
 
@@ -305,50 +307,6 @@ static func _build_shared_meshes() -> void:
 	hull.append_from(InsigniaFactory.get_slab_mesh(PLAQUE_SIZE, 0.14, 0.05, OUTLINE_WIDTH), 0, plaque)
 	hull.append_from(InsigniaFactory.get_slab_mesh(BASE_SIZE, 0.13, 0.035, OUTLINE_WIDTH), 0, stand)
 	_shared_hull = hull.commit()
-
-
-## All insignia marks of a rank merged into one mesh: surface 0 fill, surface 1 ink outline.
-## Up to three marks sit in a row; four and five stack into two rows so they stay big and bold.
-static func _badge_mesh(code: String) -> ArrayMesh:
-	if _badges.has(code):
-		return _badges[code]
-	var data := Ranks.info(code)
-	var shape: String = data["insignia"]
-	var marks: int = data["marks"]
-	var rows: Array = [marks]
-	var size := 0.24
-	match marks:
-		2:
-			size = 0.22
-		3:
-			size = 0.2
-		4:
-			rows = [2, 2]
-			size = 0.17
-		5:
-			rows = [3, 2]
-			size = 0.17
-	if shape == "eye" or shape == "flag":
-		size = 0.34
-	var sticker := InsigniaFactory.get_sticker_mesh(shape)
-	var fill := SurfaceTool.new()
-	fill.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var ink := SurfaceTool.new()
-	ink.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var gap := size * 1.12
-	var top := 0.08 + (rows.size() - 1) * gap * 0.5
-	for r in rows.size():
-		var count: int = rows[r]
-		for i in count:
-			var at := Vector3((i - (count - 1) / 2.0) * gap, top - r * gap, 0.0)
-			var xf := Transform3D(Basis().scaled(Vector3.ONE * size), at)
-			fill.append_from(sticker, 0, xf)
-			ink.append_from(sticker, 1, xf)
-	var mesh := fill.commit()
-	ink.commit(mesh)
-	_badges[code] = mesh
-	return mesh
-
 
 
 static func _overlay_material(value: Highlight) -> Material:

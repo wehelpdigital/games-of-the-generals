@@ -1,4 +1,4 @@
-# Game of the Generals — Godot client
+# Salpakan Tactics! — Godot client
 
 Real-time 3D Salpakan with a cel-shaded, toy-like anime look. Runs in the browser today (HTML5 /
 WebGL 2) and is built for Android and iOS later: Godot 4.7, Compatibility renderer, touch-first
@@ -35,7 +35,8 @@ res://
 │   ├── Ranks.gd             Board, the 21-piece set, clash rules
 │   ├── LocalArbiter.gd      Full-information referee for offline games
 │   ├── SalpakanAI.gd        Offline opponent (fair: learns ranks only from clashes)
-│   ├── InsigniaFactory.gd   Extruded insignia, rounded slabs, outline hulls, FX shapes
+│   ├── PieceIcons.gd        Chibi rank portraits shown on piece faces (and usable in UI)
+│   ├── InsigniaFactory.gd   Rounded slabs, outline hulls, emblem and FX shapes
 │   └── CosmeticLibrary.gd   Toon materials for every board theme / piece skin (shop slugs)
 ├── scenes/
 │   ├── main/Main.tscn       Entry: Game3D underneath, UI on top
@@ -45,6 +46,8 @@ res://
 │   ├── theme/AppTheme.gd    Candy buttons, cards, fonts, colours
 │   └── screens/             Title, AiSetup, Auth, Lobby, Leaderboard, Shop, GameHUD
 ├── assets/fonts/            Lilita One + Fredoka (SIL OFL, licences alongside)
+├── assets/icons/pieces/     One anime mascot SVG per rank (generated, see tools/)
+├── tools/icons/             generate_piece_icons.js: node tools/icons/generate_piece_icons.js
 └── tests/                   Headless smoke tests, AI benchmark, screenshot renderers
 ```
 

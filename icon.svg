@@ -1,1 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="124" height="124" x="2" y="2" fill="#363d52" stroke="#212532" stroke-width="4" rx="14"/><g fill="#fff" transform="translate(12.322 12.322)scale(.101)"><path d="M105 673v33q407 354 814 0v-33z"/><path fill="#478cbf" d="m105 673 152 14q12 1 15 14l4 67 132 10 8-61q2-11 15-15h162q13 4 15 15l8 61 132-10 4-67q3-13 15-14l152-14V427q30-39 56-81-35-59-83-108-43 20-82 47-40-37-88-64 7-51 8-102-59-28-123-42-26 43-46 89-49-7-98 0-20-46-46-89-64 14-123 42 1 51 8 102-48 27-88 64-39-27-82-47-48 49-83 108 26 42 56 81zm0 33v39c0 276 813 276 814 0v-39l-134 12-5 69q-2 10-14 13l-162 11q-12 0-16-11l-10-65H446l-10 65q-4 11-16 11l-162-11q-12-3-14-13l-5-69z"/><path d="M483 600c0 34 58 34 58 0v-86c0-34-58-34-58 0z"/><circle cx="725" cy="526" r="90"/><circle cx="299" cy="526" r="90"/></g><g fill="#414042" transform="translate(12.322 12.322)scale(.101)"><circle cx="307" cy="532" r="60"/><circle cx="717" cy="532" r="60"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Salpakan Tactics! app icon: a kawaii gold star on a candy-pink tile, in the game's ink style. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7ab0"/>
+      <stop offset="1" stop-color="#ff3d7f"/>
+    </linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe066"/>
+      <stop offset="1" stop-color="#ffb703"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#tile)" stroke="#1d1736" stroke-width="10"/>
+  <path d="M20 70 Q128 20 236 70 L236 64 Q236 16 192 16 L64 16 Q20 16 20 64 Z" fill="#ffffff" opacity="0.22"/>
+  <path d="M60 46 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z" fill="#ffffff"/>
+  <path d="M202 192 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="#ffffff"/>
+  <path d="M128 34 L151.5 93.6 L215.5 97.6 L166 138.4 L182.1 200.4 L128 166 L73.9 200.4 L90 138.4 L40.5 97.6 L104.5 93.6 Z"
+        fill="url(#star)" stroke="#1d1736" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M128 52 L143 92 L104.5 93.6 Z" fill="#ffffff" opacity="0.35"/>
+  <ellipse cx="108" cy="128" rx="9" ry="13" fill="#1d1736"/>
+  <ellipse cx="148" cy="128" rx="9" ry="13" fill="#1d1736"/>
+  <circle cx="111" cy="122" r="3.6" fill="#ffffff"/>
+  <circle cx="151" cy="122" r="3.6" fill="#ffffff"/>
+  <circle cx="106" cy="133" r="1.8" fill="#ffffff"/>
+  <circle cx="146" cy="133" r="1.8" fill="#ffffff"/>
+  <ellipse cx="94" cy="148" rx="9" ry="5" fill="#ff6f9f" opacity="0.8"/>
+  <ellipse cx="162" cy="148" rx="9" ry="5" fill="#ff6f9f" opacity="0.8"/>
+  <path d="M118 146 Q128 157 138 146" fill="none" stroke="#1d1736" stroke-width="5" stroke-linecap="round"/>
+</svg>

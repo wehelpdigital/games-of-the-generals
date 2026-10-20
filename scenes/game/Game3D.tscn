@@ -1,0 +1,60 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scenes/game/Game3D.gd" id="1_game"]
+[ext_resource type="Script" path="res://scenes/game/CameraRig.gd" id="2_rig"]
+[ext_resource type="Script" path="res://scenes/game/Board3D.gd" id="3_board"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_war"]
+sky_top_color = Color(0.05, 0.065, 0.1, 1)
+sky_horizon_color = Color(0.17, 0.17, 0.2, 1)
+ground_bottom_color = Color(0.02, 0.02, 0.025, 1)
+ground_horizon_color = Color(0.17, 0.17, 0.2, 1)
+sun_angle_max = 20.0
+
+[sub_resource type="Sky" id="Sky_war"]
+sky_material = SubResource("ProceduralSkyMaterial_war")
+
+[sub_resource type="Environment" id="Environment_war"]
+background_mode = 2
+sky = SubResource("Sky_war")
+ambient_light_source = 3
+ambient_light_energy = 0.55
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 1.05
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.06
+fog_enabled = true
+fog_light_color = Color(0.07, 0.08, 0.1, 1)
+fog_density = 0.012
+
+[node name="Game3D" type="Node3D"]
+script = ExtResource("1_game")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_war")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.9, -0.6, 0)
+light_color = Color(1, 0.95, 0.88, 1)
+light_energy = 1.15
+shadow_enabled = true
+directional_shadow_max_distance = 30.0
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.45, 2.5, 0)
+light_color = Color(0.7, 0.8, 1, 1)
+light_energy = 0.35
+
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("2_rig")
+camera = NodePath("Camera3D")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+fov = 42.0
+near = 0.1
+far = 200.0
+
+[node name="Board3D" type="Node3D" parent="."]
+script = ExtResource("3_board")

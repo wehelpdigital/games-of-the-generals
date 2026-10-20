@@ -11,6 +11,7 @@ const LEVELS := [
 ]
 
 var _card: PanelContainer
+var _buttons: Dictionary = {}  # level -> Button
 
 
 func _ready() -> void:
@@ -37,6 +38,7 @@ func _ready() -> void:
 		var option := AppTheme.vbox(4)
 		option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var b := AppTheme.button(entry["title"], entry["kind"], func() -> void: _start(level), 56)
+		_buttons[level] = b
 		option.add_child(b)
 		var blurb := AppTheme.label(entry["blurb"], "MutedLabel", 17)
 		blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -48,8 +50,17 @@ func _ready() -> void:
 
 
 func open(_args: Dictionary) -> void:
+	# Rookie is free for everyone; the tougher AIs need an account.
+	for level: int in _buttons:
+		var title: String = LEVELS.filter(func(e: Dictionary) -> bool: return e["level"] == level)[0]["title"]
+		var locked := level != SalpakanAI.Difficulty.EASY and not ApiManager.is_logged_in()
+		_buttons[level].text = title + (" (log in)" if locked else "")
 	AppTheme.pop_in(_card)
 
 
 func _start(level: int) -> void:
+	if level != SalpakanAI.Difficulty.EASY and not ApiManager.is_logged_in():
+		ui.toast("Log in to challenge the Officer and General AIs.", AppTheme.BLUE)
+		ui.show_screen("auth", {"next": "ai_setup"})
+		return
 	GameSession.start_practice(level as SalpakanAI.Difficulty)

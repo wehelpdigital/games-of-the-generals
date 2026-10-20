@@ -8,6 +8,6 @@ extends Node
 
 func _ready() -> void:
 	ui.game = game
-	ui.show_screen("title")
+	ui.home()
 	if ApiManager.is_logged_in():
 		ApiManager.fetch_user()  # Refreshes the profile; a revoked token logs out (401).

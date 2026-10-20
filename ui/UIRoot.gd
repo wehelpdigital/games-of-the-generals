@@ -33,8 +33,10 @@ func _ready() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = AppTheme.get_theme()
 	add_child(_root)
-	for screen_name: String in SCREENS:
-		var screen: Screen = SCREENS[screen_name].new()
+	var all_screens: Dictionary = SCREENS.duplicate()
+	all_screens.merge(ScreenRegistry.screens)  # Screens contributed by feature modules.
+	for screen_name: String in all_screens:
+		var screen: Screen = all_screens[screen_name].new()
 		screen.name = screen_name.capitalize().replace(" ", "")
 		screen.ui = self
 		screen.visible = false
@@ -74,11 +76,20 @@ func screen(screen_name: String) -> Screen:
 	return _screens[screen_name]
 
 
-## Leave whatever is going on and return to the title with the orbiting board.
+func has_screen(screen_name: String) -> bool:
+	return _screens.has(screen_name)
+
+
+## The player's home: the dashboard when logged in (once that screen exists), else the title.
+func home() -> void:
+	show_screen("dashboard" if ApiManager.is_logged_in() and has_screen("dashboard") else "title")
+
+
+## Leave whatever is going on and return home with the orbiting board.
 func back_to_menu() -> void:
 	GameSession.leave()
 	game.show_attract()
-	show_screen("title")
+	home()
 
 
 ## Screens that need an account send the player through login first.

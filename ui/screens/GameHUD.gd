@@ -17,6 +17,7 @@ var _taunt_button: Button
 var _taunt_menu: VBoxContainer
 var _last_info: Dictionary = {}  # The finished match's game-over info (result card and recap).
 var _recap_run := 0  # Bumped to cancel a running "Watch all".
+var _slots: Dictionary = {}  # HudRegistry slot name -> container
 
 
 func _ready() -> void:
@@ -71,6 +72,7 @@ func _ready() -> void:
 	_hint.visible = false
 	add_child(_hint)
 
+	_build_slots(top, center, corner)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
@@ -80,6 +82,37 @@ func _ready() -> void:
 	GameSession.move_rejected.connect(func(_id: String, message: String) -> void: ui.toast(message, AppTheme.RED))
 	GameSession.game_over.connect(_on_game_over)
 	GameSession.taunt_received.connect(_on_taunt)
+
+
+## Containers where feature modules' widgets (HudRegistry) live, then the widgets themselves.
+func _build_slots(top: HBoxContainer, center: VBoxContainer, corner: VBoxContainer) -> void:
+	var top_left := AppTheme.hbox(10)
+	top.add_child(top_left)
+	top.move_child(top_left, 2)  # After Menu and Clips.
+	var right := AppTheme.vbox(10)
+	corner.add_child(right)
+	corner.move_child(right, 0)
+	var left := AppTheme.vbox(10)
+	left.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 16)
+	left.offset_top = 84.0
+	add_child(left)
+	var bottom_left := AppTheme.vbox(8)
+	bottom_left.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16)
+	bottom_left.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bottom_left.alignment = BoxContainer.ALIGNMENT_END
+	add_child(bottom_left)
+	var bottom_center := AppTheme.hbox(10)
+	bottom_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 70)
+	bottom_center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bottom_center.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	add_child(bottom_center)
+	_slots = {"top_left": top_left, "top_center": center, "left": left, "right": right,
+		"bottom_left": bottom_left, "bottom_center": bottom_center}
+	for entry: Dictionary in HudRegistry.widgets:
+		var widget: Control = entry["script"].new()
+		_slots[entry["slot"]].add_child(widget)
+		if widget.has_method("setup"):
+			widget.call("setup", self)
 
 
 func open(_args: Dictionary) -> void:

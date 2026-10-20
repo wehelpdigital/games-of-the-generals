@@ -23,6 +23,8 @@ ApiManager="*res://autoload/ApiManager.gd"
 ReverbManager="*res://autoload/ReverbManager.gd"
 GameSession="*res://autoload/GameSession.gd"
 Loadout="*res://autoload/Loadout.gd"
+Profile="*res://autoload/Profile.gd"
+Social="*res://autoload/Social.gd"
 
 [display]
 

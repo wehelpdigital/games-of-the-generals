@@ -46,7 +46,7 @@ func _ready() -> void:
 
 
 func open(args: Dictionary) -> void:
-	_next = args.get("next", "title")
+	_next = args.get("next", "home")
 	_show_error("")
 	_password.text = ""
 	_confirm.text = ""
@@ -87,7 +87,10 @@ func _submit_form() -> void:
 		_show_error(res.error)
 		return
 	ui.toast("Welcome, %s!" % ApiManager.user.get("username", "General"), AppTheme.MINT)
-	ui.show_screen(_next)
+	if _next in ["home", "title"]:
+		ui.home()  # Logged in now: the dashboard.
+	else:
+		ui.show_screen(_next)
 
 
 func _show_error(text: String) -> void:

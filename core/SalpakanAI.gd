@@ -17,7 +17,7 @@ extends RefCounted
 
 enum Difficulty { EASY, MEDIUM, HARD }
 
-const LABELS := {Difficulty.EASY: "Easy", Difficulty.MEDIUM: "Medium", Difficulty.HARD: "Hard"}
+const LABELS := {Difficulty.EASY: "Rookie", Difficulty.MEDIUM: "Officer", Difficulty.HARD: "General"}
 const SETTINGS := {
 	Difficulty.EASY: {"samples": 4, "depth": 1, "noise": 3.5, "blunder": 0.25, "smart_setup": false},
 	Difficulty.MEDIUM: {"samples": 14, "depth": 1, "noise": 0.8, "blunder": 0.0, "smart_setup": true},

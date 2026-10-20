@@ -2,11 +2,11 @@ extends Screen
 ## Pick an AI difficulty and start an offline practice game.
 
 const LEVELS := [
-	{"level": SalpakanAI.Difficulty.EASY, "title": "Rookie", "kind": "Success", "mascot": "PVT",
+	{"level": SalpakanAI.Difficulty.EASY, "title": "Rookie", "kind": "Success", "badge": "PVT",
 		"blurb": "Makes mistakes. Great for learning the ranks."},
-	{"level": SalpakanAI.Difficulty.MEDIUM, "title": "Officer", "kind": "Secondary", "mascot": "CPT",
+	{"level": SalpakanAI.Difficulty.MEDIUM, "title": "Officer", "kind": "Secondary", "badge": "CPT",
 		"blurb": "Plays solid and punishes careless moves."},
-	{"level": SalpakanAI.Difficulty.HARD, "title": "General", "kind": "Primary", "mascot": "G5",
+	{"level": SalpakanAI.Difficulty.HARD, "title": "General", "kind": "Primary", "badge": "G5",
 		"blurb": "Reads clashes, hunts your flag, thinks ahead."},
 ]
 
@@ -27,13 +27,13 @@ func _ready() -> void:
 	for entry: Dictionary in LEVELS:
 		var level: int = entry["level"]
 		var row := AppTheme.hbox(12)
-		var mascot := TextureRect.new()
-		mascot.texture = PieceIcons.icon_texture(entry["mascot"])
-		mascot.custom_minimum_size = Vector2(76, 76)
-		mascot.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		mascot.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		mascot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(mascot)
+		var badge := TextureRect.new()
+		badge.texture = PieceIcons.icon_texture(entry["badge"])
+		badge.custom_minimum_size = Vector2(76, 76)
+		badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(badge)
 		var option := AppTheme.vbox(4)
 		option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var b := AppTheme.button(entry["title"], entry["kind"], func() -> void: _start(level), 56)

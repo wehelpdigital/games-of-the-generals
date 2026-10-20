@@ -1,5 +1,5 @@
 extends Node
-## Close-up renders of the rank portraits on real pieces (both teams, several skins, a revealed
+## Close-up renders of the rank badges on real pieces (both teams, several skins, a revealed
 ## enemy). Needs a real renderer:
 ##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/IconShots.tscn -- --out=<dir>
 

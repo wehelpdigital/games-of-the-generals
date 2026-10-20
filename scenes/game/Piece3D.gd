@@ -1,6 +1,6 @@
 class_name Piece3D
 extends Node3D
-## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with a chibi rank portrait
+## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with an enamel rank badge
 ## (PieceIcons) and a label on its face, drawn cel-shaded with an ink outline.
 ##
 ## The face points toward the piece's owner, so the opponent only ever sees the neutral back. During
@@ -19,7 +19,7 @@ const BASE_SIZE := Vector3(0.86, 0.48, 0.1)    ## Outline x/z, thickness.
 const PLAQUE_SIZE := Vector3(0.74, 0.62, 0.16)
 const PLAQUE_TILT := -0.52  ## Radians; leans the face back toward the owner's camera so ranks read from above.
 const OUTLINE_WIDTH := 0.03
-const ICON_SIZE := 0.48  ## Side of the rank portrait on the face (the plaque is 0.74 × 0.62).
+const ICON_SIZE := 0.48  ## Side of the rank badge on the face (the plaque is 0.74 × 0.62).
 const HIGHLIGHT_INK := {
 	Highlight.HOVER: Color("ffffff"),
 	Highlight.SELECTED: Color("ffd23f"),
@@ -253,14 +253,14 @@ func _rebuild_face() -> void:
 	if rank == "" or not Ranks.INFO.has(rank):
 		return
 
-	# Chibi rank portrait, stuck on the face like a sticker just above the label.
-	var portrait := MeshInstance3D.new()
-	portrait.mesh = PieceIcons.quad()
-	portrait.material_override = PieceIcons.face_material(rank)
-	portrait.scale = Vector3(ICON_SIZE, ICON_SIZE, 1.0)
-	portrait.position = Vector3(0.0, 0.074, 0.006)
-	portrait.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_face.add_child(portrait)
+	# Rank badge, stuck on the face like an enamel pin just above the label.
+	var badge := MeshInstance3D.new()
+	badge.mesh = PieceIcons.quad()
+	badge.material_override = PieceIcons.face_material(rank)
+	badge.scale = Vector3(ICON_SIZE, ICON_SIZE, 1.0)
+	badge.position = Vector3(0.0, 0.074, 0.006)
+	badge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_face.add_child(badge)
 
 	var colors := CosmeticLibrary.piece_label_colors(_skin, side)
 	var label := Label3D.new()

@@ -61,3 +61,10 @@ Icons made by Delapouite (https://delapouite.com) and Lorc (http://lorcblog.blog
 
 Everything else in the packs (medallions, stars, suns, pips, chevrons, bars, hearts, sakura, planets, etc.)
 is drawn by our scripts.
+
+## Flag emblems
+
+The topper flag editor offers eight of these game-icons.net glyphs as emblems (raven, spiked-dragon-head,
+viking-helmet, thor-hammer, fist, comet-spark, ghost, moon), bundled by `tools/icons/bundle_flag_emblems.js`
+into `assets/icons/flag_emblems.json`. They are drawn with our own ink outline, otherwise unchanged. Same
+authors (Lorc, Delapouite) and licence (CC BY 3.0) as above; the editor shows the credit line.

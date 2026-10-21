@@ -143,6 +143,7 @@ func _build_header() -> void:
 	_name_label = AppTheme.label("", "", 24)
 	_name_label.add_theme_font_override("font", AppTheme.heading_font())
 	_name_label.clip_text = true
+	_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS  # Long names end in "..."
 	_names.add_child(_name_label)
 	var rank_row := AppTheme.hbox(6)
 	_insignia = RankInsignia.new(0, 24)
@@ -517,8 +518,12 @@ func _fill_banners() -> void:
 		var left := _time_left(str(season.get("ends_at", "")))
 		if left != "":
 			title += "  -  " + left
-		var pill := AppTheme.pill(title, _theme["accent"], Color.WHITE, 18)
+		var pill := AppTheme.pill(title, _theme["accent"], Color.WHITE, 15 if ProfileUi.narrow else 18)
 		pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if ProfileUi.narrow:  # Phones: the season name wraps instead of running off the screen.
+			pill.size_flags_horizontal = Control.SIZE_FILL
+			var pill_text := pill.get_child(0) as Label
+			pill_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		holder.add_child(pill)
 		var about := str(season.get("description", "")) if season.get("description") != null else ""
 		if about != "":

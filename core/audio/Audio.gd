@@ -210,6 +210,9 @@ func _on_node_added(node: Node) -> void:
 
 
 func _hook_button(button: BaseButton) -> void:
+	if button.has_meta("audio_hooked"):
+		return  # Moved between containers (node_added fires again): already wired once.
+	button.set_meta("audio_hooked", true)
 	if button is CheckButton or button is CheckBox:
 		button.toggled.connect(func(_on: bool) -> void: play("ui_toggle"))
 		return

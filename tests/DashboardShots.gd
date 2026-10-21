@@ -43,14 +43,14 @@ func _ready() -> void:
 
 	var themes: Array = DashboardThemes.keys()
 	if _prefix != "":
-		themes = ["classic", "neon_city", "sakura"]
+		themes = ["classic", "halloween", "neon_city"]
 	for theme: String in themes:
 		ServerConfig.values["dashboard_theme"] = theme
 		ServerConfig.values["dashboard_palette"] = null
 		ServerConfig.values["season"] = null
 		ServerConfig.values["maintenance_message"] = ""
 		if theme == "halloween":
-			ServerConfig.values["season"] = {"slug": "halloween-2026", "name": "Halloween Havoc",
+			ServerConfig.values["season"] = {"slug": "halloween", "name": "Halloween & Undas",
 				"description": "Spooky arenas and pumpkin taunts in the shop!", "ends_at": _iso_in_days(9)}
 		if theme == "winter":
 			ServerConfig.values["maintenance_message"] = "Servers restart at 02:00 PHT for 10 minutes."
@@ -96,13 +96,8 @@ func _ready() -> void:
 	await _show(ui, "guild", {"id": 3}, "guild_visitor", 1.0)
 	await _show(ui, "dashboard", {}, "dash_rookie", 1.0)
 	if _wanted("dash_hand"):
-		# The powerup hand, scrolled into view (below the fold on phones).
-		var hand: Control = ui.screen("dashboard").find_children("*", "PanelContainer", true, false).filter(
-			func(n: Node) -> bool: return n.get_script() == preload("res://ui/dashboard/PowerupLoadoutCard.gd")).front()
-		for scroll: ScrollContainer in ui.screen("dashboard").find_children("*", "ScrollContainer", true, false):
-			if scroll.is_ancestor_of(hand):
-				scroll.ensure_control_visible(hand)
-		await _shot("dash_hand", 0.6)
+		# The home keeps the hand as the My Hand tile; the binder is where it shows.
+		await _show(ui, "powerups", {}, "dash_hand", 1.0)
 	var major := _profile.duplicate(true)
 	major["guild"] = null
 	Profile._set_data(major, true)

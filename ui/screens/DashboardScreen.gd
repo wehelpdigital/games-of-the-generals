@@ -1,14 +1,18 @@
 extends Screen
-## Home after login, over the orbiting 3D board: who you are (photo, rank, XP, credits, guild),
-## the ways to play, shortcuts, the next rank's tasks, and panels from other modules
-## (DashboardRegistry: global chat, powerups...). Themed by the admin's dashboard_theme setting.
-## Wide screens: play column left, cards and side panels right. Portrait: one scrolling column.
+## Home after login, over the orbiting 3D board: who you are (photo, rank, XP, credits, guild,
+## the daily-reward gift), the ways to play, icon shortcuts, the season's shop offer, and panels
+## from other modules (DashboardRegistry: global chat, missions...). Themed by the admin's
+## dashboard_theme setting. Wide screens: play and shortcuts left, global chat in the middle,
+## season offer and missions right. Portrait: one scrolling column.
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
 const LEFT_WIDTH := 372.0
 const WIDE_MIN := 1100.0  ## Below this width the dashboard is one scrolling column.
 const COLUMN_MAX := 680.0
 const SIDE_WIDTH := 310.0
+## Registry panels the home keeps as icons instead: the daily reward is the gift in the top bar,
+## the powerup hand is the My Hand tile.
+const HIDDEN_PANELS := ["res://ui/dashboard/DailyRewardBanner.gd", "res://ui/dashboard/PowerupLoadoutCard.gd"]
 
 var _theme: Dictionary = DashboardThemes.get_theme("classic")
 var _tint: TextureRect
@@ -30,6 +34,8 @@ var _rank_label: Label
 var _xp_bar: XpBar
 var _guild_button: Button
 var _credits_button: Button
+var _reward_button: Button  # Daily login reward: a gift with a badge when today's is waiting.
+var _reward_badge: UnreadBadge
 var _logout_button: Button
 var _settings_button: Button
 var _play_row: BoxContainer  # Quick Match + Rooms.
@@ -41,7 +47,7 @@ var _play_card: PanelContainer
 var _play_box: VBoxContainer
 var _tiles_card: PanelContainer
 var _tile_grid: GridContainer
-var _next_card: NextRankCard
+var _season_card: SeasonOfferCard
 var _main_box: VBoxContainer
 var _side_box: VBoxContainer
 var _panels: Array[Control] = []
@@ -50,7 +56,7 @@ var _panels: Array[Control] = []
 var _wide: MarginContainer
 var _wide_top: VBoxContainer
 var _left_list: VBoxContainer
-var _center_list: VBoxContainer
+var _center_col: VBoxContainer
 var _right_scroll: ScrollContainer
 var _right_list: VBoxContainer
 var _right_col: VBoxContainer
@@ -78,8 +84,8 @@ func _ready() -> void:
 	_play_box = AppTheme.vbox(10)
 	_play_card.add_child(_play_box)
 	_build_tiles()
-	_next_card = NextRankCard.new()
-	_next_card.ui = ui
+	_season_card = SeasonOfferCard.new()
+	_season_card.setup(ui)
 	_main_box = AppTheme.vbox(12)
 	_side_box = AppTheme.vbox(12)
 	_side_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -95,13 +101,16 @@ func _ready() -> void:
 			_celebrate(tier))
 	ServerConfig.changed.connect(func() -> void:
 		if visible:
-			_apply_theme())
+			_apply_theme()
+			_season_card.refresh())
+	Economy.daily_changed.connect(_paint_reward)
 	ApiManager.auth_changed.connect(func(logged_in: bool) -> void:
 		if visible and not logged_in:
 			ui.home())
 
 
 func open(_args: Dictionary) -> void:
+	_layout()  # Decides wide or portrait first: the play buttons are sized for it.
 	_apply_theme()
 	_layout()
 	_refresh_profile()
@@ -109,9 +118,11 @@ func open(_args: Dictionary) -> void:
 		if panel.has_method("refresh"):
 			panel.call("refresh")
 	var delay := 0.0
-	for card: Control in [_header, _play_card, _tiles_card, _next_card]:
+	_season_card.refresh()
+	for card: Control in [_header, _play_card, _tiles_card, _season_card]:
 		AppTheme.pop_in(card, delay)
 		delay += 0.05
+	_refresh_daily()
 	if _logo and _logo.has_method("intro"):
 		_logo.call("intro")
 	Profile.refresh(4.0)
@@ -165,6 +176,22 @@ func _build_header() -> void:
 	_credits_button.add_theme_font_size_override("font_size", 18)
 	_credits_button.tooltip_text = "Credits - visit the shop"
 	_settings_button = ui.gear_button("dashboard") if ui else Button.new()
+	_reward_button = ProfileUi.colored_button("", AppTheme.PAPER, AppTheme.INK, _open_daily, 44)
+	_reward_button.custom_minimum_size.x = 52
+	_reward_button.tooltip_text = "Daily reward"
+	var gift := TextureRect.new()
+	gift.texture = EmojiPicker.texture("1f389")
+	gift.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gift.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	gift.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gift.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	gift.offset_left = 10
+	gift.offset_right = -10
+	gift.offset_top = 7
+	gift.offset_bottom = -11  # Above the button's thicker bottom lip.
+	_reward_button.add_child(gift)
+	_reward_badge = UnreadBadge.new()
+	_reward_button.add_child(_reward_badge)
 	_logout_button = ProfileUi.colored_button("", AppTheme.PAPER, AppTheme.INK, _confirm_logout, 44)
 	_logout_button.custom_minimum_size.x = 52
 	_logout_button.tooltip_text = "Log out"
@@ -254,11 +281,11 @@ func _fill_tiles() -> void:
 	var specs := [
 		["My Board", "board", AppTheme.PINK, "my_board"],
 		["Shop", "cart", AppTheme.GOLD, "shop"],
-		["Powerups", "bolt", AppTheme.PURPLE, "powerups"],
+		["My Hand", "bolt", AppTheme.PURPLE, "powerups"],
+		["Next Rank", "ranks", AppTheme.BRONZE, "ranks"],
 		["Leaderboards", "trophy", AppTheme.BLUE, "leaderboard"],
 		["Guild", "shield", AppTheme.MINT, "guilds"],
 		["Profile", "person", AppTheme.PINK, "profile"],
-		["Ranks", "ranks", AppTheme.BRONZE, "ranks"],
 		["Awards", "crown", AppTheme.PURPLE, "achievements"],
 	]
 	for spec: Array in specs:
@@ -286,32 +313,37 @@ func _fill_play() -> void:
 	ProfileUi.clear(_play_box)
 	var head := AppTheme.hbox(8)
 	head.add_child(ProfileUi.eyebrow("Play", Color(_theme["accent"]).darkened(0.15)))
-	head.add_child(AppTheme.spacer())
 	var greeting := AppTheme.label(_greeting(), "MutedLabel", 15)
+	greeting.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	greeting.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	greeting.clip_text = true  # Long names mustn't widen the card past a phone screen.
+	greeting.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	head.add_child(greeting)
 	_play_box.add_child(head)
 	if ui.has_screen("ranked"):
 		_play_box.add_child(ProfileUi.play_button("Ranked Match", "Your rank only - win +60 XP",
-			_theme["accent"], func() -> void: ui.show_screen("ranked"), 74, "swords"))
+			_theme["accent"], func() -> void: ui.show_screen("ranked"), 74 if _portrait else 62, "swords"))
 	var row := ProfileUi.flex(10)  # Side by side, or stacked (phones, and the narrow left column).
 	_play_row = row
 	row.vertical = ProfileUi.narrow or not _portrait
 	var quick := ProfileUi.play_button("Quick Match", "Anyone online", _theme["accent2"],
-		func() -> void: ui.require_login("lobby"), 64, "globe")
+		func() -> void: ui.require_login("lobby"), 64 if _portrait else 54, "globe")
 	quick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(quick)
 	if ui.has_screen("rooms"):
-		var rooms := ProfileUi.play_button("Rooms", "Host or join", AppTheme.PURPLE, func() -> void: ui.show_screen("rooms"), 64, "users")
+		var rooms := ProfileUi.play_button("Rooms", "Host or join", AppTheme.PURPLE, func() -> void: ui.show_screen("rooms"), 64 if _portrait else 54, "users")
 		rooms.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(rooms)
 	_play_box.add_child(row)
 	_play_box.add_child(ProfileUi.play_button("Play vs AI", "Practice offline", AppTheme.MINT,
-		func() -> void: ui.show_screen("ai_setup"), 58, "robot"))
+		func() -> void: ui.show_screen("ai_setup"), 58 if _portrait else 50, "robot"))
 
 
 func _add_registry_panels() -> void:
 	for slot: String in ["banner", "main", "side"]:
 		for entry: Dictionary in DashboardRegistry.in_slot(slot):
+			if (entry["script"] as Script).resource_path in HIDDEN_PANELS:
+				continue
 			var panel: Control = (entry["script"] as Script).new()
 			var parent: Control = {"banner": _banners, "main": _main_box, "side": _side_box}[slot]
 			parent.add_child(panel)
@@ -324,7 +356,7 @@ func _add_registry_panels() -> void:
 
 
 func _build_layouts() -> void:
-	# Wide: header, banners, then [play + tiles | cards (bottom) | side panels].
+	# Wide: header, banners, then [play + tiles | global chat | season offer + module cards].
 	_wide = _margin(10)
 	_frame.add_child(_wide)
 	_wide_top = AppTheme.vbox(12)
@@ -338,14 +370,10 @@ func _build_layouts() -> void:
 	_left_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.add_child(_left_list)
 	body.add_child(left)
-	var center := _scroll()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_center_list = AppTheme.vbox(12)
-	_center_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_center_list.alignment = BoxContainer.ALIGNMENT_END
-	_center_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center.add_child(_center_list)
-	body.add_child(center)
+	_center_col = AppTheme.vbox(12)
+	_center_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_center_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(_center_col)
 	_right_col = AppTheme.vbox(12)
 	_right_col.custom_minimum_size.x = SIDE_WIDTH
 	_right_scroll = _scroll()
@@ -377,7 +405,10 @@ func _layout() -> void:
 	var view := _frame.size
 	# The three-column layout needs about 1100 px; narrower screens (landscape phones, tablets)
 	# get the single scrolling column too, centred and at most COLUMN_MAX wide.
+	var was_portrait := _portrait
 	_portrait = phone_portrait or view.x < WIDE_MIN
+	if was_portrait != _portrait and _play_box.get_child_count() > 0:
+		_fill_play()
 	var short := view.y < 560.0  # Landscape phones: the logo is dropped and the header scrolls too.
 	_wide.visible = not _portrait
 	_tall.visible = _portrait
@@ -395,28 +426,21 @@ func _layout() -> void:
 			_put(_header, _tall_list, 0)
 		else:
 			_put(_header, _tall_top, 1)
-		for part: Control in [_banners, _play_card, _tiles_card, _main_box, _next_card, _side_box]:
+		for part: Control in [_banners, _play_card, _tiles_card, _season_card, _main_box, _side_box]:
 			_put(part, _tall_list)
 		_side_box.custom_minimum_size.y = 460.0 if _has_side else 0.0
 	else:
 		_logo_holder.visible = true
 		_put(_header, _wide_top, 0)
-		_put(_banners, _wide_top, 1)
+		_put(_banners, _center_col, 0)  # Above the chat, so the play column keeps its height.
 		_put(_play_card, _left_list)
 		_put(_tiles_card, _left_list)
 		_side_box.custom_minimum_size.y = 0.0
-		if _has_side:
-			# Cards sit low in the middle so the board shows above them; side panels get the right.
-			# Module cards (missions, powerups) first: the daily loop matters most.
-			_put(_main_box, _center_list)
-			_put(_next_card, _center_list)
-			_put(_side_box, _right_col)
-			_right_scroll.visible = false
-		else:
-			_put(_next_card, _right_list)
-			_put(_main_box, _right_list)
-			_put(_side_box, _right_list)
-			_right_scroll.visible = true
+		# Global chat takes the middle; the season offer and module cards (missions) the right.
+		_put(_side_box, _center_col)
+		_put(_season_card, _right_list)
+		_put(_main_box, _right_list)
+		_right_scroll.visible = true
 		_right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_fit_logo.call_deferred()
 
@@ -431,7 +455,7 @@ func _arrange_header() -> void:
 	_put(_names, _row1)
 	_names.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _portrait else Control.SIZE_FILL
 	_names.custom_minimum_size.x = 96.0 if _portrait else 190.0
-	_xp_bar.custom_minimum_size.x = 96.0 if _portrait else 190.0
+	_xp_bar.custom_minimum_size.x = 72.0 if _portrait else 190.0
 	if _portrait:
 		# Phones: name, settings and log-out on the first row; XP, credits and guild on the second.
 		_put(_settings_button, _row1)
@@ -439,6 +463,7 @@ func _arrange_header() -> void:
 		_xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_put(_xp_bar, _row2)
 		_put(_credits_button, _row2)
+		_put(_reward_button, _row2)
 		_put(_guild_button, _row2)
 		_row2.visible = true
 		_logo_holder.custom_minimum_size = Vector2(240, 150)
@@ -451,6 +476,7 @@ func _arrange_header() -> void:
 		_row1.add_child(_header_spacer())
 		_put(_guild_button, _row1)
 		_put(_credits_button, _row1)
+		_put(_reward_button, _row1)
 		_put(_settings_button, _row1)
 		_put(_logout_button, _row1)
 		_row2.visible = false
@@ -480,19 +506,18 @@ func _apply_theme() -> void:
 	_theme = DashboardThemes.resolve(ServerConfig.get_value("dashboard_theme", "classic"), ServerConfig.get_value("dashboard_palette"))
 	_tint.texture = DashboardThemes.tint_texture(_theme)
 	_ambient.set_style(_theme["deco"], _theme["accent"], _theme["accent2"])
-	for card: PanelContainer in [_play_card, _tiles_card, _next_card]:
+	for card: PanelContainer in [_play_card, _tiles_card]:
 		card.add_theme_stylebox_override("panel", DashboardThemes.card_style(_theme))
+	_season_card.set_colors(_theme)
 	var bar := ProfileUi.box(Color(_theme["card"], 0.96), 24, 3)
 	bar.set_content_margin_all(10)
 	bar.content_margin_left = 12
 	bar.content_margin_right = 12
 	_header.add_theme_stylebox_override("panel", bar)
 	_xp_bar.set_color(_theme["accent"])
-	_next_card.set_colors(_theme["accent"], _theme["accent2"])
 	_fill_play()
 	_fill_tiles()
 	_fill_banners()
-	_next_card.refresh()
 
 
 func _fill_banners() -> void:
@@ -510,28 +535,6 @@ func _fill_banners() -> void:
 		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		note.add_child(text)
 		holder.add_child(note)
-	var season: Variant = ServerConfig.get_value("season")
-	if season is Dictionary and str(season.get("name", "")) != "":
-		var title := str(season["name"]).to_upper()
-		if not title.contains("SEASON"):
-			title += " SEASON"
-		var left := _time_left(str(season.get("ends_at", "")))
-		if left != "":
-			title += "  -  " + left
-		var pill := AppTheme.pill(title, _theme["accent"], Color.WHITE, 15 if ProfileUi.narrow else 18)
-		pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		if ProfileUi.narrow:  # Phones: the season name wraps instead of running off the screen.
-			pill.size_flags_horizontal = Control.SIZE_FILL
-			var pill_text := pill.get_child(0) as Label
-			pill_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		holder.add_child(pill)
-		var about := str(season.get("description", "")) if season.get("description") != null else ""
-		if about != "":
-			var blurb := ProfileUi.wrap(about, 15, Color.WHITE)
-			blurb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			blurb.add_theme_color_override("font_outline_color", AppTheme.INK)
-			blurb.add_theme_constant_override("outline_size", 5)
-			holder.add_child(blurb)
 	if holder.get_child_count() == 0:
 		holder.free()
 		return
@@ -555,7 +558,8 @@ func _refresh_profile() -> void:
 	else:
 		_xp_bar.set_progress(float(progress["xp"]) - float(progress["from"]), float(progress["to"]) - float(progress["from"]),
 			"%s / %s XP" % [ProfileUi.grouped(progress["xp"]), ProfileUi.grouped(progress["to"])])
-	_credits_button.text = ProfileUi.grouped(Profile.credits()) + " cr"
+	# Phones drop the "cr": the gold button already says credits, and the row must fit.
+	_credits_button.text = ProfileUi.grouped(Profile.credits()) + ("" if _portrait else " cr")
 	var guild := Profile.my_guild()
 	if guild.is_empty():
 		_guild_button.text = "Guilds"
@@ -564,7 +568,6 @@ func _refresh_profile() -> void:
 		_guild_button.text = "[%s]" % str(guild.get("tag", "?"))
 		_guild_button.theme_type_variation = "SuccessButton"
 	_guild_button.visible = ui.has_screen("guilds")
-	_next_card.refresh()
 
 
 func _greeting() -> String:
@@ -592,6 +595,30 @@ func _time_left(iso: String) -> String:
 
 
 # --- Actions ------------------------------------------------------------------------------------
+
+## Fetches today's reward; the first visit of the day opens the calendar by itself.
+func _refresh_daily() -> void:
+	await Economy.refresh_daily()
+	_paint_reward()
+	if Economy.should_offer_daily() and is_visible_in_tree():
+		Economy.mark_daily_offered()
+		DailyRewardPopup.open(ui)
+
+
+func _paint_reward() -> void:
+	var daily := Economy.daily
+	_reward_button.visible = ApiManager.is_logged_in() and not daily.is_empty()
+	var waiting: bool = not daily.is_empty() and not daily.get("claimed_today", true)
+	_reward_badge.set_count(1 if waiting else 0)
+	var left := EconomyUi.time_left(str(daily.get("next_reset_at", "")))
+	_reward_button.tooltip_text = "Daily reward - ready to claim!" if waiting else (
+		"Daily reward - next one in %s" % left if left != "" else "Daily reward")
+
+
+func _open_daily() -> void:
+	Economy.mark_daily_offered()
+	DailyRewardPopup.open(ui)
+
 
 func _open_guild() -> void:
 	var guild := Profile.my_guild()

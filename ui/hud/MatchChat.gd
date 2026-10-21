@@ -1,11 +1,18 @@
 extends VBoxContainer
-## In-match chat (HUD, bottom-left): a collapsible panel with the match's messages, quick emoji
-## and taunts, and "mute opponent", which hides their chat and their taunts. Online it uses
-## GET/POST /api/games/{id}/chat and the ChatMessage event on private-game.{id}; against the AI
-## the chat stays on this device and the AI sometimes answers. While the opponent's Jammer
-## powerup is active (MatchView `jammed_until`) the input is locked.
+## In-match chat: a collapsible panel with the match's messages, quick emoji and taunts, and
+## "mute opponent", which hides their chat and their taunts. Online it uses GET/POST
+## /api/games/{id}/chat and the ChatMessage event on private-game.{id}; against the AI the chat
+## stays on this device and the AI sometimes answers. While the opponent's Jammer powerup is
+## active (GameSession.jammed_left()) the input is locked.
+##
+## Registered in the HUD's "bottom_left" slot, but it places itself in the bottom-right corner:
+## the powerup column owns the left edge, and the panel opens upwards, kept clear of the action
+## buttons (beside them in portrait, below them in landscape).
 
 const QUICK_TAUNTS := 3
+const MARGIN := 16.0
+const PANEL_WIDTH := 320.0
+const CHAT_HEIGHT := Vector2(90.0, 200.0)  # Min / max height of the message list.
 const AI_TIERS := [0, 4, 11]  # Rank colours for the Rookie / Officer / General AI.
 const AI_LINES := [
 	"Is that your best move? 😏", "Hmm... interesting. 🤔", "My spy sees everything 👀",
@@ -35,6 +42,7 @@ func _init() -> void:
 	alignment = BoxContainer.ALIGNMENT_END
 	add_theme_constant_override("separation", 8)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_level = true  # Positioned by _place(), not by the slot.
 	visible = false
 
 	_panel = PanelContainer.new()
@@ -48,7 +56,8 @@ func _init() -> void:
 	style.shadow_offset = Vector2(0, 5)
 	style.shadow_size = 2
 	_panel.add_theme_stylebox_override("panel", style)
-	_panel.custom_minimum_size = Vector2(330, 0)
+	_panel.custom_minimum_size = Vector2(PANEL_WIDTH, 0)
+	_panel.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_panel.visible = false
 	add_child(_panel)
 
@@ -64,7 +73,7 @@ func _init() -> void:
 	box.add_child(header)
 
 	_chat = ChatView.new(true)
-	_chat.custom_minimum_size.y = 180
+	_chat.custom_minimum_size.y = CHAT_HEIGHT.y
 	box.add_child(_chat)
 
 	var quick := AppTheme.hbox(4)
@@ -108,17 +117,21 @@ func _init() -> void:
 	box.add_child(input)
 
 	var bar := AppTheme.hbox(8)
-	_toggle = AppTheme.button("Chat", "Ghost", _toggle_panel, 46)
-	_toggle.icon = EmojiPicker.icon("chat")
-	_toggle.expand_icon = false
-	_toggle.add_theme_constant_override("icon_max_width", 24)
-	_toggle.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	bar.add_child(_toggle)
+	bar.alignment = BoxContainer.ALIGNMENT_END
+	bar.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_unread_pill = AppTheme.pill("0", AppTheme.PINK, Color.WHITE, 14)
 	_unread_pill.visible = false
 	_unread_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bar.add_child(_unread_pill)
+	_toggle = AppTheme.button("", "Ghost", _toggle_panel, 46)
+	_toggle.icon = EmojiPicker.icon("chat")
+	_toggle.add_theme_constant_override("icon_max_width", 26)
+	_toggle.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_toggle.custom_minimum_size.x = 58
+	_toggle.tooltip_text = "Match chat"
+	bar.add_child(_toggle)
 	_mute = AppTheme.button("", "Ghost", _toggle_mute, 46)
+	_mute.custom_minimum_size.x = 58
 	_mute.add_theme_constant_override("icon_max_width", 24)
 	_mute.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	bar.add_child(_mute)
@@ -129,6 +142,7 @@ func _init() -> void:
 	tick.autostart = true
 	tick.timeout.connect(_tick)
 	add_child(tick)
+	resized.connect(_place)
 
 
 ## HudRegistry hook.
@@ -139,6 +153,7 @@ func setup(owner_hud: Screen) -> void:
 	GameSession.move_result.connect(_on_move_result)
 	GameSession.game_over.connect(func(_info: Dictionary) -> void: _chat.add_system("Match over. Say GG! 🫡"))
 	Social.match_message.connect(_on_match_message)
+	get_viewport().size_changed.connect(_place)
 	_refresh_mute()
 
 
@@ -147,7 +162,7 @@ func setup(owner_hud: Screen) -> void:
 func _on_match_loaded(_view: Dictionary) -> void:
 	var key := "%d:%d" % [GameSession.kind, GameSession.match_id()]
 	visible = true
-	_fit_width()
+	_place()
 	if key == _match_key:
 		return
 	_match_key = key
@@ -176,11 +191,32 @@ func _tick() -> void:
 			_panel.visible = false
 	if in_match:
 		_update_jam()
+		_place()  # The action buttons above change between setup and play.
 
 
-func _fit_width() -> void:
-	var screen := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
-	_panel.custom_minimum_size.x = minf(330.0, screen.x - 40.0)
+## Bottom-right corner. The panel's width and the message list's height shrink so the panel never
+## covers the HUD's action buttons: beside them when they sit at the bottom (portrait), below them
+## when they form the top-right column (landscape).
+func _place() -> void:
+	if not is_inside_tree() or not visible:
+		return
+	var screen := get_viewport().get_visible_rect().size
+	var width := minf(PANEL_WIDTH, screen.x - 2.0 * MARGIN)
+	var top_limit := 84.0  # Below the HUD's top bar.
+	var panel_bottom := screen.y - MARGIN - _toggle.get_combined_minimum_size().y - 8.0
+	var actions: Variant = hud.get("_actions") if hud else null
+	if actions is Control and (actions as Control).is_visible_in_tree():
+		var rect := (actions as Control).get_global_rect()
+		if rect.end.x > screen.x - MARGIN - width and rect.position.y < panel_bottom:
+			if rect.position.y > screen.y * 0.5:
+				width = maxf(220.0, screen.x - MARGIN - rect.end.x - 12.0)  # Beside the buttons.
+			else:
+				top_limit = maxf(top_limit, rect.end.y + 12.0)  # Below the column.
+	_panel.custom_minimum_size.x = width
+	var fixed := _panel.get_combined_minimum_size().y - _chat.custom_minimum_size.y
+	_chat.custom_minimum_size.y = clampf(panel_bottom - top_limit - fixed, CHAT_HEIGHT.x, CHAT_HEIGHT.y)
+	reset_size()
+	position = Vector2(screen.x - MARGIN - size.x, screen.y - MARGIN - size.y)
 
 
 # --- Messages ---------------------------------------------------------------------------------
@@ -232,7 +268,10 @@ func _submit() -> void:
 
 ## Sends a chat line; true when it went out.
 func _say(text: String) -> bool:
-	if _jammed or not GameSession.has_match():
+	if not GameSession.has_match():
+		return false
+	if _jam_seconds_left() > 0:
+		hud.ui.toast(_jam_text(), AppTheme.RED)
 		return false
 	var body := Social.clean(text, Social.MAX_CHAT_LENGTH)
 	if GameSession.kind == GameSession.Kind.PRACTICE:
@@ -243,12 +282,13 @@ func _say(text: String) -> bool:
 	var res: Dictionary = await Social.send_match(GameSession.match_id(), body)
 	_send.disabled = false
 	if not res.ok and res.error != "":
-		hud.ui.toast(res.error, AppTheme.RED)
+		hud.ui.toast(_jam_text() if _jam_seconds_left() > 0 else res.error, AppTheme.RED)
 	return res.ok
 
 
 func _taunt(slug: String) -> void:
-	if _jammed:
+	if _jam_seconds_left() > 0:
+		hud.ui.toast(_jam_text(), AppTheme.RED)
 		return
 	var problem: String = await GameSession.send_taunt(slug)
 	if problem != "":
@@ -304,7 +344,7 @@ func _ai_user() -> Dictionary:
 
 func _toggle_panel() -> void:
 	_panel.visible = not _panel.visible
-	_fit_width()
+	_place()
 	if _panel.visible:
 		_set_unread(0)
 		_chat.scroll_to_end()
@@ -346,18 +386,16 @@ func _update_jam() -> void:
 		for c in _quick:
 			if c is BaseButton:
 				(c as BaseButton).disabled = jammed
-		_field.placeholder_text = ("Jammed! Comms back in %d:%02d" % [floori(left / 60.0), left % 60]) if jammed else "Message..."
+		_field.placeholder_text = _jam_text() if jammed else "Message..."
 		if jammed:
 			AppTheme.set_pill(_jam_pill, "JAMMED %d:%02d" % [floori(left / 60.0), left % 60], AppTheme.RED)
 
 
-## Seconds left on the opponent's Jammer (0 when free). `jammed_until` may be an ISO time for me
-## or a {white, black} map.
+## Whole seconds left on the opponent's Jammer against me (0 when free).
 func _jam_seconds_left() -> int:
-	var value: Variant = GameSession.match_view.get("jammed_until")
-	if value is Dictionary:
-		value = value.get(GameSession.my_side())
-	if not (value is String) or value == "":
-		return 0
-	var until := Time.get_unix_time_from_datetime_string(str(value).left(19))
-	return maxi(0, ceili(until - Time.get_unix_time_from_system()))
+	return ceili(GameSession.jammed_left())
+
+
+func _jam_text() -> String:
+	var left := _jam_seconds_left()
+	return "Jammed! %d:%02d" % [floori(left / 60.0), left % 60]

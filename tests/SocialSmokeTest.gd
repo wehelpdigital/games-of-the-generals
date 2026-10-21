@@ -73,12 +73,31 @@ func _ready() -> void:
 	chat.call("_toggle_mute")
 	check(ui.setting("mute_taunts", false) and ui.setting("mute_chat", false), "mute opponent mutes chat and taunts")
 	chat.call("_toggle_mute")
-	GameSession.match_view["jammed_until"] = Time.get_datetime_string_from_unix_time(int(Time.get_unix_time_from_system()) + 90) + "Z"
+
+	# The chat sits bottom-right, clear of the action buttons, and opens upwards.
+	var screen := get_viewport().get_visible_rect().size
+	chat.call("_toggle_panel")
+	await frames(3)
+	var chat_rect: Rect2 = chat.get_global_rect()
+	check(chat_rect.end.x <= screen.x and chat_rect.end.y <= screen.y and chat_rect.position.x > screen.x * 0.5, "chat sits in the bottom-right corner")
+	var actions: Control = hud.get("_actions")
+	check(not chat_rect.intersects(actions.get_global_rect()), "open chat panel clears the action buttons")
+	chat.call("_toggle_panel")
+
+	# Jammer (needs an active match): input locked with a countdown, unlocked when it ends.
+	GameSession.submit_setup(board.get_setup_placements())
+	await wait_until(func() -> bool: return GameSession.status() == "active")
+	var until := Time.get_datetime_string_from_unix_time(int(Time.get_unix_time_from_system()) + 90) + "Z"
+	GameSession.match_view["jammed_until"] = {GameSession.my_side(): until}
 	chat.call("_update_jam")
-	check(not (chat.get("_field") as LineEdit).editable, "jammer locks the chat input")
+	var field: LineEdit = chat.get("_field")
+	check(not field.editable and field.placeholder_text.begins_with("Jammed! 1:"), "jammer locks the chat input with a countdown")
+	var lines := chat_view.message_count()
+	await chat.call("_say", "can you hear me?")
+	check(chat_view.message_count() == lines, "nothing is sent while jammed")
 	GameSession.match_view.erase("jammed_until")
 	chat.call("_update_jam")
-	check((chat.get("_field") as LineEdit).editable, "chat unlocks when the jam ends")
+	check(field.editable, "chat unlocks when the jam ends")
 
 	# Voice chat is a browser feature.
 	check(not VoiceChat.supported(), "voice chat reports unsupported on desktop")

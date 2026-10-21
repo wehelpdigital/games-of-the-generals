@@ -1,7 +1,7 @@
 extends Screen
 ## The cosmetics shop / locker. Docked beside the board (below it on portrait phones) so every
 ## item previews live on the 3D board behind it. Eight categories; equipping is instant.
-## TEST MODE (Loadout.TEST_MODE): everything is free and no login is needed.
+## TEST MODE (Loadout.test_mode()): everything is free and no login is needed.
 
 var _panel: PanelContainer
 var _category := "arena"
@@ -21,7 +21,7 @@ func _ready() -> void:
 	var header := AppTheme.hbox(10)
 	header.add_child(AppTheme.label("Shop", "HeadingLabel"))
 	header.add_child(AppTheme.spacer())
-	if Loadout.TEST_MODE:
+	if Loadout.test_mode():
 		header.add_child(AppTheme.pill("TEST MODE · ALL FREE", AppTheme.MINT, Color.WHITE, 16))
 	_count = AppTheme.pill("", AppTheme.PURPLE, Color.WHITE, 16)
 	header.add_child(_count)

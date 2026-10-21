@@ -25,7 +25,7 @@ func _ready() -> void:
 	GameSession.move_rejected.connect(_on_move_rejected)
 	GameSession.turn_changed.connect(_refresh_mode)
 	GameSession.game_over.connect(_on_game_over)
-	Loadout.changed.connect(func(_category: String, _slug: String) -> void: refresh_cosmetics())
+	Loadout.changed.connect(_on_loadout_changed)
 	show_attract()
 
 
@@ -49,6 +49,8 @@ func refresh_cosmetics() -> void:
 	arena.set_arena(mine["arena"])  # After the board theme: the arena owns sky, light and ground.
 	_apply_side(board.my_side, mine)
 	_apply_side(Ranks.opponent(board.my_side), theirs)
+	_apply_toppers(board.my_side, mine, true)
+	_apply_toppers(Ranks.opponent(board.my_side), theirs, false)
 
 
 func _apply_side(side: String, loadout: Dictionary) -> void:
@@ -60,6 +62,26 @@ func _apply_side(side: String, loadout: Dictionary) -> void:
 	board.set_board_glow(side, loadout["glow"])
 	board.set_trail(side, loadout["trail"])
 	board.set_kill_effect(side, loadout["kill"])
+
+
+## Toppers beside `side`'s half. Only the player's own flags may use pictures kept on this device;
+## guild-logo flags use the owner's guild logo.
+func _apply_toppers(side: String, loadout: Dictionary, mine: bool) -> void:
+	var logo := _my_guild_logo() if mine else str(_opponent_loadout.get("guild_logo_url", ""))
+	board.set_toppers(side, loadout["toppers"], logo, mine)
+
+
+func _my_guild_logo() -> String:
+	var guild: Variant = ApiManager.user.get("guild")
+	return str(guild.get("logo_url", "")) if guild is Dictionary and guild.get("logo_url") != null else ""
+
+
+## Editing toppers (e.g. in the flag editor) only rebuilds the toppers, not the whole look.
+func _on_loadout_changed(category: String, _slug: String) -> void:
+	if category == "toppers":
+		_apply_toppers(board.my_side, Loadout.complete(Loadout.items), true)
+	else:
+		refresh_cosmetics()
 
 
 ## Shop preview for effects that only show during play: a demo move (trail) or a demo knockout
@@ -114,7 +136,9 @@ func _on_match_loaded(view: Dictionary) -> void:
 	rig.set_side(side)
 	var players: Variant = view.get("players")
 	var rival: Variant = players.get(Ranks.opponent(side)) if players is Dictionary else null
-	_opponent_loadout = rival.get("loadout", {}) if rival is Dictionary and rival.get("loadout") is Dictionary else {}
+	_opponent_loadout = (rival["loadout"] as Dictionary).duplicate(true) if rival is Dictionary and rival.get("loadout") is Dictionary else {}
+	if rival is Dictionary and rival.get("guild") is Dictionary and rival["guild"].get("logo_url") != null:
+		_opponent_loadout["guild_logo_url"] = str(rival["guild"]["logo_url"])
 	refresh_cosmetics()
 
 	var pieces: Array = view.get("pieces", [])

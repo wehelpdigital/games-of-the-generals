@@ -74,7 +74,7 @@ func _ready() -> void:
 	box.add_child(_city_field)
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 300
+	scroll.custom_minimum_size.y = 230
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list = AppTheme.vbox(6)
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL

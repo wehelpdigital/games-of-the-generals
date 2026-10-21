@@ -4,8 +4,8 @@ extends Control
 ## grid, leaves, snow, bats, twinkling lights or summer sun rays. A few dozen shapes drawn per
 ## frame, only while visible.
 
-const COUNTS := {"confetti": 22, "fireflies": 26, "petals": 26, "neon": 14, "leaves": 18, "snow": 44,
-	"bats": 6, "lights": 30, "sun": 14}
+const COUNTS := {"confetti": 30, "fireflies": 30, "petals": 32, "neon": 16, "leaves": 22, "snow": 64,
+	"bats": 8, "lights": 34, "sun": 16}
 
 var style := "confetti"
 var accent := AppTheme.PINK
@@ -58,8 +58,8 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 		"fireflies":
 			bit["pos"] = Vector2(_rng.randf() * w, _rng.randf_range(0.2, 1.0) * h)
 			bit["vel"] = Vector2(_rng.randf_range(-12, 12), _rng.randf_range(-18, -6))
-			bit["size"] = _rng.randf_range(2.0, 4.5)
-			bit["color"] = accent2
+			bit["size"] = _rng.randf_range(2.5, 5.0)
+			bit["color"] = accent2.lightened(0.3)
 		"neon":
 			bit["pos"] = Vector2(_rng.randf() * w, (_rng.randf() if anywhere else 1.05) * h)
 			bit["vel"] = Vector2(0, _rng.randf_range(-26, -12))
@@ -68,8 +68,8 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 		"bats":
 			bit["pos"] = Vector2((_rng.randf() if anywhere else -0.1) * w, _rng.randf_range(0.06, 0.55) * h)
 			bit["vel"] = Vector2(_rng.randf_range(40, 90), 0)
-			bit["size"] = _rng.randf_range(12, 24)
-			bit["color"] = Color("1a0f2e")
+			bit["size"] = _rng.randf_range(16, 30)
+			bit["color"] = Color("2b1740")
 		"sun":
 			bit["pos"] = Vector2(_rng.randf() * w, (_rng.randf() if anywhere else 1.05) * h)
 			bit["vel"] = Vector2(_rng.randf_range(-6, 6), _rng.randf_range(-40, -16))
@@ -82,17 +82,17 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 			bit["vel"] = Vector2(_rng.randf_range(-10, 14), fall * _rng.randf_range(0.7, 1.35))
 			match style:
 				"confetti":
-					bit["size"] = _rng.randf_range(5, 9)
+					bit["size"] = _rng.randf_range(6, 10)
 					bit["color"] = [AppTheme.PINK, AppTheme.BLUE, AppTheme.YELLOW, AppTheme.MINT, AppTheme.PURPLE][_rng.randi() % 5]
 				"petals":
-					bit["size"] = _rng.randf_range(6, 11)
+					bit["size"] = _rng.randf_range(8, 13)
 					bit["color"] = [Color("ffb3cf"), Color("ff8fbc"), Color("ffd3e4")][_rng.randi() % 3]
 				"leaves":
-					bit["size"] = _rng.randf_range(9, 15)
+					bit["size"] = _rng.randf_range(11, 18)
 					bit["color"] = [Color("3fbf5f"), Color("8fd14f"), Color("2e9e57"), Color("d9b43a")][_rng.randi() % 4]
 				_:
-					bit["size"] = _rng.randf_range(1.6, 4.2)
-					bit["color"] = Color(1, 1, 1, _rng.randf_range(0.6, 0.95))
+					bit["size"] = _rng.randf_range(2.0, 5.0)
+					bit["color"] = Color(1, 1, 1, _rng.randf_range(0.75, 1.0))
 
 
 func _step(bit: Dictionary, delta: float) -> void:
@@ -115,6 +115,12 @@ func _draw() -> void:
 			_draw_light_string()
 		"sun":
 			_draw_sun_rays()
+		"bats":
+			# A big harvest moon behind the bats.
+			var moon := Vector2(size.x * 0.54, size.y * 0.3)
+			draw_circle(moon, 130.0, Color(1.0, 0.75, 0.35, 0.1))
+			draw_circle(moon, 80.0, Color(1.0, 0.85, 0.5, 0.3))
+			draw_circle(moon + Vector2(-20, -12), 14.0, Color(0.9, 0.7, 0.4, 0.22))
 	for bit in _bits:
 		var pos: Vector2 = bit["pos"]
 		var s: float = bit["size"]

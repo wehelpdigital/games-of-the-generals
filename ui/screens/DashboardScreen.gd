@@ -5,8 +5,8 @@ extends Screen
 ## Wide screens: play column left, cards and side panels right. Portrait: one scrolling column.
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
-const LEFT_WIDTH := 380.0
-const SIDE_WIDTH := 340.0
+const LEFT_WIDTH := 410.0
+const SIDE_WIDTH := 330.0
 
 var _theme: Dictionary = DashboardThemes.get_theme("classic")
 var _tint: TextureRect
@@ -134,9 +134,9 @@ func _build_header() -> void:
 	_avatar_button.add_child(_avatar)
 
 	_names = AppTheme.vbox(0)
-	_names.custom_minimum_size.x = 150
+	_names.custom_minimum_size.x = 190
 	_names.alignment = BoxContainer.ALIGNMENT_CENTER
-	_name_label = AppTheme.label("", "", 26)
+	_name_label = AppTheme.label("", "", 24)
 	_name_label.add_theme_font_override("font", AppTheme.heading_font())
 	_name_label.clip_text = true
 	_names.add_child(_name_label)
@@ -149,7 +149,7 @@ func _build_header() -> void:
 	_names.add_child(rank_row)
 
 	_xp_bar = XpBar.new(26)
-	_xp_bar.custom_minimum_size.x = 210
+	_xp_bar.custom_minimum_size.x = 190
 	_xp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	_guild_button = ProfileUi.small_button("Guild", "Success", _open_guild, 44)
@@ -160,7 +160,11 @@ func _build_header() -> void:
 	_logout_button.custom_minimum_size.x = 52
 	_logout_button.tooltip_text = "Log out"
 	var door := TileIcon.new("logout", Vector2(26, 26))
-	door.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	door.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	door.offset_left = 12
+	door.offset_right = -12
+	door.offset_top = 9
+	door.offset_bottom = -13  # Above the button's thicker bottom lip.
 	_logout_button.add_child(door)
 
 	_logo_holder = Control.new()
@@ -252,7 +256,7 @@ func _fill_tiles() -> void:
 			continue
 		var action := _open_guild if target == "guilds" else func() -> void: ui.show_screen(target)
 		var t := ProfileUi.tile(spec[0], spec[1], spec[2], action)
-		t.custom_minimum_size.y = 84
+		t.custom_minimum_size.y = 80
 		_tile_grid.add_child(t)
 
 
@@ -265,7 +269,7 @@ func _fill_play() -> void:
 	head.add_child(greeting)
 	_play_box.add_child(head)
 	if ui.has_screen("ranked"):
-		_play_box.add_child(ProfileUi.play_button("Ranked Match", "Face players of your rank - win +60 XP",
+		_play_box.add_child(ProfileUi.play_button("Ranked Match", "Your rank only - win +60 XP",
 			_theme["accent"], func() -> void: ui.show_screen("ranked"), 74, "swords"))
 	var row := AppTheme.hbox(10)
 	var quick := ProfileUi.play_button("Quick Match", "Anyone online", _theme["accent2"],
@@ -307,11 +311,13 @@ func _build_layouts() -> void:
 	var left := _scroll()
 	left.custom_minimum_size.x = LEFT_WIDTH
 	_left_list = AppTheme.vbox(12)
+	_left_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.add_child(_left_list)
 	body.add_child(left)
 	var center := _scroll()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_center_list = AppTheme.vbox(12)
+	_center_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_center_list.alignment = BoxContainer.ALIGNMENT_END
 	_center_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(_center_list)
@@ -320,6 +326,7 @@ func _build_layouts() -> void:
 	_right_col.custom_minimum_size.x = SIDE_WIDTH
 	_right_scroll = _scroll()
 	_right_list = AppTheme.vbox(12)
+	_right_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_right_scroll.add_child(_right_list)
 	_right_col.add_child(_right_scroll)
 	body.add_child(_right_col)
@@ -332,6 +339,7 @@ func _build_layouts() -> void:
 	var tall_scroll := _scroll()
 	tall_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tall_list = AppTheme.vbox(14)
+	_tall_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tall_scroll.add_child(_tall_list)
 	_tall_top.add_child(tall_scroll)
 

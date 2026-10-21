@@ -21,8 +21,8 @@ static var _js_done: JavaScriptObject  # Kept alive while the browser share shee
 static func message(profile: Dictionary) -> String:
 	var tier := PlayerRanks.clamp_tier(profile.get("rank_tier", 0))
 	if tier == 0:
-		return "I'm playing Salpakan Tactics! - 3D Salpakan online, free in your browser. Beat me ->"
-	return "I just ranked up to %s in Salpakan Tactics! Beat me ->" % PlayerRanks.name_of(tier)
+		return "I'm playing Salpakan Tactics! - 3D Salpakan online, free in your browser. Think you can beat me?"
+	return "I just ranked up to %s in Salpakan Tactics! Think you can beat me?" % PlayerRanks.name_of(tier)
 
 
 static func url_for(platform: String, text: String, link := URL) -> String:

@@ -163,7 +163,17 @@ func _near_card(level: String, place: Dictionary, top: int, mine: Variant) -> Pa
 	else:
 		head.add_child(AppTheme.pill("Unranked", Color(AppTheme.INK, 0.1), AppTheme.MUTED, 15))
 	box.add_child(head)
-	box.add_child(AppTheme.label(level.capitalize(), "MutedLabel", 14))
+	var captions := AppTheme.hbox(10)
+	var level_label := AppTheme.label(level.capitalize(), "MutedLabel", 14)
+	level_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	captions.add_child(level_label)
+	for spec: Array in [["XP", 80], ["Wins", 56]]:
+		var caption := AppTheme.label(spec[0], "MutedLabel", 14)
+		caption.custom_minimum_size.x = spec[1]
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		captions.add_child(caption)
+	captions.add_child(ProfileUi.gap(16))
+	box.add_child(captions)
 	var rows := AppTheme.vbox(6)
 	rows.name = "Rows"
 	rows.add_child(ProfileUi.note("Loading...", 15))

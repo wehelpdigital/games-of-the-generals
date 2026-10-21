@@ -49,7 +49,6 @@ func _load() -> void:
 
 func _render() -> void:
 	ProfileUi.clear(_body)
-	(_page["title"] as Label).text = str(_guild.get("name", "Guild"))
 	var mine := Profile.my_guild()
 	var is_member := not mine.is_empty() and int(mine.get("id", -1)) == _guild_id
 	var my_id := int(Profile.data.get("id", ApiManager.user.get("id", -1)))

@@ -66,7 +66,8 @@ func _render_top() -> void:
 	var card := AppTheme.card("Row")
 	var line := AppTheme.hbox(12)
 	card.add_child(line)
-	var crown := TileIcon.new("crown", Vector2(46, 46))
+	var unlocked := ApiManager.is_logged_in() and Profile.tier() >= PlayerRanks.GUILD_MIN_TIER
+	var crown := TileIcon.new("crown" if unlocked else "lock", Vector2(46, 46))
 	crown.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(crown)
 	var words := AppTheme.vbox(2)
@@ -74,7 +75,6 @@ func _render_top() -> void:
 	var title := AppTheme.label("Found your own guild", "", 22)
 	title.add_theme_font_override("font", AppTheme.heading_font())
 	words.add_child(title)
-	var unlocked := ApiManager.is_logged_in() and Profile.tier() >= PlayerRanks.GUILD_MIN_TIER
 	var why := "Upload a logo your members fly on their table flags, and climb the guild rankings together."
 	if not unlocked:
 		why = "Reach %s to found a guild (you're %s). Until then, join one below!" % [
@@ -84,12 +84,6 @@ func _render_top() -> void:
 	var create := ProfileUi.small_button("Create" if unlocked else "Locked", "Primary" if unlocked else "Ghost", _open_create, 46)
 	create.disabled = not unlocked
 	create.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	if not unlocked:
-		var lock := TileIcon.new("lock", Vector2(22, 22))
-		lock.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
-		lock.position.x = 10
-		create.add_child(lock)
-		create.text = "     Locked"
 	line.add_child(create)
 	_top.add_child(card)
 

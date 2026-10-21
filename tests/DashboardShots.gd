@@ -100,6 +100,7 @@ func _ready() -> void:
 	Profile._set_data(major, true)
 	await _show(ui, "guilds", {"tab": "rankings"}, "guilds_rankings", 1.0)
 	if _wanted("guild_create"):
+		ServerConfig.values["shop_test_mode"] = false  # Show the charter price.
 		ui.screen("guilds").call("_open_create")
 		await _shot("guild_create", 0.9)
 		ui.close_dialog()

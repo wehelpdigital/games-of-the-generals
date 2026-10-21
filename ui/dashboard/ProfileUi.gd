@@ -75,20 +75,22 @@ static func play_button(title: String, subtitle: String, bg: Color, action: Call
 	row.offset_right = -14
 	row.offset_bottom = -4
 	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	var compact := height < 70.0
 	if icon != "":
-		var glyph := TileIcon.new(icon, Vector2(height * 0.5, height * 0.5))
+		var glyph := TileIcon.new(icon, Vector2.ONE * height * (0.42 if compact else 0.5))
 		glyph.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(glyph)
 	var text := AppTheme.vbox(0)
 	text.alignment = BoxContainer.ALIGNMENT_CENTER
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var head := AppTheme.label(title, "", 28 if height >= 70 else 24, Color.WHITE)
+	var head := AppTheme.label(title, "", 21 if compact else 28, Color.WHITE)
+	head.clip_text = true
 	head.add_theme_font_override("font", AppTheme.heading_font())
 	head.add_theme_color_override("font_outline_color", AppTheme.INK)
 	head.add_theme_constant_override("outline_size", 7)
 	text.add_child(head)
 	if subtitle != "":
-		var sub := AppTheme.label(subtitle, "", 15, Color(1, 1, 1, 0.95))
+		var sub := AppTheme.label(subtitle, "", 14 if compact else 15, Color(1, 1, 1, 0.95))
 		sub.add_theme_color_override("font_outline_color", Color(AppTheme.INK, 0.6))
 		sub.add_theme_constant_override("outline_size", 4)
 		sub.clip_text = true
@@ -108,11 +110,12 @@ static func tile(title: String, icon: String, bg: Color, action: Callable) -> Bu
 	column.offset_top = 8
 	column.offset_bottom = -10
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	var glyph := TileIcon.new(icon, Vector2(40, 40))
+	var glyph := TileIcon.new(icon, Vector2(38, 38))
 	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(glyph)
-	var name_label := AppTheme.label(title, "", 17, Color.WHITE)
+	var name_label := AppTheme.label(title, "", 15, Color.WHITE)
 	name_label.add_theme_font_override("font", AppTheme.heading_font())
+	name_label.clip_text = true
 	name_label.add_theme_color_override("font_outline_color", AppTheme.INK)
 	name_label.add_theme_constant_override("outline_size", 5)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

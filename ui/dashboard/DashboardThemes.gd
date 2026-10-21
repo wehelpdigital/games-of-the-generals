@@ -49,6 +49,36 @@ const THEMES := {
 		"tint_top": Color("ffd77a"), "tint_top_a": 0.34, "tint_bottom": Color("ff9f5a"), "tint_bottom_a": 0.5,
 		"accent": Color("ff7a1a"), "accent2": Color("12b8c4"), "card": Color("fffaf0"),
 	},
+	"valentines": {
+		"label": "Valentine's", "deco": "hearts",
+		"tint_top": Color("ffc4d6"), "tint_top_a": 0.45, "tint_bottom": Color("fff0f4"), "tint_bottom_a": 0.72,
+		"accent": Color("ff4f7b"), "accent2": Color("c2185b"), "card": Color("fff5f8"),
+	},
+	"lunar_new_year": {
+		"label": "Lunar New Year", "deco": "lanterns",
+		"tint_top": Color("5a0a0a"), "tint_top_a": 0.6, "tint_bottom": Color("b3201c"), "tint_bottom_a": 0.45,
+		"accent": Color("d62828"), "accent2": Color("f4b400"), "card": Color("fff8ec"),
+	},
+	"kalayaan": {
+		"label": "Kalayaan", "deco": "stars",
+		"tint_top": Color("0038a8"), "tint_top_a": 0.45, "tint_bottom": Color("f2f6ff"), "tint_bottom_a": 0.7,
+		"accent": Color("0038a8"), "accent2": Color("ce1126"), "card": Color("f7f9ff"),
+	},
+	"thanksgiving": {
+		"label": "Harvest", "deco": "autumn",
+		"tint_top": Color("7a3a12"), "tint_top_a": 0.42, "tint_bottom": Color("ffe2b8"), "tint_bottom_a": 0.6,
+		"accent": Color("c8641e"), "accent2": Color("7a4a1e"), "card": Color("fff6ea"),
+	},
+	"fiesta": {
+		"label": "Fiesta", "deco": "bunting",
+		"tint_top": Color("fff2a8"), "tint_top_a": 0.3, "tint_bottom": Color("fff8dc"), "tint_bottom_a": 0.66,
+		"accent": Color("ff3d7f"), "accent2": Color("00a6a6"), "card": Color("fffdf2"),
+	},
+	"new_year": {
+		"label": "New Year", "deco": "fireworks",
+		"tint_top": Color("0d0a24"), "tint_top_a": 0.8, "tint_bottom": Color("2a1f4a"), "tint_bottom_a": 0.62,
+		"accent": Color("ffcf3f"), "accent2": Color("ff4f8b"), "card": Color("fffaf0"),
+	},
 }
 
 

@@ -1,11 +1,14 @@
 class_name DashboardAmbient
 extends Control
 ## Light, CPU-cheap 2D decoration drifting over the dashboard: confetti, fireflies, petals, a neon
-## grid, leaves, snow, bats, twinkling lights or summer sun rays. A few dozen shapes drawn per
-## frame, only while visible.
+## grid, leaves, snow, bats, twinkling lights, summer sun rays, and the holiday looks (rising
+## hearts, red lanterns, gold stars, autumn leaves, fiesta bunting, fireworks). A few dozen shapes
+## drawn per frame, only while visible.
 
 const COUNTS := {"confetti": 30, "fireflies": 30, "petals": 32, "neon": 16, "leaves": 22, "snow": 64,
-	"bats": 8, "lights": 34, "sun": 16}
+	"bats": 8, "lights": 34, "sun": 16, "hearts": 18, "lanterns": 10, "stars": 26, "autumn": 24,
+	"bunting": 24, "fireworks": 7}
+const BUNTING := [Color("ff3d7f"), Color("ffcf3f"), Color("00a6a6"), Color("3d8bff"), Color("27c98f"), Color("ff8a1f")]
 
 var style := "confetti"
 var accent := AppTheme.PINK
@@ -75,6 +78,20 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 			bit["vel"] = Vector2(_rng.randf_range(-6, 6), _rng.randf_range(-40, -16))
 			bit["size"] = _rng.randf_range(4, 11)
 			bit["color"] = Color(1, 1, 1, 0.55)
+		"hearts", "lanterns":
+			# Rising: hearts float up, lanterns drift up slowly.
+			bit["pos"] = Vector2(_rng.randf() * w, (_rng.randf() if anywhere else 1.08) * h)
+			var lantern := style == "lanterns"
+			bit["vel"] = Vector2(_rng.randf_range(-6, 6), _rng.randf_range(-22, -10) if lantern else _rng.randf_range(-42, -20))
+			bit["size"] = _rng.randf_range(14, 24) if lantern else _rng.randf_range(8, 16)
+			bit["color"] = Color("d62828") if lantern else [accent, accent2, Color("ff9ec7")][_rng.randi() % 3]
+			bit["spin"] = 0.0
+		"fireworks":
+			bit["pos"] = Vector2(_rng.randf_range(0.1, 0.9) * w, _rng.randf_range(0.08, 0.5) * h)
+			bit["vel"] = Vector2.ZERO
+			bit["size"] = _rng.randf_range(50, 110)
+			bit["age"] = _rng.randf_range(-1.6, 0.0) if anywhere else _rng.randf_range(-0.8, 0.0)
+			bit["color"] = [accent, accent2, Color("6fe3ff"), Color("ffffff"), Color("b58cff")][_rng.randi() % 5]
 		_:
 			# Falling things: confetti, petals, leaves, snow (and snow under the Christmas lights).
 			bit["pos"] = Vector2(_rng.randf() * w, (_rng.randf() if anywhere else -0.05) * h)
@@ -90,6 +107,15 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 				"leaves":
 					bit["size"] = _rng.randf_range(11, 18)
 					bit["color"] = [Color("3fbf5f"), Color("8fd14f"), Color("2e9e57"), Color("d9b43a")][_rng.randi() % 4]
+				"autumn":
+					bit["size"] = _rng.randf_range(11, 18)
+					bit["color"] = [Color("e8641e"), Color("c8341c"), Color("f4a72a"), Color("8a4a1e")][_rng.randi() % 4]
+				"stars":
+					bit["size"] = _rng.randf_range(6, 12)
+					bit["color"] = [Color("ffcf3f"), Color("ffcf3f"), accent, accent2][_rng.randi() % 4]
+				"bunting":
+					bit["size"] = _rng.randf_range(5, 9)
+					bit["color"] = BUNTING[_rng.randi() % BUNTING.size()]
 				_:
 					bit["size"] = _rng.randf_range(2.0, 5.0)
 					bit["color"] = Color(1, 1, 1, _rng.randf_range(0.75, 1.0))
@@ -98,7 +124,12 @@ func _respawn(bit: Dictionary, anywhere: bool) -> void:
 func _step(bit: Dictionary, delta: float) -> void:
 	var pos: Vector2 = bit["pos"]
 	var vel: Vector2 = bit["vel"]
-	var sway := sin(_time * 1.3 + float(bit["phase"])) * (22.0 if style in ["petals", "leaves"] else 8.0)
+	if style == "fireworks":
+		bit["age"] = float(bit["age"]) + delta
+		if float(bit["age"]) > 1.8:
+			_respawn(bit, false)
+		return
+	var sway := sin(_time * 1.3 + float(bit["phase"])) * (22.0 if style in ["petals", "leaves", "autumn"] else 8.0)
 	pos += (vel + Vector2(sway if style != "bats" else 0.0, 0.0)) * delta
 	bit["rot"] = float(bit["rot"]) + float(bit["spin"]) * delta
 	bit["pos"] = pos
@@ -115,6 +146,8 @@ func _draw() -> void:
 			_draw_light_string()
 		"sun":
 			_draw_sun_rays()
+		"bunting":
+			_draw_bunting()
 		"bats":
 			# A big harvest moon behind the bats.
 			var moon := Vector2(size.x * 0.54, size.y * 0.3)
@@ -131,8 +164,18 @@ func _draw() -> void:
 				_quad(pos, Vector2(s, s * 0.55), rot, color)
 			"petals":
 				_leaf(pos, s, rot, color, false)
-			"leaves":
+			"leaves", "autumn":
 				_leaf(pos, s, rot, color, true)
+			"hearts":
+				_heart(pos, s, color)
+			"lanterns":
+				_lantern(pos + Vector2(sin(_time * 0.8 + float(bit["phase"])) * 6.0, 0.0), s)
+			"stars":
+				_star(pos, s, rot, color)
+			"bunting":
+				_quad(pos, Vector2(s, s * 0.55), rot, color)
+			"fireworks":
+				_burst(pos, float(bit["age"]), s, color)
 			"fireflies":
 				var glow := 0.5 + 0.5 * sin(_time * 2.4 + float(bit["phase"]))
 				draw_circle(pos, s * 3.2, Color(color, 0.12 * glow))
@@ -167,6 +210,69 @@ func _leaf(pos: Vector2, s: float, rot: float, color: Color, vein: bool) -> void
 	draw_colored_polygon(points, color)
 	if vein:
 		draw_line(pos + Vector2(-s, 0).rotated(rot), pos + Vector2(s, 0).rotated(rot), color.darkened(0.3), 1.2, true)
+
+
+func _heart(pos: Vector2, s: float, color: Color) -> void:
+	var points := PackedVector2Array()
+	for i in 24:
+		var t := TAU * i / 24.0
+		var x := 16.0 * pow(sin(t), 3.0)
+		var y := 13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t)
+		points.append(pos + Vector2(x, -y) * s / 17.0)
+	draw_colored_polygon(points, color)
+	draw_circle(pos + Vector2(-s * 0.35, -s * 0.3), s * 0.16, Color(1, 1, 1, 0.55))
+
+
+func _lantern(pos: Vector2, s: float) -> void:
+	draw_circle(pos, s * 1.5, Color(1.0, 0.55, 0.2, 0.1))
+	var points := PackedVector2Array()
+	for i in 20:
+		var a := TAU * i / 20.0
+		points.append(pos + Vector2(cos(a) * s, sin(a) * s * 0.78))
+	draw_colored_polygon(points, Color("d62828"))
+	for k in [-0.45, 0.0, 0.45]:
+		draw_line(pos + Vector2(k * s, -s * 0.72), pos + Vector2(k * s * 1.2, s * 0.72), Color("a01818"), 1.5, true)
+	draw_rect(Rect2(pos + Vector2(-s * 0.4, -s * 0.95), Vector2(s * 0.8, s * 0.22)), Color("f4b400"))
+	draw_rect(Rect2(pos + Vector2(-s * 0.4, s * 0.72), Vector2(s * 0.8, s * 0.22)), Color("f4b400"))
+	draw_line(pos + Vector2(0, s * 0.94), pos + Vector2(0, s * 1.5), Color("f4b400"), 2.0, true)
+
+
+func _star(pos: Vector2, s: float, rot: float, color: Color) -> void:
+	var points := PackedVector2Array()
+	for i in 10:
+		var r := s if i % 2 == 0 else s * 0.45
+		points.append(pos + Vector2.from_angle(rot - PI / 2.0 + TAU * i / 10.0) * r)
+	draw_colored_polygon(points, color)
+
+
+## A firework: a quick flash, then a ring of sparks that spreads, droops and fades.
+func _burst(pos: Vector2, age: float, reach: float, color: Color) -> void:
+	if age < 0.0:
+		return
+	var k := clampf(age / 1.4, 0.0, 1.0)
+	var fade := 1.0 - k
+	if age < 0.12:
+		draw_circle(pos, 18.0 * (1.0 - age / 0.12), Color(1, 1, 1, 0.8))
+	for i in 18:
+		var dir := Vector2.from_angle(TAU * i / 18.0)
+		var p := pos + dir * reach * ease(k, 0.4) + Vector2(0, 30.0 * k * k)
+		draw_circle(p, 3.2 * fade + 0.8, Color(color, fade))
+		draw_line(p, p - dir * 10.0 * fade, Color(color, fade * 0.5), 2.0, true)
+
+
+## Strings of little triangle flags across the top, gently waving.
+func _draw_bunting() -> void:
+	for row in 2:
+		var y0 := 18.0 + row * 46.0
+		var count := int(size.x / 38.0)
+		for i in count:
+			var x := (i + 0.5 * row) * size.x / count
+			var sag := 14.0 * sin(PI * fposmod(x / (size.x * 0.5), 1.0))
+			var wave := sin(_time * 2.2 + i * 0.7) * 3.0
+			var top := Vector2(x, y0 + sag)
+			var color: Color = BUNTING[(i + row * 2) % BUNTING.size()]
+			draw_colored_polygon(PackedVector2Array([top + Vector2(-14, 0), top + Vector2(14, 0), top + Vector2(wave, 26)]), Color(color, 0.85))
+		draw_line(Vector2(0, y0), Vector2(size.x, y0 + 4.0), Color(AppTheme.INK, 0.35), 1.5, true)
 
 
 func _bat(pos: Vector2, s: float, color: Color, flap: float) -> void:

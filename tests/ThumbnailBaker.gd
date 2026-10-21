@@ -3,7 +3,7 @@ extends Node
 ## ShopThumbs): a 2:1 still for every item, and for animated categories a strip of 8 frames. Each
 ## item is staged on the real board (Game3D in its own world) with a camera that suits it, rendered
 ## at twice the size and scaled down. Re-run after adding or changing items, then re-import:
-##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>] [--seasonal]
+##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>] [--seasonal] [--missing]
 ##   godot --headless --path . --import
 
 const OUT := "res://assets/shop_thumbs"
@@ -18,6 +18,7 @@ var _only := ""
 var _slug := ""
 var _count := 0
 var _seasonal := false  # --seasonal: only the holiday collections' items.
+var _missing := false  # --missing: only items without a picture yet.
 
 
 func _ready() -> void:
@@ -31,6 +32,8 @@ func _ready() -> void:
 			_slug = arg.trim_prefix("--slug=")
 		elif arg == "--seasonal":
 			_seasonal = true
+		elif arg == "--missing":
+			_missing = true
 	if not bake:
 		print("Pass --bake to (re)write the shop thumbnails.")
 		get_tree().quit()
@@ -57,6 +60,8 @@ func _ready() -> void:
 			if _slug != "" and slug != _slug:
 				continue
 			if _seasonal and str(CosmeticCatalog.info(category, slug).get("season", "")) == "":
+				continue
+			if _missing and FileAccess.file_exists("%s/%s/%s.webp" % [OUT, category, slug]):
 				continue
 			await _bake(category, slug)
 	print("baked %d pictures" % _count)
@@ -221,7 +226,8 @@ func _frame_camera(category: String, slug := "") -> void:
 		if slug in ["ambience_villagers", "ambience_army_march", "ambience_parade"]:
 			_aim(Vector3(-2.3, 1.9, 4.6), Vector3(-4.74, 0.3, 1.6), 40.0)  # The left rim, where they march.
 		elif slug in ["ambience_birds", "ambience_bats", "ambience_butterflies", "ambience_paper_planes",
-				"ambience_balloons", "ambience_ufo", "ambience_clouds", "ambience_meteors", "ambience_aurora", "ambience_fireworks"]:
+				"ambience_balloons", "ambience_ufo", "ambience_clouds", "ambience_meteors", "ambience_aurora", "ambience_fireworks",
+				"ambience_broadside", "ambience_searchlights", "ambience_choppers", "ambience_starfighters", "ambience_laser_horizon", "ambience_raven_watch", "ambience_dragon_flyover"]:
 			_aim(Vector3(0.0, 2.2, 7.4), Vector3(0.0, 2.3, 1.0), 56.0)  # The sky over your half.
 		else:
 			_aim(Vector3(0.0, 3.0, 6.2), Vector3(0.0, 1.0, 1.6), 50.0)  # Weather over your pieces.

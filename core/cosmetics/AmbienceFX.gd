@@ -97,6 +97,47 @@ const STYLES := {
 		"swatch": [Color("0038a8"), Color("ce1126"), Color("fcd116")]},
 	"ambience_banderitas": {"name": "Banderitas", "rarity": "rare", "season": "fiesta", "desc": "Strings of colourful fiesta bunting flutter over your half.",
 		"swatch": [Color("ff3d7f"), Color("ffcf3f"), Color("27c98f"), Color("3d8bff")]},
+	# Themed collections.
+	"ambience_wave_spray": {"name": "Wave Spray", "rarity": "epic", "collection": "great_wave", "desc": "Sea spray bursts up beside the board and drifts over your half as foam mist.",
+		"swatch": [Color("ffffff"), Color("8fc6ff"), Color("2a4a8a")]},
+	"ambience_broadside": {"name": "Broadside", "rarity": "legendary", "collection": "treasure_seas", "desc": "Distant cannons flash and boom; cannonballs arc overhead and splash down.",
+		"swatch": [Color("2a2d40"), Color("ffb020"), Color("f2ece2")]},
+	"ambience_maple_wind": {"name": "Maple Wind", "rarity": "rare", "collection": "samurai_ronin", "desc": "Crimson maple leaves swept along by a strong wind.",
+		"swatch": [Color("ff6a3a"), Color("e8341c"), Color("7a1010")]},
+	"ambience_smoke_bombs": {"name": "Smoke Bombs", "rarity": "epic", "collection": "ninja_clan", "desc": "Smoke bombs pop along your rim and throwing stars whistle past.",
+		"swatch": [Color("8a7aa8"), Color("3a2d55"), Color("c9d2de")]},
+	"ambience_neon_drones": {"name": "Drone Patrol", "rarity": "epic", "collection": "cyber_neon", "desc": "Neon drones hum over your half, sweeping scan beams through a light neon drizzle.",
+		"swatch": [Color("2ef6ff"), Color("ff2bd6"), Color("1b2447")]},
+	"ambience_searchlights": {"name": "Hangar Searchlights", "rarity": "rare", "collection": "giant_robots", "desc": "Big searchlights sweep the sky on both sides of the board.",
+		"swatch": [Color("fff6c8"), Color("4a5060"), Color("2f6bd8")]},
+	"ambience_choppers": {"name": "Chopper Patrol", "rarity": "epic", "collection": "kaiju_attack", "desc": "Helicopters circle overhead, their spotlights hunting for something big.",
+		"swatch": [Color("e8eef8"), Color("ffb020"), Color("2a2d40")]},
+	"ambience_starfighters": {"name": "Starfighter Chase", "rarity": "legendary", "collection": "space_opera", "desc": "Three starfighters loop and chase each other above your half.",
+		"swatch": [Color("e8eef8"), Color("3ad6ff"), Color("2a2d40")]},
+	"ambience_laser_horizon": {"name": "Laser Horizon", "rarity": "epic", "collection": "synthwave", "desc": "Pink and cyan lasers fan out across the sky under twinkling stars.",
+		"swatch": [Color("ff4fa8"), Color("3ad6ff"), Color("2a1048")]},
+	"ambience_pixel_weather": {"name": "Pixel Weather", "rarity": "rare", "collection": "arcade_8bit", "desc": "Blocky clouds drift by, dropping pixel rain and the odd gold coin.",
+		"swatch": [Color("ffffff"), Color("3d8bff"), Color("ffcf3f")]},
+	"ambience_tumbleweeds": {"name": "Tumbleweed Breeze", "rarity": "common", "collection": "wild_west", "desc": "Tumbleweeds bounce past in a dusty breeze while vultures circle.",
+		"swatch": [Color("c8a066"), Color("e8c890"), Color("4a3a2e")]},
+	"ambience_steam_works": {"name": "Steam Works", "rarity": "rare", "collection": "steampunk", "desc": "Brass vents on your rim hiss steam while little gears float up.",
+		"swatch": [Color("e8b850"), Color("c8743a"), Color("f2ece2")]},
+	"ambience_raven_watch": {"name": "Raven Watch", "rarity": "rare", "collection": "norse_vikings", "desc": "Ravens cross a cold sky dusted with light snow.",
+		"swatch": [Color("1d1a2a"), Color("ffffff"), Color("7fd6ff")]},
+	"ambience_heavenly_rays": {"name": "Heavenly Rays", "rarity": "legendary", "collection": "greek_gods", "desc": "Golden sunbeams break through the clouds and glitter drifts down.",
+		"swatch": [Color("fff6c8"), Color("ffd24a"), Color("ffffff")]},
+	"ambience_sound_effects": {"name": "Sound Effects", "rarity": "epic", "collection": "comic_hero", "desc": "POW! ZAP! BAM! Comic sound effects pop up all around your half.",
+		"swatch": [Color("fff36b"), Color("ff5a3a"), Color("3d8bff")]},
+	"ambience_toxic_mist": {"name": "Toxic Mist", "rarity": "rare", "collection": "zombie_outbreak", "desc": "Green mist creeps over your tiles while bubbles rise and pop.",
+		"swatch": [Color("b8ff6a"), Color("7ad04a"), Color("2a3a1a")]},
+	"ambience_twinkle_dust": {"name": "Twinkle Dust", "rarity": "rare", "collection": "magical_sparkle", "desc": "Pastel stars float up while sparkles and little hearts drift down.",
+		"swatch": [Color("ffb3ec"), Color("c9a8ff"), Color("ffffff")]},
+	"ambience_stage_lights": {"name": "Stage Lights", "rarity": "legendary", "collection": "concert_stage", "desc": "Coloured spotlights sweep your half and confetti cannons fire.",
+		"swatch": [Color("ff4fa8"), Color("3ad6ff"), Color("ffd23f")]},
+	"ambience_street_beats": {"name": "Street Beats", "rarity": "rare", "collection": "street_graffiti", "desc": "Music notes bounce up and spray-paint clouds puff on your rim.",
+		"swatch": [Color("ff3bd6"), Color("4dffb0"), Color("ffd23f")]},
+	"ambience_dragon_flyover": {"name": "Dragon Flyover", "rarity": "legendary", "collection": "fantasy_kingdom", "desc": "A dragon sweeps across the sky and lets out a burst of fire.",
+		"swatch": [Color("2f8a5a"), Color("c8342d"), Color("ffb020")]},
 }
 
 
@@ -159,14 +200,14 @@ func _ready() -> void:
 			for i in 3:
 				_paper_plane(i)
 		"ambience_birds":
-			_flock(false)
+			_flock("bird")
 		"ambience_butterflies":
 			for i in (3 if reduced else 5):
 				_butterfly(i)
 		"ambience_fireflies":
 			_fireflies()
 		"ambience_bats":
-			_flock(true)
+			_flock("bat")
 		"ambience_ghosts":
 			for i in 3:
 				_ghost(i)
@@ -192,7 +233,7 @@ func _ready() -> void:
 		"ambience_haunted_night":
 			_fog(12, [Color("6a4a9a", 0.0), Color("5a3a8a", 0.32), Color("3a2a5a", 0.0)], 0.35)
 			_pumpkin_lights()
-			_flock(true)
+			_flock("bat")
 		"ambience_santa_sleigh":
 			_fall("snowflake", false, 40, 0.16, [Color("ffffff"), Color("e2f2ff"), Color("b8dcff")], 0.5, Vector3(0.2, 0.0, 0.0), 120.0)
 			_sleigh()
@@ -211,7 +252,7 @@ func _ready() -> void:
 			gust.position.x -= 2.5
 			gust.color_initial_ramp = FxTextures.gradient([Color("ffd23f"), Color("ff8a1f"), Color("d6401c"), Color("8a4a1e")], false)
 		"ambience_seaside_gulls":
-			_flock(false, true)
+			_flock("gull")
 			_glints()
 		"ambience_kalayaan_fireworks":
 			_firework_palette = [Color("3d6bff"), Color("ff3d4a"), Color("fcd116"), Color("ffffff")]
@@ -220,6 +261,93 @@ func _ready() -> void:
 		"ambience_banderitas":
 			_banderitas()
 			_fall("square", false, 24, 0.1, [Color.WHITE, Color.WHITE, Color.WHITE], 0.6, Vector3(0.3, 0.0, 0.0), 540.0).color_initial_ramp = FxTextures.rainbow()
+		"ambience_wave_spray":
+			_every(Vector2(0.7, 1.4), _spray_burst)
+			_fog(10, [Color("ffffff", 0.0), Color("e8f4ff", 0.3), Color("c8e0ff", 0.0)], 0.5)
+		"ambience_broadside":
+			_every(Vector2(1.6, 3.0), _cannon_shot)
+			_flock("gull")
+		"ambience_maple_wind":
+			var maple := _fall("leaf", false, 44, 0.28, [Color("ff6a3a"), Color("e8341c"), Color("b81c1c")], 0.6, Vector3(2.0, 0.0, 0.0), 300.0)
+			maple.position.x -= 2.0
+			maple.color_initial_ramp = FxTextures.gradient([Color("ff7a3a"), Color("e8341c"), Color("b81c1c"), Color("7a1010")], false)
+			_fog(8, [Color("fff4ec", 0.0), Color("f2e2d8", 0.22), Color("e0ccc0", 0.0)], 0.6)
+		"ambience_smoke_bombs":
+			_every(Vector2(0.8, 1.8), _smoke_pop)
+			_every(Vector2(2.4, 4.0), _shuriken_throw)
+			_fall("leaf", false, 16, 0.22, [Color("8ad06a"), Color("5fa84a"), Color("3a7a3a")], 0.5, Vector3(1.4, 0.0, 0.0), 260.0)
+		"ambience_neon_drones":
+			for i in 3:
+				_drone(i)
+			_fall("streak", false, 50, 0.5, [Color("ff2bd6", 0.0), Color("2ef6ff", 0.7), Color("ff2bd6", 0.0)], 5.0, Vector3(0.4, -2.0, 0.0), 0.0, Vector2(0.05, 0.6))
+		"ambience_searchlights":
+			for i in 4:
+				var x: float = [-HALF_X - 2.4, -HALF_X - 4.2, HALF_X + 2.4, HALF_X + 4.2][i]
+				var light := _beam(Vector3(x, Board3D.GROUND_Y, -1.0 + (i % 2) * 3.0), Vector3(PI, 0.0, 0.0), 16.0, Vector2(0.2, 1.2), Color(1.0, 0.96, 0.78, 0.13))
+				light.add_child(PropKit.model("searchlight", [
+					PropKit.pt("4a5060", ShapeKit.cylinder(0.3, 0.26, 0.4, 16), Vector3.ZERO),
+					PropKit.pt("fff6c8|g2.0", ShapeKit.cylinder(0.27, 0.27, 0.02, 16), Vector3(0.0, -0.21, 0.0), Vector3.ZERO, 0.0),
+				]))
+				_actor(light, _tick_sweep, {"base": Vector3(PI, 0.0, 0.0), "swing": Vector2(0.6, 0.3), "phase": i * 1.9, "speed": 0.45})
+		"ambience_choppers":
+			for i in 2:
+				_chopper(i)
+		"ambience_starfighters":
+			for i in 3:
+				_starfighter(i)
+			_twinkle(30, 0.22, [Color("ffffff"), Color("c8e0ff"), Color("9cf6ff")], Vector3(0.0, 4.8, 0.0), Vector3(HALF_X + 3.0, 1.0, 3.0))
+		"ambience_laser_horizon":
+			for i in 6:
+				var color := Color("ff4fa8") if i % 2 == 0 else Color("3ad6ff")
+				var laser := _beam(Vector3(-5.0 + i * 2.0, Board3D.GROUND_Y, -7.0), Vector3(PI + 0.55, 0.0, 0.0), 18.0, Vector2(0.03, 0.16), Color(color, 0.4))
+				_actor(laser, _tick_sweep, {"base": Vector3(PI + 0.55, 0.0, 0.0), "swing": Vector2(0.7, 0.15), "phase": i * 0.9, "speed": 0.7})
+			_twinkle(30, 0.2, [Color("ffffff"), Color("ffd1f0"), Color("9cf6ff")], Vector3(0.0, 5.0, -1.0), Vector3(HALF_X + 3.0, 1.0, 3.0))
+		"ambience_pixel_weather":
+			for i in 3:
+				_cloud(i, true)
+			_fall("square", false, 44, 0.1, [Color("9cdcff"), Color("3d8bff"), Color("2f3fbf")], 2.2, Vector3.ZERO, 0.0)
+			_fall("coin", false, 8, 0.22, [Color("fff1b0"), Color("ffcf3f"), Color("d4a017")], 0.8, Vector3.ZERO, 200.0)
+		"ambience_tumbleweeds":
+			for i in 3:
+				_tumbleweed(i)
+			var dust := _fall("dot", false, 40, 0.1, [Color("e8c890"), Color("c8a066"), Color("a8804a")], 0.3, Vector3(2.4, 0.0, 0.0), 0.0)
+			dust.position = Vector3(-4.0, 0.9, 2.2)
+			dust.emission_box_extents = Vector3(3.0, 0.8, 2.2)
+			_flock("vulture")
+		"ambience_steam_works":
+			_steam_vents()
+			_rising("gear", 12, 0.3, [Color("e8b850"), Color("c8743a"), Color("d8a03a")], 0.3, 60.0)
+		"ambience_raven_watch":
+			_flock("raven")
+			_fall("snowflake", false, 30, 0.16, [Color("ffffff"), Color("e2f2ff"), Color("b8dcff")], 0.4, Vector3(0.4, 0.0, 0.0), 100.0)
+		"ambience_heavenly_rays":
+			_cloud(0)
+			_cloud(2)
+			for i in 4:
+				var ray := _beam(Vector3(-3.3 + i * 2.2, 8.0, 0.4 + (i % 2) * 2.0), Vector3(-0.15, 0.0, 0.18 - i * 0.12), 9.5, Vector2(0.4, 1.1), Color(1.0, 0.9, 0.6, 0.06))
+				_actor(ray, _tick_ray, {"mat": (ray.get_child(0) as MeshInstance3D).material_override, "alpha": 0.075, "phase": i * 1.7})
+			_fall("sparkle", false, 30, 0.14, [Color("fff6c8"), Color("ffd24a"), Color("ffa21f")], 0.35, Vector3.ZERO, 150.0)
+		"ambience_sound_effects":
+			_every(Vector2(0.9, 1.8), _comic_pop)
+		"ambience_toxic_mist":
+			_fog(16, [Color("b8ff6a", 0.0), Color("7ad04a", 0.3), Color("4a8a2a", 0.0)], 0.3)
+			_rising("bubble", 18, 0.26, [Color("d4ff3a"), Color("8ad04a"), Color("b8ff6a")], 0.4)
+		"ambience_twinkle_dust":
+			_rising("star", 18, 0.22, [Color("ffb3ec"), Color("c9a8ff"), Color("ffffff")], 0.35, 90.0)
+			_fall("sparkle", false, 26, 0.14, [Color("ffffff"), Color("ffd1f0"), Color("c9a8ff")], 0.3, Vector3.ZERO, 150.0)
+			_fall("heart", false, 10, 0.16, [Color("ffe3ec"), Color("ff8ec0"), Color("ff5aa0")], 0.35, Vector3(0.2, 0.0, 0.0), 60.0)
+		"ambience_stage_lights":
+			var spots := [Color("ff4fa8"), Color("3ad6ff"), Color("b84dff"), Color("ffd23f")]
+			for i in 4:
+				var spot := _beam(Vector3(-3.6 + i * 2.4, 6.4, -1.0), Vector3(-0.4, 0.0, 0.0), 8.5, Vector2(0.1, 1.1), Color(spots[i], 0.08))
+				_actor(spot, _tick_sweep, {"base": Vector3(-0.4, 0.0, 0.0), "swing": Vector2(0.4, 0.15), "phase": i * 1.4, "speed": 0.9})
+			_every(Vector2(2.5, 4.5), _confetti_cannon)
+			_rising("note", 10, 0.28, [Color("ff4fa8"), Color("3ad6ff"), Color("ffd23f")], 0.45)
+		"ambience_street_beats":
+			_rising("note", 16, 0.3, [Color("ff3bd6"), Color("4dffb0"), Color("ffd23f"), Color("3ad6ff")], 0.5)
+			_every(Vector2(1.2, 2.4), _paint_puff)
+		"ambience_dragon_flyover":
+			_dragon()
 
 
 func _process(delta: float) -> void:
@@ -615,26 +743,29 @@ func _flap(actor: Dictionary, t: float, rate: float, amount: float) -> void:
 
 # --- Fly-bys -------------------------------------------------------------------------------------
 
-func _flock(bats: bool, gulls := false) -> void:
-	var count := 4 if reduced else (6 if bats else 7)
-	var key := "bat" if bats else ("gull" if gulls else "bird")
-	var body_color := "2a1f3a" if bats else ("ffffff" if gulls else "3a3150")
+## A flock crossing the sky: "bird", "bat", "gull", "raven" or "vulture".
+func _flock(kind: String) -> void:
+	var bats := kind == "bat"
+	var count := 4 if reduced else (6 if bats else (3 if kind == "vulture" else 7))
+	var key := kind
+	var body_color: String = {"bat": "2a1f3a", "gull": "ffffff", "raven": "1d1a2a", "vulture": "4a3a2e"}.get(kind, "3a3150")
 	var body := [
 		PropKit.pt(body_color, ShapeKit.capsule(0.045, 0.2), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
 		PropKit.pt(body_color, ShapeKit.sphere(0.045), Vector3(0.0, 0.03, -0.1)),
 	]
 	if not bats:
-		body.append(PropKit.pt("ffb020", ShapeKit.cone(0.02, 0.06, 8), Vector3(0.0, 0.03, -0.16), Vector3(-PI / 2.0, 0.0, 0.0), 0.0))
+		var beak: String = {"raven": "3a3a48", "vulture": "e8d0a0"}.get(kind, "ffb020")
+		body.append(PropKit.pt(beak, ShapeKit.cone(0.02, 0.06, 8), Vector3(0.0, 0.03, -0.16), Vector3(-PI / 2.0, 0.0, 0.0), 0.0))
 	var wing_poly := PackedVector2Array([Vector2(0.0, 0.03), Vector2(-0.2, 0.0), Vector2(-0.26, -0.05), Vector2(-0.12, -0.04), Vector2(0.0, -0.05)]) if bats \
 		else PackedVector2Array([Vector2(0.0, 0.04), Vector2(-0.22, 0.01), Vector2(-0.18, -0.03), Vector2(0.0, -0.04)])
-	var wing_color := "4a3a6a" if bats else ("dfe6ee" if gulls else "5a4f78")
+	var wing_color: String = {"bat": "4a3a6a", "gull": "dfe6ee", "raven": "2a2640", "vulture": "5a4636"}.get(kind, "5a4f78")
 	var wing := [PropKit.pt(wing_color, ShapeKit.prism(wing_poly, 0.012, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.01)]
 	for i in count:
 		var parts := _winged(key, body, wing, 0.04)
 		var root: Node3D = parts["root"]
 		var row := int((i + 1) / 2.0)
 		var offset := Vector3(row * 0.7 * (1.0 if i % 2 == 0 else -1.0), randf_range(-0.2, 0.2), row * 0.9)
-		root.scale = Vector3.ONE * (2.0 if bats else 2.2)
+		root.scale = Vector3.ONE * (2.0 if bats else (2.7 if kind == "vulture" else 2.2))
 		_actor(root, _tick_flock, {"left": parts["left"], "right": parts["right"], "offset": offset,
 			"phase": randf() * TAU, "bats": bats, "last": i == count - 1})
 	_flock_reset()
@@ -806,13 +937,21 @@ func _tick_balloon(actor: Dictionary, t: float, _delta: float) -> void:
 	node.rotation.y = sin(t * 0.3 + float(actor["phase"])) * 0.4
 
 
-func _cloud(i: int) -> void:
-	var cloud := PropKit.model("cloud", [
-		PropKit.pt("ffffff", ShapeKit.sphere(0.55, 0.6, 16), Vector3(0.0, 0.0, 0.0), Vector3.ZERO, 0.0),
-		PropKit.pt("ffffff", ShapeKit.sphere(0.42, 0.48, 16), Vector3(0.55, -0.05, 0.1), Vector3.ZERO, 0.0),
-		PropKit.pt("ffffff", ShapeKit.sphere(0.45, 0.5, 16), Vector3(-0.55, -0.04, -0.05), Vector3.ZERO, 0.0),
-		PropKit.pt("eef4ff", ShapeKit.sphere(0.36, 0.4, 16), Vector3(0.2, 0.22, -0.1), Vector3.ZERO, 0.0),
-	])
+func _cloud(i: int, pixel := false) -> void:
+	var cloud: Node3D
+	if pixel:
+		cloud = PropKit.model("pixel_cloud", [
+			PropKit.pt("ffffff", _cube(Vector3(1.6, 0.4, 0.8)), Vector3.ZERO, Vector3.ZERO, 0.03),
+			PropKit.pt("ffffff", _cube(Vector3(0.8, 0.4, 0.8)), Vector3(-0.2, 0.4, 0.0), Vector3.ZERO, 0.03),
+			PropKit.pt("eef4ff", _cube(Vector3(0.4, 0.4, 0.8)), Vector3(0.4, 0.32, 0.0), Vector3.ZERO, 0.03),
+		])
+	else:
+		cloud = PropKit.model("cloud", [
+			PropKit.pt("ffffff", ShapeKit.sphere(0.55, 0.6, 16), Vector3(0.0, 0.0, 0.0), Vector3.ZERO, 0.0),
+			PropKit.pt("ffffff", ShapeKit.sphere(0.42, 0.48, 16), Vector3(0.55, -0.05, 0.1), Vector3.ZERO, 0.0),
+			PropKit.pt("ffffff", ShapeKit.sphere(0.45, 0.5, 16), Vector3(-0.55, -0.04, -0.05), Vector3.ZERO, 0.0),
+			PropKit.pt("eef4ff", ShapeKit.sphere(0.36, 0.4, 16), Vector3(0.2, 0.22, -0.1), Vector3.ZERO, 0.0),
+		])
 	var shadow := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(2.6, 1.6)
@@ -1180,3 +1319,445 @@ func _glints() -> void:
 	p.color_ramp = FxTextures.gradient([Color("ffffff"), Color("fff6c8"), Color("fff1b0")])
 	p.emitting = true
 	add_child(p)
+
+# --- Themed collections --------------------------------------------------------------------------
+
+## A one-shot puff of particles at `at` that cleans itself up.
+func _burst_at(shape: String, additive: bool, at: Vector3, amount: int, lifetime: float, size: float, colors: Array,
+		speed: Vector2, gravity := Vector3.ZERO, dir := Vector3.UP, spread := 180.0) -> CPUParticles3D:
+	var p := FxTextures.particles(shape, additive, _scaled(amount), lifetime, size)
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.local_coords = true
+	p.position = at
+	p.direction = dir
+	p.spread = spread
+	p.initial_velocity_min = speed.x
+	p.initial_velocity_max = speed.y
+	p.gravity = gravity
+	FxTextures.random_angle(p, shape)
+	p.scale_amount_min = 0.7
+	p.scale_amount_max = 1.3
+	p.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.4), Vector2(0.2, 1.0), Vector2(1.0, 0.85)])
+	p.color_ramp = FxTextures.gradient(colors)
+	p.emitting = true
+	add_child(p)
+	create_tween().tween_callback(p.queue_free).set_delay(lifetime + 0.3)
+	return p
+
+
+## Things drifting up from the tiles: notes, bubbles, stars, gears.
+func _rising(shape: String, amount: int, size: float, colors: Array, speed: float, spin := 0.0) -> CPUParticles3D:
+	var lifetime := 3.8
+	var p := FxTextures.particles(shape, false, _scaled(amount), lifetime, size)
+	p.local_coords = true
+	p.preprocess = lifetime
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.position = Vector3(0.0, 0.5, 2.0)
+	p.emission_box_extents = Vector3(HALF_X, 0.3, 2.0)
+	p.direction = Vector3.UP
+	p.spread = 25.0
+	p.initial_velocity_min = speed * 0.7
+	p.initial_velocity_max = speed * 1.3
+	p.gravity = Vector3(0.1, 0.0, 0.0)
+	if spin > 0.0:
+		FxTextures.random_angle(p, shape)
+		p.angular_velocity_min = -spin
+		p.angular_velocity_max = spin
+	else:
+		p.angle_min = -12.0
+		p.angle_max = 12.0
+	p.scale_amount_min = 0.7
+	p.scale_amount_max = 1.3
+	p.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.0), Vector2(0.15, 1.0), Vector2(0.85, 1.0), Vector2(1.0, 0.0)])
+	p.color_initial_ramp = FxTextures.gradient(colors, false)
+	p.emitting = true
+	add_child(p)
+	return p
+
+
+## Stars twinkling in place inside a box (sky shows).
+func _twinkle(amount: int, size: float, colors: Array, center: Vector3, extents: Vector3) -> void:
+	var p := FxTextures.particles("sparkle", true, _scaled(amount), 1.6, size)
+	p.local_coords = true
+	p.preprocess = 1.6
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.position = center
+	p.emission_box_extents = extents
+	p.gravity = Vector3.ZERO
+	p.initial_velocity_max = 0.03
+	p.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.0), Vector2(0.5, 1.0), Vector2(1.0, 0.0)])
+	p.color_ramp = FxTextures.gradient(colors)
+	p.emitting = true
+	add_child(p)
+
+
+## A soft additive light cone from the pivot's origin along its -Y (searchlights, stage lights,
+## sun rays). Turn the returned pivot to aim it.
+func _beam(at: Vector3, rot: Vector3, length: float, width: Vector2, color: Color) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.position = at
+	pivot.rotation = rot
+	var cone := CylinderMesh.new()
+	cone.top_radius = width.x
+	cone.bottom_radius = width.y
+	cone.height = length
+	cone.radial_segments = 18
+	cone.cap_top = false
+	cone.cap_bottom = false
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.albedo_color = color
+	var beam := MeshInstance3D.new()
+	beam.mesh = cone
+	beam.material_override = m
+	beam.position = Vector3(0.0, -length * 0.5, 0.0)
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pivot.add_child(beam)
+	return pivot
+
+
+## Swings a beam pivot around its resting aim.
+func _tick_sweep(actor: Dictionary, t: float, _delta: float) -> void:
+	var base: Vector3 = actor["base"]
+	var swing: Vector2 = actor["swing"]
+	var ph: float = actor["phase"]
+	var speed: float = actor["speed"]
+	(actor["node"] as Node3D).rotation = base + Vector3(sin(t * speed * 0.7 + ph) * swing.y, 0.0, sin(t * speed + ph) * swing.x)
+
+
+## Fades a beam's glow in and out.
+func _tick_ray(actor: Dictionary, t: float, _delta: float) -> void:
+	var m: StandardMaterial3D = actor["mat"]
+	m.albedo_color.a = float(actor["alpha"]) * (0.55 + 0.45 * sin(t * 0.6 + float(actor["phase"])))
+
+
+## Something hovering in a slow loop over the half, facing where it goes (drones, helicopters).
+## A "rotor" child spins.
+func _tick_hover(actor: Dictionary, t: float, delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var c: Vector3 = actor["center"]
+	var r: Vector2 = actor["radius"]
+	var a := t * float(actor["speed"]) + float(actor["phase"])
+	var pos := c + Vector3(cos(a) * r.x, sin(a * 1.7) * 0.15, sin(a) * r.y)
+	var ahead := c + Vector3(cos(a + 0.05) * r.x, pos.y - c.y, sin(a + 0.05) * r.y)
+	node.position = pos
+	if not ahead.is_equal_approx(pos):
+		node.look_at(to_global(ahead), Vector3.UP)
+	if actor.has("rotor"):
+		(actor["rotor"] as Node3D).rotate_y(delta * 26.0)
+
+
+## A spot on the frame rim around the owner's half.
+func _rim_spot() -> Vector3:
+	var along := randf() * _rim_length()
+	for i in RIM_PATH.size() - 1:
+		var a: Vector2 = RIM_PATH[i]
+		var b: Vector2 = RIM_PATH[i + 1]
+		var seg := (b - a).length()
+		if along <= seg:
+			var at := a + (b - a) * (along / seg)
+			return Vector3(at.x, RIM_Y, at.y)
+		along -= seg
+	return Vector3(RIM_X, RIM_Y, RIM_Z)
+
+
+# Great Wave: spray bursting up from the sea beside the board.
+func _spray_burst() -> void:
+	var side := -1.0 if randf() < 0.5 else 1.0
+	var at := Vector3(side * randf_range(HALF_X + 0.9, HALF_X + 2.0), -0.2, randf_range(-0.5, 4.2))
+	_burst_at("dot", false, at, 34, 1.4, 0.18, [Color("ffffff"), Color("dff3ff"), Color("8fc6ff")],
+		Vector2(2.4, 3.6), Vector3(-side * 0.6, -4.5, 0.0), Vector3(-side * 0.35, 1.0, 0.0), 22.0)
+	_burst_at("puff", false, at + Vector3(0.0, 0.3, 0.0), 6, 1.6, 0.9, [Color("ffffff", 0.7), Color("e8f4ff", 0.45), Color("c8e0ff", 0.0)],
+		Vector2(0.3, 0.8), Vector3.ZERO, Vector3.UP, 50.0)
+
+
+# Treasure Seas: distant cannon fire, a ball arcing overhead and a splash.
+func _cannon_shot() -> void:
+	var side := -1.0 if randf() < 0.5 else 1.0
+	var from := Vector3(side * randf_range(HALF_X + 3.5, HALF_X + 6.0), 0.4, randf_range(-3.0, 1.5))
+	var to := Vector3(-side * randf_range(HALF_X + 3.0, HALF_X + 6.0), -0.3, randf_range(-5.0, -1.0))
+	_burst_at("dot", true, from, 14, 0.35, 0.3, [Color("fff6c8"), Color("ffb020"), Color("ff6a1a")], Vector2(1.0, 2.2), Vector3.ZERO, Vector3(-side, 0.4, 0.0), 35.0)
+	_burst_at("puff", false, from, 10, 2.2, 1.0, [Color("f2ece2", 0.85), Color("c9c2b0", 0.55), Color("a8a090", 0.0)], Vector2(0.3, 0.9), Vector3(0.0, 0.25, 0.0))
+	var ball := PropKit.model("cannonball", [PropKit.pt("2a2d40", ShapeKit.sphere(0.14, -1.0, 12), Vector3.ZERO)])
+	ball.scale = Vector3.ONE * 1.4
+	ball.position = from
+	add_child(ball)
+	var fly := func(k: float) -> void:
+		ball.position = from.lerp(to, k) + Vector3(0.0, sin(k * PI) * 5.0, 0.0)
+	var t := create_tween()
+	t.tween_method(fly, 0.0, 1.0, 1.7)
+	t.tween_callback(func() -> void:
+		_burst_at("dot", false, to, 20, 1.0, 0.13, [Color("ffffff"), Color("dff3ff"), Color("8fc6ff")], Vector2(1.6, 2.6), Vector3(0.0, -5.0, 0.0), Vector3.UP, 25.0))
+	t.tween_callback(ball.queue_free)
+
+
+# Ninja Clan: smoke bombs popping on the rim; now and then a throwing star whizzes past.
+func _smoke_pop(colors: Array = [Color("8a7aa8", 0.85), Color("5a4a78", 0.6), Color("3a2d55", 0.0)]) -> void:
+	var at := _rim_spot() + Vector3(0.0, 0.25, 0.0)
+	_burst_at("puff", false, at, 9, 1.5, 0.8, colors, Vector2(0.3, 0.9), Vector3(0.0, 0.3, 0.0))
+
+
+# Street Graffiti: a cloud of spray paint.
+func _paint_puff() -> void:
+	var c: Color = [Color("ff3bd6"), Color("4dffb0"), Color("ffd23f"), Color("3ad6ff")].pick_random()
+	_smoke_pop([Color(c, 0.8), Color(c, 0.5), Color(c, 0.0)])
+
+
+func _shuriken_throw() -> void:
+	var star := PropKit.model("shuriken", [
+		PropKit.pt("c9d2de", ShapeKit.prism(InsigniaFactory.star_polygon(4, 0.2, 0.06), 0.02, 0.005), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.012),
+		PropKit.pt("2a2350", ShapeKit.cylinder(0.04, 0.04, 0.03, 12), Vector3.ZERO, Vector3.ZERO, 0.0),
+	])
+	star.scale = Vector3.ONE * 1.5
+	var dir := 1.0 if randf() < 0.5 else -1.0
+	var y := randf_range(1.4, 2.2)
+	var z := randf_range(0.6, 3.4)
+	star.position = Vector3(-8.0 * dir, y, z)
+	add_child(star)
+	var t := create_tween()
+	t.tween_property(star, "position", Vector3(8.0 * dir, y - 0.4, z + randf_range(-0.6, 0.6)), 0.9)
+	t.parallel().tween_property(star, "rotation:y", 30.0 * dir, 0.9)
+	t.tween_callback(star.queue_free)
+
+
+# Neon drones, helicopters and starfighters.
+func _drone(i: int) -> void:
+	var glow: String = ["2ef6ff", "ff2bd6", "b84dff"][i % 3]
+	var parts := [
+		PropKit.pt("1b2447", ShapeKit.box(Vector3(0.26, 0.26, 0.08), 0.06, 0.015), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt(glow + "|g2.0", ShapeKit.sphere(0.045, -1.0, 10), Vector3(0.0, -0.04, -0.12), Vector3.ZERO, 0.0),
+	]
+	for k in 4:
+		var a := TAU * k / 4.0 + PI / 4.0
+		var arm := Vector3(cos(a), 0.0, sin(a)) * 0.22
+		parts.append(PropKit.pt("2a2d40", ShapeKit.cylinder(0.014, 0.014, 0.22, 6), arm * 0.5, Vector3(0.0, -a, PI / 2.0), 0.0))
+		parts.append(PropKit.pt(glow + "|a0.5", ShapeKit.cylinder(0.1, 0.1, 0.012, 16), arm + Vector3(0.0, 0.035, 0.0), Vector3.ZERO, 0.0))
+		parts.append(PropKit.pt(glow + "|g1.6", ShapeKit.sphere(0.022, -1.0, 8), arm + Vector3(0.0, -0.02, 0.0), Vector3.ZERO, 0.0))
+	var drone := PropKit.model("drone_" + glow, parts)
+	drone.scale = Vector3.ONE * 1.5
+	drone.add_child(_beam(Vector3(0.0, -0.05, 0.0), Vector3.ZERO, 1.7, Vector2(0.03, 0.42), Color(Color(glow), 0.1)))
+	_actor(drone, _tick_hover, {"center": Vector3(-2.6 + i * 2.6, 2.5 + i * 0.25, 2.0), "radius": Vector2(1.6, 1.2),
+		"speed": 0.45 + i * 0.08, "phase": i * 2.1})
+
+
+func _chopper(i: int) -> void:
+	var paint: String = ["e8eef8", "ffb020"][i % 2]
+	var body := [
+		PropKit.pt(paint, ShapeKit.sphere(0.2, 0.32, 16), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("9cf6ff|a0.8", ShapeKit.sphere(0.14, 0.2, 14), Vector3(0.0, 0.03, -0.12)),
+		PropKit.pt(paint, ShapeKit.cylinder(0.03, 0.06, 0.5, 8), Vector3(0.0, 0.04, 0.38), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("e8341c", ShapeKit.box(Vector3(0.02, 0.14, 0.1), 0.01, 0.004), Vector3(0.0, 0.1, 0.6), Vector3(0.0, PI / 2.0, 0.0)),
+		PropKit.pt("2a2d40", ShapeKit.cylinder(0.012, 0.012, 0.44, 6), Vector3(0.12, -0.2, 0.0), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("2a2d40", ShapeKit.cylinder(0.012, 0.012, 0.44, 6), Vector3(-0.12, -0.2, 0.0), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("2a2d40", ShapeKit.cylinder(0.02, 0.02, 0.1, 6), Vector3(0.0, 0.18, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("ff3d4a|g2.0", ShapeKit.sphere(0.02, -1.0, 6), Vector3(0.0, -0.17, 0.0), Vector3.ZERO, 0.0),
+	]
+	var chopper := PropKit.model("chopper_" + paint, body)
+	var rotor := PropKit.model("chopper_rotor", [
+		PropKit.pt("2a2d40", ShapeKit.box(Vector3(0.9, 0.035, 0.012), 0.01, 0.004), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("2a2d40", ShapeKit.box(Vector3(0.9, 0.035, 0.012), 0.01, 0.004), Vector3.ZERO, Vector3(PI / 2.0, PI / 2.0, 0.0), 0.0),
+	])
+	rotor.position = Vector3(0.0, 0.23, 0.0)
+	chopper.add_child(rotor)
+	chopper.add_child(_beam(Vector3(0.0, -0.18, -0.1), Vector3(0.3, 0.0, 0.0), 2.4, Vector2(0.04, 0.55), Color(1.0, 0.96, 0.8, 0.11)))
+	chopper.scale = Vector3.ONE * 1.6
+	_actor(chopper, _tick_hover, {"rotor": rotor, "center": Vector3(0.0, 3.0 + i * 0.4, 1.8), "radius": Vector2(3.4, 1.6),
+		"speed": 0.32, "phase": i * PI})
+
+
+func _starfighter(i: int) -> void:
+	var paint: String = ["e8eef8", "c9d2de", "ffb020"][i % 3]
+	var wing := PackedVector2Array([Vector2(0.0, 0.32), Vector2(-0.28, -0.2), Vector2(0.0, -0.1), Vector2(0.28, -0.2)])
+	var fighter := PropKit.model("starfighter_" + paint, [
+		PropKit.pt(paint, ShapeKit.prism(wing, 0.03, 0.008), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.014),
+		PropKit.pt("2a2d40", ShapeKit.capsule(0.05, 0.36), Vector3(0.0, 0.03, -0.02), Vector3(PI / 2.0, 0.0, 0.0), 0.012),
+		PropKit.pt("9cf6ff|a0.85", ShapeKit.sphere(0.04, 0.05, 10), Vector3(0.0, 0.07, -0.08), Vector3.ZERO, 0.0),
+		PropKit.pt("3ad6ff|g2.5", ShapeKit.cylinder(0.035, 0.035, 0.02, 10), Vector3(0.0, 0.03, 0.17), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+	])
+	fighter.scale = Vector3.ONE * 1.8
+	var trail := FxTextures.particles("dot", true, _scaled(24), 0.5, 0.14)
+	trail.local_coords = false
+	trail.gravity = Vector3.ZERO
+	trail.initial_velocity_max = 0.05
+	trail.scale_amount_curve = FxTextures.curve([Vector2(0.0, 1.0), Vector2(1.0, 0.0)])
+	trail.color_ramp = FxTextures.gradient([Color("ffffff"), Color("3ad6ff"), Color("2a5aff")])
+	trail.position = Vector3(0.0, 0.03, 0.19)
+	trail.emitting = true
+	fighter.add_child(trail)
+	_actor(fighter, _tick_plane, {"center": Vector3(0.0, 3.4, 1.8), "phase": -i * 0.45, "radius": Vector2(4.2, 1.8), "speed": 0.55})
+
+
+# Arcade: blocky clouds.
+static func _cube(size: Vector3) -> Callable:
+	return func(grow: float) -> Mesh:
+		var m := BoxMesh.new()
+		m.size = size + Vector3.ONE * grow * 2.0
+		return m
+
+
+# Wild West: tumbleweeds bouncing past beside the board.
+func _tumbleweed(i: int) -> void:
+	var parts := [PropKit.pt("8a6a3a", ShapeKit.sphere(0.13, -1.0, 10), Vector3.ZERO, Vector3.ZERO, 0.0)]
+	for k in 5:
+		parts.append(PropKit.pt("c8a066", ShapeKit.torus(0.2, 0.23, 16, 4), Vector3.ZERO, Vector3(k * 0.7, k * 1.25, k * 0.45), 0.012))
+	var weed := PropKit.model("tumbleweed", parts)
+	weed.scale = Vector3.ONE * 1.6
+	_actor(weed, _tick_tumbleweed, {"lane": i % 3, "speed": randf_range(1.3, 1.9), "offset": i * 6.0})
+
+
+func _tick_tumbleweed(actor: Dictionary, t: float, _delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var span := 24.0
+	var u := fposmod(t * float(actor["speed"]) + float(actor["offset"]), span) - span / 2.0
+	var hop := absf(sin(t * 3.4 + float(actor["offset"]))) * 0.45
+	var y := Board3D.GROUND_Y + 0.37 + hop
+	match int(actor["lane"]):
+		0:
+			node.position = Vector3(u, y, -6.4)
+			node.rotation = Vector3(0.0, 0.0, -u / 0.37)
+		1:
+			node.position = Vector3(-HALF_X - 1.6, y, -u)
+			node.rotation = Vector3(-u / 0.37, 0.0, 0.0)
+		_:
+			node.position = Vector3(HALF_X + 1.6, y, u)
+			node.rotation = Vector3(u / 0.37, 0.0, 0.0)
+
+
+# Steampunk: brass vents puffing steam on the rim corners.
+func _steam_vents() -> void:
+	var vent := [
+		PropKit.pt("c8743a", ShapeKit.cylinder(0.07, 0.09, 0.22, 12), Vector3(0.0, 0.11, 0.0)),
+		PropKit.pt("e8b850", ShapeKit.torus(0.06, 0.1, 14, 4), Vector3(0.0, 0.22, 0.0), Vector3.ZERO, 0.012),
+		PropKit.pt("e8b850", ShapeKit.cylinder(0.025, 0.025, 0.1, 8), Vector3(0.1, 0.12, 0.0), Vector3(0.0, 0.0, PI / 2.0), 0.01),
+		PropKit.pt("c8342d", ShapeKit.cylinder(0.035, 0.035, 0.02, 10), Vector3(0.15, 0.12, 0.0), Vector3(0.0, 0.0, PI / 2.0), 0.0),
+	]
+	for spot: Vector2 in [Vector2(-RIM_X, RIM_Z), Vector2(RIM_X, RIM_Z), Vector2(-RIM_X, 2.1), Vector2(RIM_X, 2.1)]:
+		var pipe := PropKit.model("steam_vent", vent)
+		pipe.position = Vector3(spot.x, RIM_Y, spot.y)
+		pipe.scale = Vector3.ONE * 1.5
+		add_child(pipe)
+		var steam := FxTextures.particles("puff", false, _scaled(10), 1.8, 0.6)
+		steam.local_coords = true
+		steam.preprocess = 1.8
+		steam.position = pipe.position + Vector3(0.0, 0.38, 0.0)
+		steam.direction = Vector3.UP
+		steam.spread = 12.0
+		steam.initial_velocity_min = 0.7
+		steam.initial_velocity_max = 1.1
+		steam.gravity = Vector3(0.25, 0.2, 0.0)
+		steam.angle_min = -180.0
+		steam.angle_max = 180.0
+		steam.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.3), Vector2(0.4, 1.0), Vector2(1.0, 1.6)])
+		steam.color_ramp = FxTextures.gradient([Color("ffffff", 0.75), Color("f2ece2", 0.45), Color("e8e0d4", 0.0)])
+		steam.emitting = true
+		add_child(steam)
+
+
+# Fantasy Kingdom: a dragon crosses the sky and breathes a puff of fire on the way.
+func _dragon() -> void:
+	var scales := "2f8a5a"
+	var body := [
+		PropKit.pt(scales, ShapeKit.capsule(0.11, 0.5, 12), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("ffcf6a", ShapeKit.capsule(0.07, 0.36, 10), Vector3(0.0, -0.05, -0.02), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt(scales, ShapeKit.capsule(0.06, 0.26, 10), Vector3(0.0, 0.1, -0.3), Vector3(-(PI / 2.0 - 0.6), 0.0, 0.0)),
+		PropKit.pt(scales, ShapeKit.sphere(0.09, 0.14, 12), Vector3(0.0, 0.18, -0.44)),
+		PropKit.pt(scales, ShapeKit.capsule(0.045, 0.14, 8), Vector3(0.0, 0.16, -0.52), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("fff4dc", ShapeKit.cone(0.02, 0.09, 6), Vector3(0.04, 0.26, -0.41), Vector3(0.5, 0.0, -0.3), 0.0),
+		PropKit.pt("fff4dc", ShapeKit.cone(0.02, 0.09, 6), Vector3(-0.04, 0.26, -0.41), Vector3(0.5, 0.0, 0.3), 0.0),
+		PropKit.pt("ffd23f|g1.5", ShapeKit.sphere(0.016, -1.0, 6), Vector3(0.05, 0.2, -0.5), Vector3.ZERO, 0.0),
+		PropKit.pt("ffd23f|g1.5", ShapeKit.sphere(0.016, -1.0, 6), Vector3(-0.05, 0.2, -0.5), Vector3.ZERO, 0.0),
+		PropKit.pt(scales, ShapeKit.cone(0.08, 0.5, 10), Vector3(0.0, -0.02, 0.48), Vector3(PI / 2.0 - 0.15, 0.0, 0.0)),
+		PropKit.pt("c8342d", ShapeKit.prism(PackedVector2Array([Vector2(0.0, 0.0), Vector2(0.06, -0.08), Vector2(-0.06, -0.08)]), 0.01, 0.002), Vector3(0.0, 0.02, 0.73), Vector3(-PI / 2.0, 0.0, 0.0), 0.0),
+	]
+	var wing_poly := PackedVector2Array([Vector2(0.0, 0.12), Vector2(-0.3, 0.16), Vector2(-0.62, 0.06), Vector2(-0.5, -0.06),
+		Vector2(-0.36, 0.0), Vector2(-0.24, -0.1), Vector2(-0.12, -0.02), Vector2(0.0, -0.12)])
+	var wing := [PropKit.pt("c8342d", ShapeKit.prism(wing_poly, 0.016, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.014)]
+	var parts := _winged("dragon", body, wing, 0.08)
+	var root: Node3D = parts["root"]
+	root.scale = Vector3.ONE * 2.4
+	root.visible = false
+	_actor(root, _tick_dragon, {"left": parts["left"], "right": parts["right"], "phase": 0.0, "cycle": 11.0, "fired": -1})
+
+
+func _tick_dragon(actor: Dictionary, t: float, _delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var cycle: float = float(actor["cycle"]) * (1.5 if reduced else 1.0)
+	var lap := floori((t + 2.0) / cycle)
+	var k := fposmod(t + 2.0, cycle) / 6.5
+	node.visible = k <= 1.0
+	if not node.visible:
+		return
+	var dir := 1.0 if lap % 2 == 0 else -1.0
+	var from := Vector3(-10.0 * dir, 3.4, 0.2)
+	var to := Vector3(10.0 * dir, 3.9, 2.8)
+	var pos := from.lerp(to, k) + Vector3(0.0, sin(k * PI) * 0.7 + sin(t * 2.2) * 0.12, 0.0)
+	node.position = pos
+	node.look_at(to_global(pos + (to - from).normalized()), Vector3.UP)
+	_flap(actor, t, 5.5, 0.55)
+	if k > 0.45 and int(actor["fired"]) != lap:
+		actor["fired"] = lap
+		var mouth := pos + (to - from).normalized() * 1.4 + Vector3(0.0, 0.3, 0.0)
+		_burst_at("flame", true, mouth, 22, 0.8, 0.5, [Color("fff6c8"), Color("ffb020"), Color("ff4a1a"), Color("8a1010")],
+			Vector2(2.5, 4.0), Vector3(0.0, 0.6, 0.0), (to - from).normalized() + Vector3(0.0, -0.25, 0.0), 14.0)
+
+
+# Comic Hero: sound effects pop up around the edges of the half.
+const COMIC_WORDS := ["POW!", "ZAP!", "BAM!", "WHAM!", "BOOM!", "KAPOW!", "THWACK!", "ZOK!"]
+const COMIC_COLORS := ["fff36b", "ff5a3a", "3d8bff", "4dffb0", "ff4fa8"]
+
+
+func _comic_pop() -> void:
+	var side := -1.0 if randf() < 0.5 else 1.0
+	var at := Vector3(side * randf_range(HALF_X - 0.5, HALF_X + 1.6), randf_range(1.8, 2.9), randf_range(0.3, 3.6))
+	if randf() < 0.3:
+		at = Vector3(randf_range(-HALF_X + 1.0, HALF_X - 1.0), randf_range(3.0, 3.6), randf_range(-0.6, 0.6))
+	var pop := Node3D.new()
+	pop.position = at
+	add_child(pop)
+	var burst := MeshInstance3D.new()
+	burst.mesh = FxTextures.quad(1.5)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	m.albedo_texture = FxTextures.texture("star")
+	m.albedo_color = Color(COMIC_COLORS[randi() % COMIC_COLORS.size()])
+	m.render_priority = 2
+	burst.material_override = m
+	burst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pop.add_child(burst)
+	var label := Label3D.new()
+	label.text = COMIC_WORDS[randi() % COMIC_WORDS.size()]
+	label.font = load(KillFX.WORD_FONT)
+	label.font_size = 80
+	label.pixel_size = 0.004
+	label.modulate = Color("ffffff")
+	label.outline_modulate = Color("1d1736")
+	label.outline_size = 22
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.render_priority = 4
+	pop.add_child(label)
+	pop.scale = Vector3.ONE * 0.2
+	var t := create_tween()
+	t.tween_property(pop, "scale", Vector3.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.7)
+	t.tween_property(m, "albedo_color:a", 0.0, 0.3)
+	t.parallel().tween_property(label, "modulate:a", 0.0, 0.3)
+	t.parallel().tween_property(label, "outline_modulate:a", 0.0, 0.3)
+	t.tween_callback(pop.queue_free)
+
+
+# Concert Stage: a confetti cannon fires from one side.
+func _confetti_cannon() -> void:
+	var side := -1.0 if randf() < 0.5 else 1.0
+	var at := Vector3(side * (HALF_X + 0.8), 0.4, randf_range(0.5, 3.5))
+	var p := _burst_at("square", false, at, 40, 2.2, 0.1, [Color.WHITE, Color.WHITE, Color.WHITE], Vector2(3.0, 5.0),
+		Vector3(0.0, -2.0, 0.0), Vector3(-side * 0.6, 1.0, 0.0), 25.0)
+	p.color_initial_ramp = FxTextures.rainbow()
+	p.angular_velocity_min = -500.0
+	p.angular_velocity_max = 500.0

@@ -1,10 +1,10 @@
 extends Node
 ## Screenshots of every ambience on the player's half of the board (opponent plain). Needs a real
 ## renderer:
-##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/AmbienceShots.tscn -- --out=<dir> [--only=slug]
+##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/AmbienceShots.tscn -- --out=<dir> [--only=slug,slug]
 
 var _out := "user://ambience_shots"
-var _only := ""
+var _only: Array = []
 
 
 func _ready() -> void:
@@ -12,7 +12,7 @@ func _ready() -> void:
 		if arg.begins_with("--out="):
 			_out = arg.trim_prefix("--out=")
 		elif arg.begins_with("--only="):
-			_only = arg.trim_prefix("--only=")
+			_only = arg.trim_prefix("--only=").split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
 	var game: Game3D = load("res://scenes/game/Game3D.tscn").instantiate()
 	add_child(game)
@@ -20,7 +20,7 @@ func _ready() -> void:
 	game.rig.attract = false
 	var plain := Loadout.complete({})
 	for slug: String in CosmeticCatalog.slugs("ambience"):
-		if slug == AmbienceFX.NONE or (_only != "" and slug != _only):
+		if slug == AmbienceFX.NONE or (not _only.is_empty() and slug not in _only):
 			continue
 		var look := plain.duplicate(true)
 		look["ambience"] = slug

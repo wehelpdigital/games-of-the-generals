@@ -61,6 +61,16 @@ func _ready() -> void:
 	check((board.get("_try_bar") as Control).visible, "the try-on bar shows")
 	board.call("_end_try")
 
+	# A Featured Board's whole look, then "Wear the set" (everything is owned in test mode).
+	ui.show_screen("my_board", {"try_look": "fb_great_wave"})
+	await _shot("board_try_look", 1.8)
+	check(Loadout.get_item("arena") != "great_wave_coast", "trying a whole look on doesn't equip it")
+	board.call("_wear_tried")
+	await _shot("board_wore_set", 1.4)
+	check(Loadout.get_item("kill") == "kill_wave_crash" and Loadout.get_item("arena") == "great_wave_coast", "Wear the set equips the whole look")
+	check((Loadout.get_toppers()["slots"] as Array).size() == 3, "the set's three toppers are placed")
+	Loadout.reset()
+
 	if (board.get("_fold_button") as Button).visible:
 		board.call("_toggle_fold")
 		await _shot("board_folded", 0.8)

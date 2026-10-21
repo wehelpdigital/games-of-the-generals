@@ -2,17 +2,21 @@ extends Node
 ## Bakes the shop's item pictures into res://assets/shop_thumbs/<category>/<slug>.webp (read by
 ## ShopThumbs): a 2:1 still for every item, and for animated categories a strip of 8 frames. Each
 ## item is staged on the real board (Game3D in its own world) with a camera that suits it, rendered
-## at twice the size and scaled down. Re-run after adding or changing items, then re-import:
+## at two to three times the size and scaled down, so the pictures stay crisp on big and high-DPI
+## screens. Re-run after adding or changing items, then publish them to the website
+## (tools/publish_thumbs.py) and re-import:
 ##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>] [--seasonal] [--missing]
 ## `--featured` bakes the Featured Boards' whole-board pictures instead (featured/<slug>.webp).
 ##   godot --headless --path . --import
 
 const OUT := "res://assets/shop_thumbs"
-const STILL := Vector2i(240, 120)
-const FRAME := Vector2i(192, 96)
-const RENDER := Vector2i(480, 240)
-const FEATURED := Vector2i(480, 240)  ## Featured Boards: a bigger picture of the whole board.
-const FEATURED_RENDER := Vector2i(960, 480)
+const STILL := Vector2i(512, 256)
+const FRAME := Vector2i(320, 160)
+const RENDER := Vector2i(1024, 512)
+const FEATURED := Vector2i(960, 480)  ## Featured Boards: a bigger picture of the whole board.
+const FEATURED_RENDER := Vector2i(1920, 960)
+const STILL_QUALITY := 0.86
+const CLIP_QUALITY := 0.8
 
 var _view: SubViewport
 var _game: Game3D
@@ -177,7 +181,7 @@ func _bake_featured(slug: String) -> void:
 			if (x + y) % 4 != 1:
 				army.append({"id": "f%d_%d" % [x, y], "side": Ranks.WHITE, "x": x, "y": y, "rank": ranks[(x * 3 + y) % ranks.size()]})
 	_game.board.sync_pieces(army)
-	_aim(Vector3(0.0, 7.4, 12.2), Vector3(0.0, 0.1, 0.4), 44.0)
+	_aim(Vector3(0.0, 6.9, 12.8), Vector3(0.0, 0.3, -0.4), 46.0)
 	await _wait(1.6)
 	var fx: Node = _game.board.get("_ambience_nodes").get(Ranks.WHITE)
 	if fx != null and fx.get("_flock_time") != null:
@@ -321,7 +325,8 @@ func _grab_async(size: Vector2i) -> Image:
 
 func _save(image: Image, category: String, slug: String) -> void:
 	var file := ShopThumbs.path(category, slug)
-	image.save_webp(ProjectSettings.globalize_path(file), true, 0.8)
+	image.convert(Image.FORMAT_RGB8)  # Opaque: no alpha plane in the file.
+	image.save_webp(ProjectSettings.globalize_path(file), true, CLIP_QUALITY if ShopThumbs.is_clip(category) else STILL_QUALITY)
 	# Kept as-is in the export (decoded by ShopThumbs), not imported as a texture.
 	var import := FileAccess.open(ProjectSettings.globalize_path(file + ".import"), FileAccess.WRITE)
 	import.store_string("[remap]\n\nimporter=\"keep\"\n")

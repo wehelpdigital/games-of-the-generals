@@ -462,10 +462,14 @@ func _try_on(category: String, slug: String) -> void:
 	_show_try_actions()
 	_place_try_bar()
 	AppTheme.pop_in(_try_bar)
+	if category in ["aura", "glow", "topper"]:
+		Audio.play_item(category, slug)
 	if category in ["trail", "kill"]:
 		await get_tree().create_timer(0.5).timeout
 		if visible and not _trying.is_empty():
 			ui.game.preview_effect(category)
+			if category == "trail":
+				Audio.play_item("trail", slug)
 
 
 ## Shows a Featured Board's whole look on your side, seen whole, without equipping anything.

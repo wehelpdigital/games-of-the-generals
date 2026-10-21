@@ -5,6 +5,8 @@ extends SmokeTestBase
 ## with --resolution 390x844). Also exports the catalog for the server when given --catalog=<path>.
 ## Real renderer:
 ##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/ShopShots.tscn -- --out=<dir> [--audit] [--catalog=<file>]
+## With --api-url=<site> the pictures not on disk come from <site>/play/thumbs (e.g. `php -S` on the
+## web repo's public folder), as in the browser.
 
 var _out := "user://shop"
 var _catalog := ""
@@ -17,11 +19,13 @@ func _ready() -> void:
 		elif arg.begins_with("--catalog="):
 			_catalog = arg.trim_prefix("--catalog=")
 	DirAccess.make_dir_recursive_absolute(_out)
-	ApiManager.base_url = "http://127.0.0.1:9"  # Offline: every request fails fast.
+	if not Array(OS.get_cmdline_user_args()).any(func(a: String) -> bool: return a.begins_with("--api-url=")):
+		ApiManager.base_url = "http://127.0.0.1:9"  # Offline: every request fails fast.
 	seed(11)
 	await boot()
 	if _catalog != "":
 		_export_catalog()
+	_check_themes()
 	var ui: UIRoot = main.get_node("UI")
 	var shop: Screen = ui.screen("shop")
 	ApiManager.token = "offline-test"  # The shop is for players; requests still fail fast.
@@ -95,6 +99,26 @@ const FEATURED_KEY := "featured"
 
 ## docs/cosmetics_catalog.json for the server: {category: {label, items: {slug: {name, rarity, desc,
 ## season?, collection?}}}}.
+## Every item has a known theme, every theme a Featured Board, and every set only real items.
+func _check_themes() -> void:
+	var unknown: Array = []
+	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
+		for slug: String in CosmeticCatalog.slugs(entry["key"]):
+			if not Collections.exists(CosmeticCatalog.collection_of(entry["key"], slug)):
+				unknown.append("%s/%s" % [entry["key"], slug])
+	check(unknown.is_empty(), "every item's theme is known %s" % [unknown])
+	var bare: Array = Collections.listed().filter(func(t: String) -> bool: return FeaturedBoards.of_theme(t).is_empty())
+	check(bare.is_empty(), "every theme has a Featured Board %s" % [bare])
+	var broken: Array = []
+	for set_slug: String in FeaturedBoards.all():
+		for pair: Array in FeaturedBoards.items(set_slug):
+			if CosmeticCatalog.info(pair[0], pair[1]).is_empty():
+				broken.append("%s: %s/%s" % [set_slug, pair[0], pair[1]])
+			elif FeaturedBoards.season_of(set_slug) == "" and CosmeticCatalog.season_of(pair[0], pair[1]) != "":
+				broken.append("%s: seasonal %s" % [set_slug, pair[1]])
+	check(broken.is_empty(), "Featured Boards only use real, all-year items (holiday sets excepted) %s" % [broken])
+
+
 func _export_catalog() -> void:
 	var out: Dictionary = {}
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:

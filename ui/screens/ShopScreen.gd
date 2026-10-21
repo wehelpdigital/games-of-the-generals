@@ -253,7 +253,10 @@ func _rail_button(entry: Dictionary) -> Button:
 			glyph = TileIcon.new("bolt", Vector2(30, 30))
 		_:
 			var picture := TextureRect.new()
-			picture.texture = ShopThumbs.icon(key, _sample_slug(key), 44)
+			var sample := _sample_slug(key)
+			ShopThumbs.when_ready(key, sample, func() -> void:
+				if is_instance_valid(picture):
+					picture.texture = ShopThumbs.icon(key, sample, 44))
 			picture.custom_minimum_size = Vector2(46, 32)
 			picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -541,7 +544,7 @@ func _outlined(text: String, size: int) -> Label:
 
 func _theme_picture(tag: String, height: float) -> ThumbView:
 	var boards := FeaturedBoards.of_theme(tag)
-	if not boards.is_empty() and ShopThumbs.texture("featured", boards[0]) != null:
+	if not boards.is_empty() and ShopThumbs.exists("featured", boards[0]):
 		return ThumbView.new("featured", boards[0], height, [Collections.color_of(tag)])
 	var cover := Collections.cover(tag)
 	if cover.is_empty():
@@ -1167,6 +1170,8 @@ func _show_preview_item() -> void:
 	var tag := Collections.theme_of(_preview_category, _preview_slug)
 	_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
 	ui.game.preview_item(_preview_category, _preview_slug)
+	if _preview_category in ["aura", "glow", "topper"]:
+		Audio.play_item(_preview_category, _preview_slug)
 	_play_preview_effect()
 	_mark_results()
 
@@ -1209,6 +1214,8 @@ func _play_preview_effect() -> void:
 			await get_tree().create_timer(0.35).timeout
 			if _preview_bar.visible and _preview_slug == slug:
 				ui.game.preview_effect(_preview_category)
+				if _preview_category == "trail":
+					Audio.play_item("trail", slug)
 		"taunt":
 			ui.game.throw_taunt(Ranks.BLACK, slug)
 
@@ -1234,7 +1241,7 @@ func _fill_results() -> void:
 		for slug: String in FeaturedBoards.all():
 			var b := AppTheme.button(FeaturedBoards.name_of(slug), "Ghost", _open_preview.bind(LOOK, slug), 34)
 			b.add_theme_font_size_override("font_size", 14)
-			b.icon = ShopThumbs.icon("featured", slug, 44)
+			_icon_when_ready(b, "featured", slug)
 			b.set_meta("item", "%s/%s" % [LOOK, slug])
 			_results.add_child(b)
 		_mark_results()
@@ -1251,7 +1258,7 @@ func _fill_results() -> void:
 			var text := name_text if query == "" else "%s · %s" % [name_text, label]
 			var b := AppTheme.button(text, "Ghost", _open_preview.bind(category, slug), 34)
 			b.add_theme_font_size_override("font_size", 14)
-			b.icon = ShopThumbs.icon(category, slug, 44)
+			_icon_when_ready(b, category, slug)
 			b.set_meta("item", "%s/%s" % [category, slug])
 			_results.add_child(b)
 			found += 1
@@ -1260,6 +1267,13 @@ func _fill_results() -> void:
 	if found == 0:
 		_results.add_child(AppTheme.label("Nothing matches \"%s\"." % _search.text.strip_edges(), "MutedLabel", 15))
 	_mark_results()
+
+
+## A result button's little picture, once it has loaded.
+func _icon_when_ready(button: Button, category: String, slug: String) -> void:
+	ShopThumbs.when_ready(category, slug, func() -> void:
+		if is_instance_valid(button):
+			button.icon = ShopThumbs.icon(category, slug, 44))
 
 
 func _mark_results() -> void:

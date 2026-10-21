@@ -279,6 +279,19 @@ static func _build() -> Theme:
 	var scroll_bg := _box(Color(INK, 0.08), 8, 0, INK)
 	scroll_bg.set_content_margin_all(4)
 	theme.set_stylebox("scroll", "VScrollBar", scroll_bg)
+
+	# Tooltips: a dark rounded card with light text (Label's ink colour would vanish on them).
+	var tip := _box(INK, 12, 3, PAPER)
+	tip.content_margin_left = 14
+	tip.content_margin_right = 14
+	tip.content_margin_top = 8
+	tip.content_margin_bottom = 8
+	tip.shadow_color = Color(INK, 0.35)
+	tip.shadow_size = 4
+	theme.set_stylebox("panel", "TooltipPanel", tip)
+	theme.set_color("font_color", "TooltipLabel", PAPER)
+	theme.set_color("font_shadow_color", "TooltipLabel", Color(0, 0, 0, 0))
+	theme.set_font_size("font_size", "TooltipLabel", 18)
 	return theme
 
 

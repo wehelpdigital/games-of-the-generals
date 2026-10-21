@@ -32,6 +32,7 @@ func _ready() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = AppTheme.get_theme()
+	get_tree().root.theme = _root.theme  # Popups such as tooltips live in their own window.
 	add_child(_root)
 	var all_screens: Dictionary = SCREENS.duplicate()
 	all_screens.merge(ScreenRegistry.screens)  # Screens contributed by feature modules.

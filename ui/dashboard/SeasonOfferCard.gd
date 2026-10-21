@@ -71,12 +71,9 @@ func refresh() -> void:
 	_count.text = "%d items" % items.size() if not items.is_empty() else ""
 	ProfileUi.clear(_peek)
 	for item: Array in items.slice(0, PEEK):
-		var picture := TextureRect.new()
-		picture.texture = ShopThumbs.still(item[0], item[1])
-		picture.custom_minimum_size = Vector2(0, 64)
+		# ThumbView: shop pictures come from the website, loading (with a shimmer) once on screen.
+		var picture := ThumbView.new(item[0], item[1], 64.0)
 		picture.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		picture.tooltip_text = str(CosmeticCatalog.info(item[0], item[1]).get("name", item[1]))
 		_peek.add_child(picture)
 	_peek.visible = _peek.get_child_count() > 0

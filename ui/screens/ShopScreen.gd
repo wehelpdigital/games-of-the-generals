@@ -12,6 +12,7 @@ extends Screen
 ## search every item, buy or equip, and go back to the same spot in the shop.
 
 const EXTRAS := "extras"
+const SEASONAL := "seasonal"
 
 var _frame: Control  # Holds the panel and the preview bar; scaled up on phones (ProfileUi.fit).
 var _panel: PanelContainer
@@ -64,6 +65,7 @@ func _ready() -> void:
 	_tab_grid.add_theme_constant_override("h_separation", 6)
 	_tab_grid.add_theme_constant_override("v_separation", 6)
 	var entries: Array = CosmeticCatalog.CATEGORIES.duplicate()
+	entries.push_front({"key": SEASONAL, "label": "Seasonal"})
 	entries.append({"key": EXTRAS, "label": "More"})
 	for entry: Dictionary in entries:
 		var key: String = entry["key"]
@@ -177,6 +179,8 @@ func _switch(category: String) -> void:
 	for key: String in _tabs:
 		_tabs[key].theme_type_variation = "AccentButton" if key == category else "GhostButton"
 	_blurb.text = "Shoutouts, guild charters and other extras." if category == EXTRAS else ""
+	if category == SEASONAL:
+		_blurb.text = "Holiday collections. Each one is on sale during its occasion; preview anything, any time."
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
 		if entry["key"] == category:
 			_blurb.text = entry["blurb"]
@@ -199,6 +203,9 @@ func _refresh() -> void:
 	_blurb.visible = true
 	if _category == EXTRAS:
 		_build_extras()
+		return
+	if _category == SEASONAL:
+		_build_seasonal()
 		return
 	if _category == "ambience":
 		_content.add_child(_ambience_toggle())
@@ -266,6 +273,74 @@ func _ambience_toggle() -> Control:
 	return toggle
 
 
+# --- Seasonal collections ------------------------------------------------------------------------
+
+## Every holiday collection, on-sale ones first, then by how soon each comes back.
+func _build_seasonal() -> void:
+	var today := Time.get_date_dict_from_system()
+	var order: Array = Seasons.ORDER.duplicate()
+	order.sort_custom(func(a: String, b: String) -> bool:
+		var la := Seasons.is_live(a, today)
+		var lb := Seasons.is_live(b, today)
+		if la != lb:
+			return la
+		return _days_until(a, today) < _days_until(b, today))
+	for occasion: String in order:
+		var found: Array = []
+		for entry: Dictionary in CosmeticCatalog.CATEGORIES:
+			var category: String = entry["key"]
+			for slug: String in CosmeticCatalog.slugs(category):
+				if str(CosmeticCatalog.info(category, slug).get("season", "")) == occasion:
+					found.append([category, slug])
+		if found.is_empty():
+			continue
+		_content.add_child(_season_header(occasion, found.size(), Seasons.is_live(occasion, today)))
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 10)
+		grid.add_theme_constant_override("v_separation", 10)
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		for pair: Array in found:
+			grid.add_child(_card(pair[1], CosmeticCatalog.info(pair[0], pair[1]), pair[0]))
+		_content.add_child(grid)
+
+
+func _season_header(occasion: String, count: int, live: bool) -> PanelContainer:
+	var card := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Seasons.color_of(occasion)
+	style.set_corner_radius_all(18)
+	style.set_border_width_all(4)
+	style.border_color = AppTheme.INK
+	style.set_content_margin_all(12)
+	card.add_theme_stylebox_override("panel", style)
+	var box := AppTheme.vbox(4)
+	card.add_child(box)
+	var row := AppTheme.hbox(8)
+	var title := AppTheme.label(Seasons.name_of(occasion), "", 22, Color.WHITE)
+	title.add_theme_font_override("font", AppTheme.heading_font())
+	title.add_theme_color_override("font_outline_color", AppTheme.INK)
+	title.add_theme_constant_override("outline_size", 6)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(title)
+	row.add_child(AppTheme.pill("ON SALE NOW" if live else "RETURNS %s" % Seasons.returns_text(occasion).to_upper(),
+		AppTheme.MINT if live else AppTheme.INK, Color.WHITE, 13))
+	box.add_child(row)
+	var blurb := AppTheme.label("%s  ·  %s  ·  %d items" % [Seasons.window_text(occasion), str(Seasons.OCCASIONS[occasion].get("blurb", "")), count], "", 14, Color.WHITE)
+	blurb.add_theme_color_override("font_outline_color", AppTheme.INK)
+	blurb.add_theme_constant_override("outline_size", 4)
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(blurb)
+	return card
+
+
+func _days_until(occasion: String, today: Dictionary) -> int:
+	var start := str(Seasons.OCCASIONS.get(occasion, {}).get("start", "01-01")).split("-")
+	var now := int(today["month"]) * 31 + int(today["day"])
+	var then := int(start[0]) * 31 + int(start[1])
+	return posmod(then - now, 12 * 31)
+
+
 # --- Item cards ----------------------------------------------------------------------------------
 
 func _card(slug: String, item: Dictionary, category := _category) -> PanelContainer:
@@ -297,7 +372,15 @@ func _card(slug: String, item: Dictionary, category := _category) -> PanelContai
 	var info := Loadout.shop_info(category, slug)
 	if info.get("featured", false):
 		badges.add_child(AppTheme.pill("FEATURED", AppTheme.PINK, Color.WHITE, 13))
-	var season := _season_badge(info)
+	var occasion := Loadout.season_of(category, slug)
+	if occasion != "" and _category != SEASONAL:
+		badges.add_child(AppTheme.pill(Seasons.name_of(occasion).to_upper(), Seasons.color_of(occasion), Color.WHITE, 13))
+	var back := Loadout.returns_text(category, slug)
+	if back != "":
+		badges.add_child(AppTheme.pill("RETURNS %s" % back.to_upper(), AppTheme.INK, Color.WHITE, 13))
+	elif occasion != "":
+		badges.add_child(AppTheme.pill("ON SALE NOW", AppTheme.MINT, Color.WHITE, 13))
+	var season := _season_badge(info) if occasion == "" else ""
 	if season != "":
 		badges.add_child(AppTheme.pill(season, AppTheme.PURPLE, Color.WHITE, 13))
 	box.add_child(badges)
@@ -318,6 +401,11 @@ func _action(slug: String, item: Dictionary, owned: bool, equipped: bool, catego
 	if not owned:
 		if not ApiManager.is_logged_in():
 			return AppTheme.button("Log in to buy", "Secondary", func() -> void: ui.require_login("shop"), 42)
+		if not Loadout.available(category, slug):
+			# Off-season: preview it now, buy it when its occasion comes back.
+			var later := AppTheme.button("Returns %s" % Loadout.returns_text(category, slug), "Ghost", Callable(), 42)
+			later.disabled = true
+			return later
 		var buy := AppTheme.button("Buy · %s" % AppTheme.num(Loadout.price(category, slug)), "Primary", _buy.bind(slug, item, category), 42)
 		buy.disabled = _buying
 		return buy

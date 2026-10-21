@@ -77,6 +77,12 @@ func _ready() -> void:
 	editor.done.emit()
 	shop.call("_switch", "extras")
 	await _shot("shop_extras", 0.6)
+	shop.call("_switch", "seasonal")
+	await _shot("shop_seasonal", 1.4)
+	shop.call("_open_preview", "topper", "topper_parol")
+	await _shot("preview_seasonal_parol", 1.4)
+	shop.call("_close_preview")
+	await frames(3)
 
 	# Paid shop, logged out: prices are hidden behind "Log in to buy".
 	Loadout.set("_server_test_mode", false)
@@ -93,6 +99,11 @@ func _ready() -> void:
 	Loadout.set("_shop_loaded", true)
 	Loadout.shop_updated.emit()
 	await _shot("shop_paid_logged_in", 0.8)
+	shop.call("_switch", "seasonal")
+	await _shot("shop_seasonal_paid", 1.2)
+	var scroll: ScrollContainer = (shop.get("_content") as Control).get_parent()
+	scroll.scroll_vertical = 2600
+	await _shot("shop_seasonal_paid_scrolled", 0.8)
 	ApiManager.token = ""
 	Loadout.set("_server_test_mode", null)
 	Loadout.reset()

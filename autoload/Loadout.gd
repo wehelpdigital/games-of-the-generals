@@ -136,6 +136,35 @@ func shop_info(category: String, slug: String) -> Dictionary:
 	return shop_items.get("%s/%s" % [category, slug], {})
 
 
+## The occasion a seasonal item belongs to ("halloween", ...), or "".
+func season_of(category: String, slug: String) -> String:
+	var server: Variant = shop_info(category, slug).get("season")
+	if server != null and str(server) != "":
+		return str(server)
+	return str(CosmeticCatalog.info(category, slug).get("season", ""))
+
+
+## Whether an item can be bought today. Seasonal items sell only during their occasion; the server
+## decides (`available` in /api/shop/items), and offline the yearly window in Seasons does.
+func available(category: String, slug: String) -> bool:
+	var server: Dictionary = shop_info(category, slug)
+	if server.has("available") and server["available"] != null:
+		return bool(server["available"])
+	var season := season_of(category, slug)
+	return season == "" or Seasons.is_live(season)
+
+
+## "Oct 15": when an off-season item is back on sale ("" when it is on sale).
+func returns_text(category: String, slug: String) -> String:
+	if available(category, slug):
+		return ""
+	var at: Variant = shop_info(category, slug).get("returns_at")
+	if at != null and str(at).length() >= 10:
+		var iso := str(at)
+		return "%s %d" % [Seasons.MONTHS[clampi(int(iso.substr(5, 2)) - 1, 0, 11)], int(iso.substr(8, 2))]
+	return Seasons.returns_text(season_of(category, slug))
+
+
 ## Server items of a type the client doesn't render as a cosmetic (guild charters, shoutouts...).
 func server_items_of(type: String) -> Array:
 	return shop_items.values().filter(func(i: Dictionary) -> bool: return str(i.get("type", "")) == type or str(i.get("category", "")) == type)

@@ -47,6 +47,8 @@ func _ready() -> void:
 
 func open(args: Dictionary) -> void:
 	_next = args.get("next", "home")
+	if args.has("mode"):
+		_set_mode(str(args["mode"]))  # "login" or "register" (e.g. from "Sign up free").
 	_show_error("")
 	_password.text = ""
 	_confirm.text = ""

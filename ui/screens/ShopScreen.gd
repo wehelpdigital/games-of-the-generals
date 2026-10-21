@@ -83,6 +83,9 @@ func _ready() -> void:
 
 
 func open(_args: Dictionary) -> void:
+	if not ApiManager.is_logged_in():
+		ui.show_screen.call_deferred("auth", {"next": "shop", "mode": "register"})  # The shop is for players.
+		return
 	_layout()
 	_close_editor()
 	_switch(_category)

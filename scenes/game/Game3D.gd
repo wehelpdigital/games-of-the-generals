@@ -11,6 +11,7 @@ extends Node3D
 
 var _formation_match := -1  # Match the local setup formation belongs to.
 var _opponent_loadout: Dictionary = {}  # Cosmetics shown on the other side of the board.
+var _showcase: Dictionary = {}  # Guest title-screen showcase; replaces the player's own look.
 
 
 func _ready() -> void:
@@ -43,7 +44,7 @@ func show_attract() -> void:
 ## Applies every equipped cosmetic: the player's loadout on their side (plus the arena and board,
 ## which only the viewer sees), and the opponent's loadout on the other side.
 func refresh_cosmetics() -> void:
-	var mine := Loadout.complete(Loadout.items)
+	var mine := Loadout.complete(_showcase if not _showcase.is_empty() else Loadout.items)
 	var theirs := Loadout.complete(_opponent_loadout)
 	board.set_board_theme(mine["board"])
 	arena.set_arena(mine["arena"])  # After the board theme: the arena owns sky, light and ground.
@@ -51,6 +52,15 @@ func refresh_cosmetics() -> void:
 	_apply_side(Ranks.opponent(board.my_side), theirs)
 	_apply_toppers(board.my_side, mine, true)
 	_apply_toppers(Ranks.opponent(board.my_side), theirs, false)
+
+
+## Title-screen showcase for guests (FeatureShowcase): dresses the player's side in `mine`
+## without touching their saved loadout, and the rival in `rival` if given. `{}` ends it.
+func set_showcase(mine: Dictionary, rival := {}) -> void:
+	_showcase = mine
+	if not rival.is_empty():
+		_opponent_loadout = rival
+	refresh_cosmetics()
 
 
 func _apply_side(side: String, loadout: Dictionary) -> void:
@@ -130,6 +140,7 @@ func shuffle_formation() -> void:
 
 
 func _on_match_loaded(view: Dictionary) -> void:
+	_showcase = {}  # A real match always shows the player's own look.
 	var side := GameSession.my_side()
 	board.set_mode(Board3D.Mode.SPECTATE, side, false)
 	rig.attract = false

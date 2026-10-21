@@ -32,7 +32,6 @@ var _guild_button: Button
 var _credits_button: Button
 var _logout_button: Button
 var _settings_button: Button
-var _board_button: Button
 var _play_row: BoxContainer  # Quick Match + Rooms.
 var _logo_holder: Control
 var _logo: Control
@@ -165,16 +164,6 @@ func _build_header() -> void:
 	_credits_button.add_theme_font_size_override("font_size", 18)
 	_credits_button.tooltip_text = "Credits - visit the shop"
 	_settings_button = ui.gear_button("dashboard") if ui else Button.new()
-	_board_button = ProfileUi.colored_button("", AppTheme.PINK, Color.WHITE, func() -> void: ui.show_screen("my_board"), 44)
-	_board_button.custom_minimum_size.x = 52
-	_board_button.tooltip_text = "My Board - wear what you own"
-	var board_icon := TileIcon.new("board", Vector2(26, 26))
-	board_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	board_icon.offset_left = 12
-	board_icon.offset_right = -12
-	board_icon.offset_top = 8
-	board_icon.offset_bottom = -12  # Above the button's thicker bottom lip.
-	_board_button.add_child(board_icon)
 	_logout_button = ProfileUi.colored_button("", AppTheme.PAPER, AppTheme.INK, _confirm_logout, 44)
 	_logout_button.custom_minimum_size.x = 52
 	_logout_button.tooltip_text = "Log out"
@@ -449,7 +438,6 @@ func _arrange_header() -> void:
 		_xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_put(_xp_bar, _row2)
 		_put(_credits_button, _row2)
-		_put(_board_button, _row2)
 		_put(_guild_button, _row2)
 		_row2.visible = true
 		_logo_holder.custom_minimum_size = Vector2(240, 150)
@@ -461,7 +449,6 @@ func _arrange_header() -> void:
 		_put(_logo_holder, _row1)
 		_row1.add_child(_header_spacer())
 		_put(_guild_button, _row1)
-		_put(_board_button, _row1)
 		_put(_credits_button, _row1)
 		_put(_settings_button, _row1)
 		_put(_logout_button, _row1)

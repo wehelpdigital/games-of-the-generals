@@ -29,7 +29,7 @@ var _chat: ChatView
 var _field: LineEdit
 var _send: Button
 var _toggle: Button
-var _unread_pill: PanelContainer
+var _badge: UnreadBadge  # Unread messages from the opponent while the chat is closed.
 var _mute: Button
 var _jam_pill: PanelContainer
 var _quick: Array[Control] = []
@@ -119,10 +119,6 @@ func _init() -> void:
 	var bar := AppTheme.hbox(8)
 	bar.alignment = BoxContainer.ALIGNMENT_END
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_END
-	_unread_pill = AppTheme.pill("0", AppTheme.PINK, Color.WHITE, 14)
-	_unread_pill.visible = false
-	_unread_pill.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	bar.add_child(_unread_pill)
 	_toggle = AppTheme.button("", "Ghost", _toggle_panel, 46)
 	_toggle.icon = EmojiPicker.icon("chat")
 	_toggle.add_theme_constant_override("icon_max_width", 26)
@@ -130,6 +126,8 @@ func _init() -> void:
 	_toggle.custom_minimum_size.x = 58
 	_toggle.tooltip_text = "Match chat"
 	bar.add_child(_toggle)
+	_badge = UnreadBadge.new()
+	_toggle.add_child(_badge)
 	_mute = AppTheme.button("", "Ghost", _toggle_mute, 46)
 	_mute.custom_minimum_size.x = 58
 	_mute.add_theme_constant_override("icon_max_width", 24)
@@ -353,8 +351,7 @@ func _toggle_panel() -> void:
 
 func _set_unread(count: int) -> void:
 	_unread = count
-	_unread_pill.visible = count > 0
-	AppTheme.set_pill(_unread_pill, str(mini(count, 99)), AppTheme.PINK)
+	_badge.set_count(count)
 
 
 func _muted() -> bool:

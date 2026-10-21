@@ -74,6 +74,32 @@ func _ready() -> void:
 	check(ui.setting("mute_taunts", false) and ui.setting("mute_chat", false), "mute opponent mutes chat and taunts")
 	chat.call("_toggle_mute")
 
+	# Closed chat: the opponent's messages and taunts count on a badge; mine don't; opening clears it.
+	var badge: UnreadBadge = chat.get("_badge")
+	check(not badge.visible and badge.count == 0, "no unread badge to start with")
+	chat.call("_on_taunt", Ranks.opponent(GameSession.my_side()), CosmeticCatalog.slugs("taunt")[0])
+	chat.call("_ai_say", "gg 😎", 0.01)
+	await get_tree().create_timer(0.1).timeout
+	check(badge.visible and badge.count == 2, "opponent's taunt and message count while the chat is closed")
+	await chat.call("_say", "my own line")
+	check(badge.count == 2, "my own messages don't count")
+	for i in 9:
+		chat.call("_on_taunt", Ranks.opponent(GameSession.my_side()), CosmeticCatalog.slugs("taunt")[0])
+	check(badge.text() == "9+", "the badge caps at 9+")
+	chat.call("_toggle_panel")
+	check(not badge.visible and badge.count == 0, "opening the chat clears the badge")
+	chat.call("_toggle_panel")
+
+	# The global chat panel folds down and counts others' messages while folded.
+	var global := GlobalChatPanel.new()
+	add_child(global)
+	global.set_collapsed(true)
+	ReverbManager.event_received.emit("global", "ChatMessage", {"message": {"id": 801, "user": {"id": 5, "username": "kai"}, "kind": "text", "body": "hi all"}})
+	check(global.is_collapsed() and global.unread() == 1, "folded global chat counts new messages")
+	global.set_collapsed(false)
+	check(global.unread() == 0, "opening the global chat clears its badge")
+	global.queue_free()
+
 	# The chat sits bottom-right, clear of the action buttons, and opens upwards.
 	var screen := get_viewport().get_visible_rect().size
 	chat.call("_toggle_panel")

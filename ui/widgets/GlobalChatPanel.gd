@@ -2,7 +2,8 @@ class_name GlobalChatPanel
 extends PanelContainer
 ## Dashboard panel: the everyone-online chat room. Live through the public `global` channel
 ## (Social), history from GET /api/chat/global. Logged-out players can read along and get a
-## "Log in to chat" button instead of the input row.
+## "Log in to chat" button instead of the input row. It folds down to its header (folded by
+## default on phones); while folded, a badge counts new messages from others.
 
 var ui: UIRoot
 
@@ -14,6 +15,11 @@ var _field: LineEdit
 var _send: Button
 var _picker: EmojiPicker
 var _loading := false
+var _well: PanelContainer
+var _fold: Button
+var _badge: UnreadBadge
+var _collapsed := false
+var _folded_once := false
 
 
 func _init() -> void:
@@ -46,6 +52,12 @@ func _init() -> void:
 	_live = AppTheme.pill("OFFLINE", AppTheme.MUTED, Color.WHITE, 13)
 	_live.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(_live)
+	_fold = AppTheme.button("Hide", "Ghost", func() -> void: set_collapsed(not _collapsed), 40)
+	_fold.add_theme_font_size_override("font_size", 16)
+	ChatView.compact_button(_fold)
+	_badge = UnreadBadge.new()
+	_fold.add_child(_badge)
+	header.add_child(_fold)
 	box.add_child(header)
 
 	var well := PanelContainer.new()
@@ -55,6 +67,7 @@ func _init() -> void:
 	well_style.set_content_margin_all(8)
 	well.add_theme_stylebox_override("panel", well_style)
 	well.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_well = well
 	_chat = ChatView.new()
 	well.add_child(_chat)
 	box.add_child(well)
@@ -96,6 +109,41 @@ func _init() -> void:
 ## DashboardRegistry hook.
 func setup(dashboard: Screen) -> void:
 	ui = dashboard.ui
+	_fold_on_phones.call_deferred()
+
+
+## Phones start folded so the dashboard isn't all chat; after that the player decides.
+func _fold_on_phones() -> void:
+	if _folded_once or not is_inside_tree():
+		return
+	_folded_once = true
+	var view := get_viewport().get_visible_rect().size
+	set_collapsed(view.y > view.x)
+
+
+## Folds the panel down to its header (or opens it). Opening clears the unread badge.
+func set_collapsed(collapsed: bool) -> void:
+	_collapsed = collapsed
+	_well.visible = not collapsed
+	if collapsed:
+		_picker.visible = false
+		_input_row.visible = false
+		_login_row.visible = false
+	else:
+		_refresh_input()
+		_badge.set_count(0)
+		_chat.scroll_to_end()
+	_fold.text = "Open" if collapsed else "Hide"
+	custom_minimum_size.y = 0.0 if collapsed else 440.0
+	size_flags_vertical = Control.SIZE_SHRINK_BEGIN if collapsed else Control.SIZE_EXPAND_FILL
+
+
+func is_collapsed() -> bool:
+	return _collapsed
+
+
+func unread() -> int:
+	return _badge.count
 
 
 ## DashboardRegistry hook: called whenever the dashboard opens.
@@ -126,7 +174,8 @@ func _login() -> void:
 
 
 func _on_message(message: Dictionary) -> void:
-	_chat.add_message(message)
+	if _chat.add_message(message) and _collapsed and not ChatView.is_mine(message):
+		_badge.set_count(_badge.count + 1)
 
 
 func _on_emoji(emoji: String) -> void:
@@ -149,6 +198,8 @@ func _submit() -> void:
 
 
 func _refresh_input() -> void:
+	if _collapsed:
+		return
 	var logged_in := ApiManager.is_logged_in()
 	_input_row.visible = logged_in
 	_login_row.visible = not logged_in

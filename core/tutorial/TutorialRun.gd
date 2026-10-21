@@ -12,7 +12,7 @@ signal changed  ## The coach's text, marks or progress changed: read state().
 signal stage_finished  ## The current stage is done and another follows: GameSession loads it.
 signal exit_requested  ## The player resigned or quit the lesson.
 
-const STAGE_PAUSE := 2.2  ## Seconds the coach's reaction stays up before the next stage loads.
+const STAGE_PAUSE := 3.4  ## Seconds the coach's reaction stays up before the next stage loads (the battle clip plays first).
 
 var lesson: Dictionary
 var scripted := true  ## False for the graduation game: the Rookie AI plays black.

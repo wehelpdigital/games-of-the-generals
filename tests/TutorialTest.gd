@@ -186,10 +186,9 @@ func _coach() -> Control:
 	return _hud_widget("res://ui/hud/TutorialCoach.gd")
 
 
+## A HUD widget by script: in its slot, or moved out of it (the coach on phones).
 func _hud_widget(path: String) -> Control:
-	var slots: Dictionary = ui.screen("hud").get("_slots")
-	for holder: Control in slots.values():
-		for child in holder.get_children():
-			if child.get_script() and (child.get_script() as Script).resource_path == path:
-				return child
+	for node in ui.screen("hud").find_children("*", "Control", true, false):
+		if node.get_script() and (node.get_script() as Script).resource_path == path:
+			return node
 	return null

@@ -1,22 +1,27 @@
 class_name TutorialMarkers
 extends Node3D
-## Boot Camp's board marks: a pulsing ring under the piece the coach wants moved, a brighter one on
-## the square it should go to, and a flat arrow between them. Lives under Board3D while a lesson
-## runs (added by the coach widget). Uses the same unshaded, textured, see-through material kind
-## as the board's own move markers, so browsers have its shader compiled already.
+## Boot Camp's board marks: a bouncing pointer over the piece the coach wants moved, a pulsing
+## ring under it, a brighter one on the square it should go to, and a flat arrow between them.
+## Lives under Board3D while a lesson runs (added by the coach widget). Uses the same unshaded,
+## textured, see-through material kind as the board's own move markers, so browsers have its
+## shader compiled already.
 
 const Y := 0.07
 const RING_COLOR := Color("ffd23f")
 const TARGET_COLOR := Color("4dffb0")
 const ARROW_COLOR := Color("fff3c4")
+const POINTER_Y := 1.55  ## Height of the pointer over a piece's square.
 
 static var _arrow_texture: ImageTexture
+static var _pointer_texture: ImageTexture
 
 var _ring_material: StandardMaterial3D
 var _target_material: StandardMaterial3D
 var _arrow_material: StandardMaterial3D
+var _pointer_material: StandardMaterial3D
 var _nodes: Array[Node3D] = []
 var _targets: Array[Node3D] = []
+var _pointers: Array[Node3D] = []
 var _time := 0.0
 
 
@@ -24,6 +29,7 @@ func _ready() -> void:
 	_ring_material = _material(RING_COLOR, RulesFX._rim_texture())
 	_target_material = _material(TARGET_COLOR, RulesFX._rim_texture())
 	_arrow_material = _material(ARROW_COLOR, _arrow())
+	_pointer_material = _material(RING_COLOR, _pointer())
 
 
 ## Shows {rings: [cells], targets: [cells], arrow: [from, to] or []}; an empty dictionary clears.
@@ -32,8 +38,12 @@ func show_marks(marks: Dictionary) -> void:
 		node.queue_free()
 	_nodes.clear()
 	_targets.clear()
+	_pointers.clear()
 	for cell: Vector2i in marks.get("rings", []):
 		_nodes.append(_tile(cell, _ring_material, 1.0))
+		var pointer := _pointer_at(cell)
+		_nodes.append(pointer)
+		_pointers.append(pointer)
 	for cell: Vector2i in marks.get("targets", []):
 		var tile := _tile(cell, _target_material, 1.06)
 		_nodes.append(tile)
@@ -52,6 +62,13 @@ func _process(delta: float) -> void:
 	for tile in _targets:
 		var s := 1.0 + 0.06 * pulse
 		tile.scale = Vector3(s, 1.0, s)
+	var camera := get_viewport().get_camera_3d()
+	for pointer in _pointers:
+		pointer.position.y = POINTER_Y + 0.14 * sin(_time * 4.0)
+		if camera:
+			# Face the camera, upright: a sign that always reads "this one".
+			var to_camera := camera.global_position - pointer.global_position
+			pointer.global_rotation = Vector3(0.0, atan2(to_camera.x, to_camera.z), 0.0)
 
 
 func _tile(cell: Vector2i, material: StandardMaterial3D, size: float) -> MeshInstance3D:
@@ -62,6 +79,19 @@ func _tile(cell: Vector2i, material: StandardMaterial3D, size: float) -> MeshIns
 	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.position = Board3D.cell_to_local(cell) + Vector3(0.0, Y, 0.0)
+	add_child(node)
+	return node
+
+
+## A down-pointing arrow floating over `cell`, turned toward the camera every frame.
+func _pointer_at(cell: Vector2i) -> MeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.55, 0.85)
+	var node := MeshInstance3D.new()
+	node.mesh = quad
+	node.material_override = _pointer_material
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.position = Board3D.cell_to_local(cell) + Vector3(0.0, POINTER_Y, 0.0)
 	add_child(node)
 	return node
 
@@ -92,6 +122,17 @@ static func _material(color: Color, texture: Texture2D) -> StandardMaterial3D:
 	m.albedo_color = color
 	m.render_priority = 3
 	return m
+
+
+## The board arrow's picture upside down: the pointer over a piece points down at it.
+static func _pointer() -> ImageTexture:
+	if _pointer_texture != null:
+		return _pointer_texture
+	var image := _arrow().get_image()
+	image.flip_y()
+	image.generate_mipmaps()
+	_pointer_texture = ImageTexture.create_from_image(image)
+	return _pointer_texture
 
 
 ## A white arrow pointing up the image: a rounded shaft with a broad head, soft edges.

@@ -11,7 +11,7 @@ var _back_to := ""
 func _ready() -> void:
 	_page = ProfileUi.page(self, "Boot Camp", _back, 760)
 	_body = _page["body"]
-	get_viewport().size_changed.connect(_layout)
+	get_viewport().size_changed.connect(_on_resized)
 
 
 func open(args: Dictionary) -> void:
@@ -19,6 +19,12 @@ func open(args: Dictionary) -> void:
 	_layout()
 	_render()
 	AppTheme.pop_in(_page["card"])
+
+
+func _on_resized() -> void:
+	_layout()
+	if visible:
+		_render()  # Phone and wide rows differ.
 
 
 func _layout() -> void:
@@ -56,13 +62,17 @@ func _hero(done: int, total: int, graduate: bool) -> Control:
 	var top := AppTheme.hbox(12)
 	var medal := TextureRect.new()
 	medal.texture = PieceIcons.icon_texture("G5" if graduate else "PVT")
-	medal.custom_minimum_size = Vector2(64, 64)
+	medal.custom_minimum_size = Vector2(48, 48) if ProfileUi.narrow else Vector2(64, 64)
 	medal.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	medal.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	medal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	top.add_child(medal)
 	var words := AppTheme.vbox(2)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	words.add_child(ProfileUi.heading("Graduate!" if graduate else "Learn Salpakan in 5 minutes", 26))
+	var heading := ProfileUi.heading("Graduate!" if graduate else "Learn Salpakan in 5 minutes", 22 if ProfileUi.narrow else 26)
+	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	heading.custom_minimum_size.x = 80
+	words.add_child(heading)
 	words.add_child(ProfileUi.wrap("Eight quick drills on the real board, then a short game against the Rookie AI. Free, offline, no account needed.", 16, AppTheme.MUTED))
 	top.add_child(words)
 	box.add_child(top)
@@ -102,19 +112,21 @@ func _lesson_row(lesson: Dictionary, number: int) -> Control:
 	var done := TutorialProgress.is_graduate() if number == 0 else TutorialProgress.is_done(lesson["id"])
 	var badge := TextureRect.new()
 	badge.texture = PieceIcons.badge_or_mystery(str(lesson["icon"]))
-	badge.custom_minimum_size = Vector2(48, 48)
+	badge.custom_minimum_size = Vector2(40, 40) if ProfileUi.narrow else Vector2(48, 48)
 	badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(badge)
 	var words := AppTheme.vbox(2)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var title := AppTheme.label(("%d. " % number if number > 0 else "") + str(lesson["title"]), "", 20)
+	var title := AppTheme.label(("%d. " % number if number > 0 else "") + str(lesson["title"]), "", 18 if ProfileUi.narrow else 20)
 	title.add_theme_font_override("font", AppTheme.heading_font())
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size.x = 80
 	words.add_child(title)
 	words.add_child(ProfileUi.wrap(str(lesson["blurb"]), 15, AppTheme.MUTED))
 	line.add_child(words)
-	if done:
+	if done and not ProfileUi.narrow:  # Phones: "Replay" says it's done.
 		var check := AppTheme.pill("DONE", AppTheme.MINT, Color.WHITE, 14)
 		check.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(check)

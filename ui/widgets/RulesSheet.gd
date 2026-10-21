@@ -41,6 +41,7 @@ static func _rank_row(rank: String, icon_size: float) -> Control:
 	row.add_child(icon)
 	var words := AppTheme.vbox(0)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var count := int(Ranks.INFO[rank]["count"])
 	var title := Ranks.display_name(rank) + ("  x%d" % count if count > 1 else "")
 	var name_label := AppTheme.label(title, "", 17)

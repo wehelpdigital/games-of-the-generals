@@ -8,7 +8,9 @@ loose music files (see assets/audio/CREDITS.md for every URL). Treat it as untru
 script only decodes audio from it with ffmpeg.
 
 --catalog is a JSON dump of CosmeticCatalog (category -> slug -> {name}) used to document which
-sound every shop item plays (assets/audio/SOUNDS.md). tests/AudioTest checks the same thing live.
+sound every shop item plays (assets/audio/SOUNDS.md); make it with tools/audio/dump_catalog.gd.
+tests/AudioTest checks the same thing live. New shop items need no rebuild to make sound (keywords
+and category defaults cover them); add them to recipes.ITEMS when they deserve their own.
 
 Outputs (all OGG Vorbis):
 - assets/audio/sfx/<name>.ogg  one-shots, mono

@@ -117,6 +117,7 @@ func open(_args: Dictionary) -> void:
 
 func close() -> void:
 	_close_editor()
+	ShopThumbs.clear()
 	if _preview_bar.visible:
 		_preview_bar.visible = false
 		_panel.visible = true
@@ -161,6 +162,7 @@ func _on_shop_updated() -> void:
 
 func _switch(category: String) -> void:
 	_close_editor()
+	ShopThumbs.clear()  # Only the category on screen keeps its pictures decoded.
 	_category = category
 	_selected_slot = -1
 	for key: String in _tabs:
@@ -217,7 +219,7 @@ func _card(slug: String, item: Dictionary) -> PanelContainer:
 		card.add_theme_stylebox_override("panel", style)
 	var box := AppTheme.vbox(6)
 	card.add_child(box)
-	box.add_child(_swatch(item.get("swatch", [])))
+	box.add_child(ThumbView.new(_category, slug, 104.0, item.get("swatch", [])))
 	var name_label := AppTheme.label(str(item.get("name", slug.capitalize())), "", 18)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(name_label)
@@ -638,6 +640,7 @@ func _fill_results() -> void:
 			var text := name_text if query == "" else "%s · %s" % [name_text, label]
 			var b := AppTheme.button(text, "Ghost", _open_preview.bind(category, slug), 34)
 			b.add_theme_font_size_override("font_size", 14)
+			b.icon = ShopThumbs.icon(category, slug, 44)
 			b.set_meta("item", "%s/%s" % [category, slug])
 			_results.add_child(b)
 			found += 1

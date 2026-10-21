@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+		<title>$GODOT_PROJECT_NAME</title>
+		<!--
+			Salpakan Tactics! web shell, based on Godot 4.7.2's default shell (engine start-up and
+			error handling unchanged). The loader shows the animated logo, a candy progress bar and
+			tips, and stays up until the game reports it is ready (window.salpakanBooted, called
+			from TitleScreen.gd), then fades into the canvas.
+			EDIT web/shell.src.html, then run tools/brand/generate_logo.js to rebuild shell.html.
+		-->
+		<style>
+@font-face {
+	font-family: 'Lilita One';
+	src: /*@FONT@*/;
+	font-display: block;
+}
+
+:root {
+	--ink: #1d1736;
+	--paper: #fff8ec;
+	--pink: #ff4f8b;
+	--blue: #3d8bff;
+	--yellow: #ffcf3f;
+	--mint: #27c98f;
+	--gold: #ffb703;
+}
+
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: $GODOT_SPLASH_COLOR;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+/* --- Loader ------------------------------------------------------------------------------ */
+
+#status {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	overflow: hidden;
+	visibility: hidden;
+	background:
+		radial-gradient(ellipse 70% 55% at 50% 38%, rgba(255, 79, 139, 0.22), transparent 70%),
+		radial-gradient(ellipse 120% 90% at 50% 30%, #4a2f94 0%, #2c2166 48%, $GODOT_SPLASH_COLOR 100%);
+	font-family: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+	transition: opacity 0.7s ease;
+}
+
+#status.done {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Drifting confetti of tiny stars, chips and dots. */
+#status .pattern {
+	position: absolute;
+	inset: -200px;
+	opacity: 0.55;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cg fill='none' stroke-linejoin='round'%3E%3Cpath d='M30 20 l5 10 11 1 -8 8 2 11 -10 -5 -10 5 2 -11 -8 -8 11 -1z' fill='%23ffcf3f' fill-opacity='.35'/%3E%3Crect x='120' y='40' width='26' height='20' rx='6' fill='%233d8bff' fill-opacity='.35' transform='rotate(-12 133 50)'/%3E%3Ccircle cx='160' cy='150' r='6' fill='%23ff4f8b' fill-opacity='.4'/%3E%3Ccircle cx='60' cy='130' r='4' fill='%2327c98f' fill-opacity='.45'/%3E%3Cpath d='M100 160 q3 9 12 12 q-9 3 -12 12 q-3 -9 -12 -12 q9 -3 12 -12z' fill='%23fff8ec' fill-opacity='.35'/%3E%3Crect x='20' y='170' width='18' height='14' rx='4' fill='%23ff4f8b' fill-opacity='.3' transform='rotate(18 29 177)'/%3E%3C/g%3E%3C/svg%3E");
+	background-size: 200px 200px;
+	animation: drift 26s linear infinite;
+}
+
+#status .glow {
+	position: absolute;
+	left: 50%;
+	top: 38%;
+	width: min(120vw, 900px);
+	height: min(120vw, 900px);
+	transform: translate(-50%, -50%);
+	background: radial-gradient(circle, rgba(255, 207, 63, 0.22) 0%, rgba(255, 207, 63, 0.05) 40%, transparent 65%);
+	animation: breathe 3.6s ease-in-out infinite;
+}
+
+#status .stage {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(10px, 2.6vh, 26px);
+	padding: max(16px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
+	box-sizing: border-box;
+}
+
+#logo {
+	width: min(86vw, 600px, calc(52vh * 1000 / 720));
+	height: auto;
+	overflow: visible;
+	transition: transform 0.7s cubic-bezier(.3, 1.6, .5, 1);
+}
+
+#status.done #logo {
+	transform: scale(1.08);
+}
+
+.logo-float {
+	animation: float 3.4s ease-in-out 1.8s infinite;
+}
+
+#logo .emblem {
+	transform-box: fill-box;
+	transform-origin: 50% 70%;
+	animation: pop-in 0.75s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+
+#logo .star {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: star-in 0.9s cubic-bezier(.2, 1.5, .4, 1) 0.3s both, star-twinkle 3.2s ease-in-out 1.6s infinite;
+}
+
+#logo .ltr {
+	transform-box: fill-box;
+	transform-origin: 50% 100%;
+	animation: letter-in 0.6s cubic-bezier(.2, 1.7, .45, 1) both;
+	animation-delay: calc(0.5s + var(--i) * 0.065s);
+}
+
+#logo .shine {
+	animation: shine 4.2s ease-in-out 2.1s infinite;
+}
+
+#logo .ribbon {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: ribbon-in 0.75s cubic-bezier(.2, 1.6, .4, 1) 1.05s both, ribbon-sway 3.4s ease-in-out 2.2s infinite;
+}
+
+#logo .spark {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: twinkle 2.6s ease-in-out infinite both;
+	animation-delay: calc(1.2s + var(--d));
+}
+
+/* Candy progress bar. */
+.bar {
+	position: relative;
+	width: min(80vw, 440px);
+	height: 28px;
+	border-radius: 999px;
+	background: #140f2c;
+	border: 4px solid var(--paper);
+	box-shadow: 0 6px 0 rgba(8, 5, 24, 0.55), inset 0 4px 0 rgba(0, 0, 0, 0.35);
+	overflow: hidden;
+	box-sizing: border-box;
+	animation: rise 0.6s cubic-bezier(.2, 1.4, .4, 1) 1.2s both;
+}
+
+.bar-fill {
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: 0%;
+	min-width: 20px;
+	border-radius: 999px;
+	background: linear-gradient(180deg, #fff1a0 0%, var(--yellow) 45%, var(--gold) 100%);
+	box-shadow: inset 0 -5px 0 rgba(170, 90, 0, 0.35), inset 0 3px 0 rgba(255, 255, 255, 0.65);
+	overflow: hidden;
+}
+
+.bar-fill::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.32) 0 10px, transparent 10px 20px);
+	animation: stripes 0.7s linear infinite;
+}
+
+.bar-label {
+	display: flex;
+	justify-content: space-between;
+	width: min(80vw, 440px);
+	margin-top: -6px;
+	color: var(--paper);
+	font-size: 18px;
+	letter-spacing: 0.03em;
+	text-shadow: 0 3px 0 rgba(8, 5, 24, 0.6);
+	animation: rise 0.6s cubic-bezier(.2, 1.4, .4, 1) 1.3s both;
+}
+
+#status-percent {
+	color: var(--yellow);
+}
+
+.tip {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	max-width: min(88vw, 520px);
+	min-height: 52px;
+	padding: 10px 16px 10px 10px;
+	box-sizing: border-box;
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.08);
+	border: 2px solid rgba(255, 255, 255, 0.14);
+	animation: rise 0.6s cubic-bezier(.2, 1.4, .4, 1) 1.45s both;
+}
+
+.tip-badge {
+	flex: none;
+	padding: 6px 10px 5px;
+	border-radius: 10px;
+	background: var(--pink);
+	color: white;
+	font-size: 15px;
+	letter-spacing: 0.06em;
+	box-shadow: 0 3px 0 rgba(8, 5, 24, 0.5);
+}
+
+#tip-text {
+	color: #ece6ff;
+	font: 600 15px/1.35 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#tip-text.swap {
+	opacity: 0;
+	transform: translateY(6px);
+}
+
+/* Friendly error card (keeps Godot's #status-notice element and messages). */
+#status-notice {
+	display: none;
+	max-width: min(88vw, 480px);
+	padding: 22px 24px;
+	box-sizing: border-box;
+	border-radius: 22px;
+	background: var(--paper);
+	color: var(--ink);
+	border: 4px solid var(--ink);
+	box-shadow: 0 8px 0 rgba(8, 5, 24, 0.6);
+	text-align: center;
+}
+
+#status-notice h2 {
+	margin: 0 0 8px;
+	font-weight: normal;
+	font-size: 26px;
+	color: var(--pink);
+}
+
+#status-notice .message {
+	font: 600 15px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	color: #4b4470;
+	word-break: break-word;
+}
+
+#status-notice button {
+	margin-top: 16px;
+	padding: 12px 26px 10px;
+	border: 4px solid var(--ink);
+	border-radius: 16px;
+	background: var(--pink);
+	color: white;
+	font: 20px 'Lilita One', system-ui, sans-serif;
+	letter-spacing: 0.03em;
+	box-shadow: 0 5px 0 var(--ink);
+	cursor: pointer;
+}
+
+#status-notice button:active {
+	transform: translateY(4px);
+	box-shadow: 0 1px 0 var(--ink);
+}
+
+#status.mode-notice .bar,
+#status.mode-notice .bar-label,
+#status.mode-notice .tip {
+	display: none;
+}
+
+#status.mode-notice #status-notice {
+	display: block;
+	animation: rise 0.5s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+
+@media (max-height: 520px) {
+	.tip { display: none; }
+	#logo { width: min(70vw, 520px, calc(56vh * 1000 / 720)); }
+}
+
+@keyframes drift { from { transform: translate(0, 0); } to { transform: translate(200px, 200px); } }
+@keyframes breathe { 0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(0.96); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes pop-in { 0% { transform: scale(0) rotate(-14deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes star-in { 0% { transform: scale(0) rotate(-200deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes star-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 8% { transform: scale(1.14) rotate(10deg); } 16% { transform: scale(0.96) rotate(-4deg); } 24% { transform: scale(1) rotate(0); } }
+@keyframes letter-in { 0% { transform: translateY(-80px) scale(0.2, 0.6); opacity: 0; } 45% { opacity: 1; } 70% { transform: translateY(4px) scale(1.08, 0.9); } 100% { transform: none; opacity: 1; } }
+@keyframes shine { 0% { transform: skewX(-22deg) translateX(0); } 40%, 100% { transform: skewX(-22deg) translateX(1500px); } }
+@keyframes ribbon-in { 0% { transform: scale(0.2) rotate(-28deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes ribbon-sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(1.6deg) translateY(-2px); } }
+@keyframes twinkle { 0% { transform: scale(0.2) rotate(-60deg); opacity: 0; } 40%, 60% { transform: scale(1) rotate(0); opacity: 1; } 100% { transform: scale(0.2) rotate(60deg); opacity: 0; } }
+@keyframes stripes { from { transform: translateX(0); } to { transform: translateX(28px); } }
+@keyframes rise { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+	#status *, #status *::after { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Salpakan Tactics! needs JavaScript to run in your browser.
+		</noscript>
+
+		<div id="status">
+			<div class="pattern"></div>
+			<div class="glow"></div>
+			<div class="stage">
+				<div class="logo-float"><!--@LOGO@--></div>
+				<div class="bar" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100"><div class="bar-fill" id="status-progress"></div></div>
+				<div class="bar-label"><span id="status-text">Loading the battlefield…</span><span id="status-percent">0%</span></div>
+				<div class="tip"><span class="tip-badge">TIP</span><span id="tip-text">A Spy beats every officer… but a Private takes down a Spy!</span></div>
+				<div id="status-notice"></div>
+			</div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusPercent = document.getElementById('status-percent');
+	const statusText = document.getElementById('status-text');
+	const statusNotice = document.getElementById('status-notice');
+	const progressBar = statusProgress.parentElement;
+	const tipText = document.getElementById('tip-text');
+
+	const TIPS = [
+		'A Spy beats every officer… but a Private takes down a Spy!',
+		'Capture the enemy Flag, or march yours to the far row, to win.',
+		'Equal ranks clash? Both pieces leave the board.',
+		'Your ranks stay hidden until pieces clash. Bluff boldly!',
+		'Flag meets Flag? Whoever attacks wins.',
+		'A Flag on the last row next to an enemy must survive one more turn.',
+		'You field 6 Privates and 2 Spies. Use them wisely.',
+		'Practice against the AI for free, no account needed.',
+		'Dress up your chips, board and arena in the Shop.',
+		'Taunts are free to throw… and free to ignore.',
+	];
+
+	let initializing = true;
+	let statusMode = '';
+	let target = 0;      // Download progress reported by the engine, 0..1.
+	let shown = 0;       // What the bar displays, eased towards target.
+	let knownTotal = false;
+	let started = 0;
+	let finished = false;
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusOverlay.classList.toggle('mode-notice', mode === 'notice');
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const title = document.createElement('h2');
+		title.textContent = 'Oops! The battlefield didn’t load.';
+		statusNotice.appendChild(title);
+		const message = document.createElement('div');
+		message.className = 'message';
+		text.split('\n').forEach((line) => {
+			message.appendChild(document.createTextNode(line));
+			message.appendChild(document.createElement('br'));
+		});
+		statusNotice.appendChild(message);
+		const retry = document.createElement('button');
+		retry.type = 'button';
+		retry.textContent = 'Try again';
+		retry.addEventListener('click', () => window.location.reload());
+		statusNotice.appendChild(retry);
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	// The bar eases towards the real progress; when the size is unknown it creeps towards 90%.
+	function tick(now) {
+		if (finished) {
+			return;
+		}
+		if (!started) {
+			started = now;
+		}
+		if (!knownTotal && target < 0.9) {
+			target = Math.max(target, 0.9 * (1 - Math.exp(-(now - started) / 9000)));
+		}
+		shown += (target - shown) * 0.08;
+		if (target >= 1 && shown > 0.995) {
+			shown = 1;
+		}
+		const pct = Math.min(100, Math.floor(shown * 100));
+		statusProgress.style.width = `${Math.max(shown * 100, 0)}%`;
+		statusPercent.textContent = `${pct}%`;
+		progressBar.setAttribute('aria-valuenow', String(pct));
+		requestAnimationFrame(tick);
+	}
+
+	let tipIndex = 0;
+	const tipTimer = setInterval(() => {
+		tipText.classList.add('swap');
+		setTimeout(() => {
+			tipIndex = (tipIndex + 1) % TIPS.length;
+			tipText.textContent = TIPS[tipIndex];
+			tipText.classList.remove('swap');
+		}, 350);
+	}, 4500);
+
+	// Called by the game (TitleScreen.gd) once its first screen is up, or by a safety timeout.
+	function finish() {
+		if (finished || statusMode === 'notice') {
+			return;
+		}
+		finished = true;
+		clearInterval(tipTimer);
+		statusProgress.style.width = '100%';
+		statusPercent.textContent = '100%';
+		statusOverlay.classList.add('done');
+		setTimeout(() => statusOverlay.remove(), 800);
+	}
+	window.salpakanBooted = finish;
+
+	// The engine's file loader rejects without failing startGame() (e.g. a 404 on index.wasm),
+	// which would leave the bar stuck; show the error card instead.
+	window.addEventListener('unhandledrejection', (event) => {
+		if (!initializing || finished) {
+			return;
+		}
+		const reason = event.reason;
+		const text = reason instanceof Error ? reason.message : String(reason || '');
+		if (/Failed loading file|WebAssembly|CompileError|LinkError/i.test(text)) {
+			displayFailureNotice(`Couldn't download the game files. Check your connection and try again.\n(${text})`);
+		}
+	});
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Your browser is missing features the game needs:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		requestAnimationFrame(tick);
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					knownTotal = true;
+					target = Math.max(target, Math.min(0.97, current / total));
+				}
+			},
+		}).then(() => {
+			target = 1;
+			statusText.textContent = 'Deploying troops…';
+			setStatusMode('hidden');
+			setTimeout(finish, 8000);
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>

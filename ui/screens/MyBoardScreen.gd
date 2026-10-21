@@ -10,6 +10,8 @@ extends Screen
 ## "Try on" (from the shop) shows an item you don't own yet, without equipping it.
 
 const ORDER := ["arena", "board", "territory", "chip", "shape", "icons", "aura", "glow", "trail", "kill", "ambience", "topper", "taunt"]
+## Beside the side panel, close shots step back so more of the board shows (wide shots already fit).
+const DESKTOP_ZOOM_OUT := {"close": 1.6, "half": 1.3, "toppers": 1.35}
 const PANEL_WIDTH := 390.0
 const SHEET_SHARE := 0.48  # Portrait: how much of the screen the open locker covers.
 const FOLDED_HEIGHT := 132.0
@@ -218,8 +220,7 @@ func _place_try_bar() -> void:
 ## only has the room above the locker sheet, and nothing else needs to fit.
 func _frame_shot(shot: String) -> void:
 	ui.game.rig.frame(shot)
-	if _portrait:
-		ui.game.rig.zoom_by(0.8)
+	ui.game.rig.zoom_by(0.8 if _portrait else float(DESKTOP_ZOOM_OUT.get(shot, 1.0)))
 
 
 func _toggle_fold() -> void:
@@ -452,8 +453,7 @@ func _try_on(category: String, slug: String) -> void:
 	if category in ORDER and category != _category:
 		_switch(category)
 	ui.game.preview_item(category, slug)
-	if _portrait:
-		ui.game.rig.zoom_by(0.8)
+	ui.game.rig.zoom_by(0.8 if _portrait else float(DESKTOP_ZOOM_OUT.get(Game3D.PREVIEW_SHOTS.get(category, "half"), 1.0)))
 	_try_label.text = "Trying on: %s" % str(CosmeticCatalog.info(category, slug).get("name", slug))
 	_try_bar.visible = true
 	_show_try_actions()

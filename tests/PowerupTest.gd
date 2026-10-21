@@ -104,7 +104,8 @@ func _test_timer_and_timeouts() -> void:
 	a.check_timeout()
 	var quiet: Dictionary = a.legal_moves(B).filter(func(m: Dictionary) -> bool: return a.piece_at(m["to"]).is_empty())[0]
 	a.apply(quiet["id"], quiet["to"])
-	move(a, Vector2i(1, 1), Vector2i(1, 2))
+	var own: Dictionary = a.legal_moves(W).filter(func(m: Dictionary) -> bool: return a.piece_at(m["to"]).is_empty())[0]
+	a.apply(own["id"], own["to"])
 	check(a.timeouts[W] == 0, "a move of your own resets the timeout count")
 
 

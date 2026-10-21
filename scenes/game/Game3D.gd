@@ -198,3 +198,19 @@ func _apply_render_quality() -> void:
 	env.ssr_enabled = false
 	if OS.has_feature("web") or OS.has_feature("mobile"):
 		key_light.directional_shadow_max_distance = 18.0
+
+
+# --- Rules visuals (turn timers, powerups) ---------------------------------------------------
+
+var _rules_fx: RulesFX
+
+
+## Powerup visuals and board picking (intel markers, shields, ice, mines, fog, targeting). Made on
+## first use by the HUD's powerup bar, so the scene setup above stays untouched.
+func rules_fx() -> RulesFX:
+	if _rules_fx == null:
+		_rules_fx = RulesFX.new()
+		_rules_fx.name = "RulesFX"
+		board.add_child(_rules_fx)
+		_rules_fx.setup(board)
+	return _rules_fx

@@ -23,6 +23,7 @@ const DEFAULTS := {
 	"trail": "none",
 	"kill": "classic",
 	"shape": "shape_classic",
+	"ambience": "none",
 }
 const RARITY_PRICES := {"common": 300, "rare": 900, "epic": 1800, "legendary": 3000}
 const FLAG_DIR := "user://flags"

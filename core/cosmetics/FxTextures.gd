@@ -6,7 +6,7 @@ extends RefCounted
 
 const SIZE := 64
 const SHAPES := ["dot", "ring", "sparkle", "flame", "heart", "petal", "shard", "snowflake", "bolt", "ghost",
-	"bubble", "square", "star", "glow_ring", "puff", "note"]
+	"bubble", "square", "star", "glow_ring", "puff", "note", "streak", "leaf", "crack", "beam"]
 ## Sprites that read wrong when spun (flames lean sideways, hearts and notes tip over).
 const UPRIGHT := ["flame", "heart", "ghost", "note"]
 
@@ -199,6 +199,29 @@ static func _shade(shape: String, p: Vector2) -> Color:
 		"square":
 			a = 1.0 - smoothstep(0.86, 0.9, maxf(absf(p.x), absf(p.y)))
 			v = 0.82 if maxf(absf(p.x), absf(p.y)) > 0.7 else 1.0
+		"streak":
+			# Soft vertical line (rain, speed lines); stretch the quad for longer streaks.
+			a = (1.0 - smoothstep(0.3, 0.95, absf(p.x))) * (1.0 - smoothstep(0.45, 1.0, absf(p.y)))
+		"leaf":
+			# Pointed leaf with a darker midrib.
+			var half := 0.52 * pow(clampf(1.0 - p.y * p.y, 0.0, 1.0), 0.75)
+			a = 1.0 - smoothstep(-0.04, 0.03, absf(p.x) - half)
+			a *= 1.0 - smoothstep(0.9, 0.98, absf(p.y))
+			v = 0.7 if absf(p.x) < 0.05 else lerpf(0.86, 1.0, clampf(absf(p.x) / 0.5, 0.0, 1.0))
+		"crack":
+			# Jagged fissures radiating from a dark centre (earth effects, craters).
+			var ang := atan2(p.y, p.x)
+			var d := 9.0
+			for k in 7:
+				var ray := k * TAU / 7.0 + 0.35 * sin(k * 2.3)
+				var wobble := 0.09 * sin(r * 19.0 + k * 1.7)
+				d = minf(d, absf(wrapf(ang - ray - wobble, -PI, PI)) * r)
+			a = (1.0 - smoothstep(0.02, 0.06, d)) * (1.0 - smoothstep(0.85, 0.98, r))
+			a = maxf(a, 1.0 - smoothstep(0.14, 0.22, r))
+			v = 0.15
+		"beam":
+			# Bright vertical column with soft sides (lasers, tractor beams).
+			a = pow(clampf(1.0 - absf(p.x), 0.0, 1.0), 2.2) * (1.0 - smoothstep(0.85, 1.0, absf(p.y)) * 0.6)
 		"note":
 			var head := (Vector2((p.x + 0.28) / 1.2, p.y + 0.45)).length() < 0.24
 			var stem := absf(p.x - 0.0) < 0.07 and p.y > -0.45 and p.y < 0.75

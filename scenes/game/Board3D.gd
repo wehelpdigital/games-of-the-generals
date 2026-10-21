@@ -63,7 +63,9 @@ var trails := {Ranks.WHITE: TrailFX.NONE, Ranks.BLACK: TrailFX.NONE}
 var kill_effects := {Ranks.WHITE: "classic", Ranks.BLACK: "classic"}
 var board_glows := {Ranks.WHITE: BoardGlowFX.NONE, Ranks.BLACK: BoardGlowFX.NONE}
 var chip_shapes := {Ranks.WHITE: ChipShapes.DEFAULT, Ranks.BLACK: ChipShapes.DEFAULT}
+var ambiences := {Ranks.WHITE: AmbienceFX.NONE, Ranks.BLACK: AmbienceFX.NONE}
 var _glow_nodes: Dictionary = {}  # side -> Node3D
+var _ambience_nodes: Dictionary = {}  # side -> AmbienceFX
 var _toppers: Dictionary = {}     # side -> Toppers3D
 
 var _cells: Dictionary = {}    # Vector2i -> Piece3D
@@ -272,6 +274,21 @@ func set_board_glow(side: String, slug: String) -> void:
 	if glow != null:
 		add_child(glow)
 		_glow_nodes[side] = glow
+
+
+## Animated scenery over `side`'s half of the board (AmbienceFX.STYLES).
+func set_ambience(side: String, slug: String) -> void:
+	if ambiences.get(side) == slug and is_instance_valid(_ambience_nodes.get(side)):
+		return
+	ambiences[side] = slug
+	var old: Node3D = _ambience_nodes.get(side)
+	if old != null and is_instance_valid(old):
+		old.queue_free()
+	_ambience_nodes.erase(side)
+	var fx := AmbienceFX.create(side, slug)
+	if fx != null:
+		add_child(fx)
+		_ambience_nodes[side] = fx
 
 
 ## Shop preview: one of `side`'s pieces hops to a neighbouring free tile and back, showing its trail.

@@ -14,7 +14,8 @@ const CATEGORIES := [
 	{"key": "aura", "label": "Auras", "blurb": "An effect around your pieces. Your opponent sees it too."},
 	{"key": "glow", "label": "Board glow", "blurb": "A glow along your half of the board. Your opponent sees it too."},
 	{"key": "trail", "label": "Move trails", "blurb": "Left behind when your pieces move."},
-	{"key": "kill", "label": "Kill effects", "blurb": "Plays when one of your pieces wins a clash."},
+	{"key": "kill", "label": "Kill effects", "blurb": "Plays when one of your pieces wins a clash. The action ones are performed by your winning chip."},
+	{"key": "ambience", "label": "Ambience", "blurb": "Animated scenery over your half of the board: weather, sky shows, creatures and little people. Your opponent sees it too."},
 	{"key": "topper", "label": "Toppers", "blurb": "Up to three toys, plants or your own flag beside your half of the board. Your opponent sees them too."},
 	{"key": "taunt", "label": "Taunts", "blurb": "Throw these at your opponent's side during a match. Tap Throw! to try one."},
 ]
@@ -31,6 +32,7 @@ const SOURCES := {
 	"glow": ["res://core/cosmetics/BoardGlowFX.gd", "STYLES"],
 	"trail": ["res://core/cosmetics/TrailFX.gd", "STYLES"],
 	"kill": ["res://core/cosmetics/KillFX.gd", "STYLES"],
+	"ambience": ["res://core/cosmetics/AmbienceFX.gd", "STYLES"],
 	"topper": ["res://core/cosmetics/ToppersLibrary.gd", "STYLES"],
 	"taunt": ["res://core/cosmetics/TauntFX.gd", "STYLES"],
 }

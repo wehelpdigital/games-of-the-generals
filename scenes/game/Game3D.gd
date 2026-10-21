@@ -16,6 +16,10 @@ var _showcase: Dictionary = {}  # Guest title-screen showcase; replaces the play
 
 func _ready() -> void:
 	_apply_render_quality()
+	# Device setting from the shop's Ambience tab (UIRoot keeps it in its settings file).
+	var settings := ConfigFile.new()
+	if settings.load("user://settings.cfg") == OK:
+		AmbienceFX.reduced = bool(settings.get_value("ui", "reduce_ambience", false))
 	board.camera = rig.camera
 	board.move_requested.connect(GameSession.request_move)
 	board.clash_impact.connect(rig.shake)
@@ -72,6 +76,7 @@ func _apply_side(side: String, loadout: Dictionary) -> void:
 	board.set_board_glow(side, loadout["glow"])
 	board.set_trail(side, loadout["trail"])
 	board.set_kill_effect(side, loadout["kill"])
+	board.set_ambience(side, loadout["ambience"])
 
 
 ## Toppers beside `side`'s half. Only the player's own flags may use pictures kept on this device;

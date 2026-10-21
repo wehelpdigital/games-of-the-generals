@@ -2,7 +2,7 @@ class_name GameOptions
 extends VBoxContainer
 ## The powerup rules for the next game, chosen before every start (Play vs AI, Quick Match,
 ## Ranked, hosting or joining a room): powerups On or Off and, when on, Select (your own 5, picked
-## right here) or Random (5 dealt from what you've unlocked). The last choice is remembered.
+## right here, from cards) or Random (5 dealt from the whole library). The last choice is remembered.
 ## Joining someone's room shows the host's rules instead (`fixed_mode`).
 ##
 ##     GameOptions.ask(ui, {"title": "Quick Match", "confirm": "Find match"}, func(mode: String) -> void:
@@ -20,7 +20,8 @@ var _toggles: Dictionary = {}  # mode button key ("on", "off", "select", "random
 var _style_row: HBoxContainer
 var _detail: VBoxContainer
 var _count: Label
-var _tiles: Dictionary = {}  # powerup id -> Button
+var _tiles: Dictionary = {}  # powerup id -> PowerupCard
+var _info: Label  # What the last tapped card does.
 
 
 ## `mode`: the starting choice; `fixed_mode`: the host's rules when joining a room ("" = choose).
@@ -186,87 +187,98 @@ func _refresh() -> void:
 	ProfileUi.clear(_detail)
 	_tiles.clear()
 	_count = null
+	_info = null
 	match _mode:
 		PowerupLibrary.MODE_OFF:
 			_detail.add_child(ProfileUi.wrap("Classic Salpakan: no powerups for either side. Pure ranks and nerve.", 16, AppTheme.MUTED))
 		PowerupLibrary.MODE_RANDOM:
 			_detail.add_child(_random_row())
-			var unlocked := GameSession.powerups.unlocked_ids().size()
-			_detail.add_child(ProfileUi.wrap("You'll be dealt %d at random from the %d powerups you've unlocked. Your opponent gets their own." % [PowerupLibrary.MAX_SLOTS, unlocked], 16, AppTheme.MUTED))
+			_detail.add_child(ProfileUi.wrap("You'll be dealt %d cards at random from all %d powerups when the game starts. Your opponent gets their own." % [PowerupLibrary.MAX_SLOTS, PowerupLibrary.ids().size()], 16, AppTheme.MUTED))
 		_:
 			_detail.add_child(_picker())
 
 
+## Random: five card backs dealt onto the table (the real hand is dealt when the game starts).
 func _random_row() -> HBoxContainer:
 	var row := AppTheme.hbox(8)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var width := 52.0 if _narrow() else 64.0
 	for i in PowerupLibrary.MAX_SLOTS:
-		var mystery := PanelContainer.new()
-		mystery.custom_minimum_size = Vector2(54, 54)
-		mystery.add_theme_stylebox_override("panel", ProfileUi.box(AppTheme.PINK.lightened(0.15 * (i % 2)), 16, 3))
-		var q := AppTheme.label("?", "", 28, Color.WHITE)
-		q.add_theme_font_override("font", AppTheme.heading_font())
-		q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		q.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		mystery.add_child(q)
-		row.add_child(mystery)
+		var back := PowerupCard.new("", width, true)
+		back.interactive = false
+		back.hover_lift = false
+		back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(back)
+		_deal_in(back, i)
 	return row
 
 
-## Select: every unlocked powerup as a tap-to-toggle tile; exactly 5 must be lit.
+func _deal_in(card: Control, i: int) -> void:
+	card.modulate.a = 0.0
+	await card.ready
+	var t := card.create_tween().set_parallel()
+	t.tween_property(card, "modulate:a", 1.0, 0.18).set_delay(0.08 * i)
+	t.tween_property(card, "position:y", card.position.y, 0.26).from(card.position.y - 26.0).set_delay(0.08 * i) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Select: every card in the game; tap to put it in (or take it out of) your hand of 5.
 func _picker() -> VBoxContainer:
 	var box := AppTheme.vbox(8)
 	var top := AppTheme.hbox(8)
-	top.add_child(ProfileUi.wrap("Tap to choose your %d." % PowerupLibrary.MAX_SLOTS, 16, AppTheme.MUTED))
+	top.add_child(ProfileUi.wrap("Tap cards to build your hand of %d." % PowerupLibrary.MAX_SLOTS, 16, AppTheme.MUTED))
 	top.get_child(0).size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_count = AppTheme.label("", "", 16)
 	_count.add_theme_font_override("font", AppTheme.heading_font())
 	top.add_child(_count)
 	box.add_child(top)
+	var columns := 4 if _narrow() else 6
+	var width := 66.0 if _narrow() else 80.0
 	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.columns = columns
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 10)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	for id in GameSession.powerups.unlocked_ids():
-		var tile := _tile(id)
-		_tiles[id] = tile
-		grid.add_child(tile)
+		var card := PowerupCard.new(id, width)
+		card.lift_direction = Vector2.ZERO  # Picked cards glow in place (the scroll would clip a lift).
+		card.tooltip_text = "%s\n%s" % [PowerupLibrary.display_name(id), PowerupLibrary.info(id).get("desc", "")]
+		card.pressed.connect(func(c: PowerupCard) -> void: _toggle_pick(c.id))
+		_tiles[id] = card
+		grid.add_child(card)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size.y = minf(64.0 * ceilf(_tiles.size() / 2.0) + 8.0 * (ceilf(_tiles.size() / 2.0) - 1.0), 280.0)
-	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	# Two and a bit rows where there's room; less on short screens so Start stays on screen.
+	var row_height := width * PowerupCard.ASPECT + 10.0
+	scroll.custom_minimum_size.y = roundf(clampf(_view().y - 540.0, row_height * 1.3, row_height * 2.4))
 	scroll.add_child(grid)
 	box.add_child(scroll)
+	_info = AppTheme.label("", "", 14)
+	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_info.custom_minimum_size.y = 40
+	box.add_child(_info)
 	_paint_tiles()
 	return box
 
 
-func _tile(id: String) -> Button:
-	var b := Button.new()
-	b.focus_mode = Control.FOCUS_NONE
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size = Vector2(0, 64)
-	b.icon = PowerupLibrary.icon(id)
-	b.expand_icon = true
-	b.add_theme_constant_override("icon_max_width", 40)
-	b.add_theme_constant_override("h_separation", 8)
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.text = PowerupLibrary.display_name(id)
-	b.clip_text = true
-	b.add_theme_font_override("font", AppTheme.heading_font())
-	b.add_theme_font_size_override("font_size", 16)
-	b.tooltip_text = str(PowerupLibrary.info(id).get("desc", ""))
-	b.pressed.connect(_toggle_pick.bind(id))
-	return b
+func _narrow() -> bool:
+	return _view().x < 560.0
+
+
+## The screen size (the options are built before they join the tree).
+func _view() -> Vector2:
+	return (Engine.get_main_loop() as SceneTree).root.get_visible_rect().size
 
 
 func _toggle_pick(id: String) -> void:
+	if _info:
+		_info.text = "%s: %s" % [PowerupLibrary.display_name(id), PowerupLibrary.info(id).get("desc", "")]
 	if _picks.has(id):
 		_picks.erase(id)
 	elif _picks.size() >= GameSession.powerups.hand_size():
 		if ui:
-			ui.toast("You bring %d. Tap a lit one to drop it first." % GameSession.powerups.hand_size(), AppTheme.BLUE)
+			ui.toast("Your hand holds %d. Tap a picked card to drop it first." % GameSession.powerups.hand_size(), AppTheme.BLUE)
 		return
 	else:
 		_picks.append(id)
@@ -274,20 +286,13 @@ func _toggle_pick(id: String) -> void:
 
 
 func _paint_tiles() -> void:
+	var full := _picks.size() >= GameSession.powerups.hand_size()
 	for id: String in _tiles:
-		var b: Button = _tiles[id]
+		var card: PowerupCard = _tiles[id]
 		var picked := _picks.has(id)
-		var color := PowerupLibrary.color(id)
-		var bg := Color.WHITE.lerp(color, 0.32) if picked else Color.WHITE
-		for state: String in ["normal", "hover", "pressed", "focus"]:
-			var tint := bg.lightened(0.15) if state == "hover" else bg
-			b.add_theme_stylebox_override(state, ProfileUi.box(tint, 16, 4 if picked else 2, color.darkened(0.3) if picked else Color(AppTheme.INK, 0.35)))
-		b.add_theme_color_override("font_color", AppTheme.INK)
-		b.add_theme_color_override("font_hover_color", AppTheme.INK)
-		b.add_theme_color_override("font_pressed_color", AppTheme.INK)
-		b.modulate = Color.WHITE if picked or _picks.size() < GameSession.powerups.hand_size() else Color(1, 1, 1, 0.6)
+		card.selected = picked
+		card.modulate = Color.WHITE if picked or not full else Color(1, 1, 1, 0.55)
 	if _count:
 		var need := GameSession.powerups.hand_size()
-		var full := _picks.size() == need
 		_count.text = "%d / %d" % [_picks.size(), need]
-		_count.add_theme_color_override("font_color", AppTheme.MINT if full else AppTheme.PINK)
+		_count.add_theme_color_override("font_color", AppTheme.MINT if _picks.size() == need else AppTheme.PINK)

@@ -229,6 +229,7 @@ func _on_hand_moved() -> void:
 
 func _put(card: PowerupCard, width: float, at: Vector2, lift: Vector2) -> void:
 	card.lift_direction = lift
+	card.stack_selected = true
 	card.set_card_width(width)
 	card.position = at
 
@@ -328,26 +329,38 @@ func _refresh() -> void:
 			card.queue_free()
 		_cards.clear()
 		for id: String in ids:
-			var card := PowerupCard.new(id, 80)
+			var card := PowerupCard.new(id, 80, true)  # Dealt face down; turned up one by one below.
 			card.pressed.connect(_on_card_pressed)
 			card.mouse_entered.connect(_preview.bind(card, true))
 			card.mouse_exited.connect(_preview.bind(card, false))
 			_cards[id] = card
 			_hand.add_child(card)
 		_place_cards()
-	for slot: Dictionary in slots:
-		var id := str(slot.get("id", ""))
+	for i in slots.size():
+		var id := str(slots[i].get("id", ""))
 		var card: PowerupCard = _cards[id]
-		var used: bool = slot.get("used", false)
-		if id == _playing or (card.used == used and not fresh):
+		var used: bool = slots[i].get("used", false)
+		if fresh:
+			card.used = used
+			if not used:
+				_turn_up_later(card, 0.25 + 0.14 * i)
+			continue
+		if id == _playing or card.used == used:
 			continue
 		card.used = used
-		card.flip(used, 0.0 if fresh else 0.45)  # Spent cards lie face down; Recall turns one back up.
+		card.flip(used, 0.45)  # Spent cards lie face down; Recall turns one back up.
 		if used and card == _raised:
 			_lower()
 	if _raised and _inspect.visible:
 		_show_inspect(_raised, true)  # Turns change what may be played.
 	_refresh_chips()
+
+
+## The opening deal: each card turns face up in turn.
+func _turn_up_later(card: PowerupCard, delay: float) -> void:
+	await get_tree().create_timer(delay).timeout
+	if is_instance_valid(card) and not card.used:
+		card.flip(false, 0.34)
 
 
 func _on_card_pressed(card: PowerupCard) -> void:

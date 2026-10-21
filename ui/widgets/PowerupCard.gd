@@ -29,6 +29,7 @@ var compact := false
 var interactive := true
 var hover_lift := true
 var lift_direction := Vector2.UP  ## Where a raised card moves (a vertical cascade raises it sideways).
+var stack_selected := false  ## A selected card draws over its neighbours (overlapping hands).
 
 var face: Control
 var _name: Label
@@ -162,9 +163,9 @@ func _on_hover(inside: bool) -> void:
 	_animate_to(_lift() * 0.6 if inside else 0.0, 1.04 if inside else 1.0, deg_to_rad(-1.5) if inside else 0.0)
 
 
-## A raised or hovered card draws over its neighbours (fans and cascades overlap).
+## A hovered card (or a raised one in an overlapping hand) draws over its neighbours.
 func _restack() -> void:
-	z_index = 1 if selected or (_hovered and interactive and hover_lift) else 0
+	z_index = 1 if (selected and stack_selected) or (_hovered and interactive and hover_lift) else 0
 
 
 func _lift() -> float:

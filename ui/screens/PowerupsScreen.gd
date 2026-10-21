@@ -1,187 +1,226 @@
 extends Screen
-## The powerup library: all 24 powerups with what they do and the rank that unlocks them. The
-## player picks exactly 5: their hand in "Select" games (online and against the AI; "Random"
-## games deal 5 instead, and some games have powerups off). Logged out, only the rank-0 powerups
-## unlock.
+## The powerup binder: every card in the game, all open to everyone, filtered by type and rarity.
+## Tap a card to see it big (tap it again to flip it over) and add it to or drop it from your hand
+## of 5: the cards you bring to "Select" games (online and against the AI; "Random" games deal 5
+## instead, and some games have powerups off).
 
-const CREDIT := "Powerup glyphs by Lorc, Delapouite and DarkZaitzev, game-icons.net (CC BY 3.0)."
+const GAP := 10.0
+const FILTER_KINDS := [["all", "All types"], ["clock", "Clock"], ["intel", "Intel"], ["tactics", "Tactics"], ["trap", "Trap"], ["support", "Support"]]
+const FILTER_RARITIES := [["any", "Any rarity"], ["common", "Common"], ["rare", "Rare"], ["epic", "Epic"], ["legendary", "Legendary"]]
 
 var _page: Dictionary
 var _body: VBoxContainer
-var _slots_row: GridContainer
+var _tray: HBoxContainer
 var _status: Label
+var _shown_label: Label
 var _grid: GridContainer
+var _kind_tabs: Dictionary
+var _rarity_tabs: Dictionary
+var _cards: Dictionary = {}  # id -> PowerupCard in the binder
 var _selected: Array[String] = []
-var _portrait := false
+var _kind := "all"
+var _rarity := "any"
+var _card_width := 0.0
+var _width := 0.0  # The body width the cards were last sized for.
 
 
 func _ready() -> void:
-	_page = ProfileUi.page(self, "Powerups", func() -> void: ui.home(), 900)
+	_page = ProfileUi.page(self, "Powerups", func() -> void: ui.home(), 1000)
 	_body = _page["body"]
+	_body.resized.connect(_size_cards)
 	get_viewport().size_changed.connect(_layout)
 	GameSession.powerups.changed.connect(_on_loadout_changed)
+	_build()
 
 
 func _on_loadout_changed() -> void:
 	if visible:
-		_render()
+		_selected = GameSession.powerups.active_slots()
+		_refresh()
 
 
 func open(_args: Dictionary) -> void:
 	_selected = GameSession.powerups.active_slots()
 	_layout()
-	_render()
+	_refresh()
 	AppTheme.pop_in(_page["card"])
 	if ApiManager.is_logged_in():
 		await GameSession.powerups.fetch()
 		if visible:
 			_selected = GameSession.powerups.active_slots()
-			_render()
+			_refresh()
 
 
 func _layout() -> void:
-	_portrait = ProfileUi.fit_page(_page, get_viewport().get_visible_rect().size)
-	if _grid:
-		_grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
-	if _slots_row:
-		_slots_row.columns = 2 if _portrait else PowerupLibrary.MAX_SLOTS
+	ProfileUi.fit_page(_page, get_viewport().get_visible_rect().size)
+	_size_cards.call_deferred()
 
 
-func _render() -> void:
-	ProfileUi.clear(_body)
-	var intro := "Pick your 5 for Select games (Random games deal you 5, and some games are played with powerups off). Each works once per match, on your turn (two per turn, tops)."
-	if not ApiManager.is_logged_in():
-		intro += " Log in and rank up to unlock more."
-	_body.add_child(ProfileUi.wrap(intro, 16, AppTheme.MUTED))
+func _build() -> void:
+	_body.add_child(ProfileUi.wrap("Every card is open to everyone: build the hand of 5 you bring to Select games. Random games deal you 5, and some games are played with powerups off. Each card works once per match, on your turn (two per turn, tops).", 16, AppTheme.MUTED))
 
-	var loadout := AppTheme.card("Row")
-	var box := AppTheme.vbox(8)
-	loadout.add_child(box)
+	var hand := AppTheme.card("Row")
+	var box := AppTheme.vbox(10)
+	hand.add_child(box)
 	var head := AppTheme.hbox(8)
-	head.add_child(ProfileUi.eyebrow("Your loadout", AppTheme.PURPLE))
+	head.add_child(ProfileUi.eyebrow("Your hand", AppTheme.PURPLE))
 	head.add_child(AppTheme.spacer())
 	_status = AppTheme.label("", "MutedLabel", 15)
 	head.add_child(_status)
 	box.add_child(head)
-	_slots_row = GridContainer.new()
-	_slots_row.columns = 2 if _portrait else PowerupLibrary.MAX_SLOTS
-	_slots_row.add_theme_constant_override("h_separation", 8)
-	_slots_row.add_theme_constant_override("v_separation", 8)
-	box.add_child(_slots_row)
-	var actions := AppTheme.hbox(8)
-	actions.add_child(AppTheme.spacer())
+	_tray = AppTheme.hbox(int(GAP) - 2)
+	_tray.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(_tray)
+	var actions := HFlowContainer.new()
+	actions.alignment = FlowContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("h_separation", 8)
+	actions.add_theme_constant_override("v_separation", 8)
 	actions.add_child(ProfileUi.small_button("Defaults", "Ghost", _defaults, 42))
-	actions.add_child(ProfileUi.small_button("Save loadout", "Primary", _save, 42))
+	actions.add_child(ProfileUi.small_button("Deal 5", "Ghost", _deal, 42))
+	actions.add_child(ProfileUi.small_button("Save hand", "Primary", _save, 42))
 	box.add_child(actions)
-	_body.add_child(loadout)
-	_fill_slots()
+	_body.add_child(hand)
+
+	_kind_tabs = ProfileUi.tabs(_body, FILTER_KINDS, _filter_kind)
+	_rarity_tabs = ProfileUi.tabs(_body, FILTER_RARITIES, _filter_rarity)
+	_shown_label = AppTheme.label("", "MutedLabel", 15)
+	_body.add_child(_shown_label)
 
 	_grid = GridContainer.new()
-	_grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
-	_grid.add_theme_constant_override("h_separation", 10)
-	_grid.add_theme_constant_override("v_separation", 10)
-	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_grid.add_theme_constant_override("h_separation", int(GAP))
+	_grid.add_theme_constant_override("v_separation", int(GAP) + 4)
+	_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for id in PowerupLibrary.ids():
-		_grid.add_child(_card(id))
+		var card := PowerupCard.new(id, 160)
+		card.pressed.connect(func(c: PowerupCard) -> void: _inspect(c.id))
+		_cards[id] = card
+		_grid.add_child(card)
 	_body.add_child(_grid)
-	_body.add_child(ProfileUi.wrap(CREDIT, 13, AppTheme.MUTED))
+	_body.add_child(ProfileUi.gap(8))
 
 
-func _fill_slots() -> void:
-	ProfileUi.clear(_slots_row)
+## Card sizes follow the page: two per row on phones, up to six on wide screens.
+func _size_cards() -> void:
+	var width := _body.size.x if _body.size.x > 0.0 else float(_page["max_width"]) - 60.0
+	if is_equal_approx(width, _width):
+		return  # Only the height changed.
+	_width = width
+	var columns := clampi(int((width + GAP) / (170.0 + GAP)), 2, 6)
+	var card_width := floorf(minf((width - GAP * (columns - 1)) / columns, 210.0))
+	_grid.columns = columns
+	if not is_equal_approx(card_width, _card_width):
+		_card_width = card_width
+		for card: PowerupCard in _cards.values():
+			card.set_card_width(card_width)
+	_fill_tray(width)
+
+
+func _refresh() -> void:
+	for id: String in _cards:
+		var card: PowerupCard = _cards[id]
+		card.selected = _selected.has(id)
+		card.visible = (_kind == "all" or PowerupLibrary.kind(id) == _kind) and (_rarity == "any" or PowerupLibrary.rarity(id) == _rarity)
+	var shown := _cards.values().filter(func(c: PowerupCard) -> bool: return c.visible).size()
+	_shown_label.text = "Showing %d of %d cards" % [shown, _cards.size()]
+	ProfileUi.select_tab(_kind_tabs, _kind)
+	ProfileUi.select_tab(_rarity_tabs, _rarity)
+	_fill_tray(_body.size.x)
+
+
+func _fill_tray(width: float) -> void:
+	ProfileUi.clear(_tray)
+	var slot_width := floorf(clampf((maxf(width, 300.0) - 40.0 - (GAP - 2.0) * 4.0) / 5.0, 56.0, 124.0))
 	for i in PowerupLibrary.MAX_SLOTS:
-		var slot := AppTheme.card("Row")
-		slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var row := AppTheme.hbox(8)
-		slot.add_child(row)
 		if i < _selected.size():
-			var id := _selected[i]
-			row.add_child(_icon(id, 40))
-			var name := AppTheme.label(PowerupLibrary.display_name(id), "", 15)
-			name.add_theme_font_override("font", AppTheme.heading_font())
-			name.clip_text = true
-			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(name)
+			var card := PowerupCard.new(_selected[i], slot_width)
+			card.pressed.connect(func(c: PowerupCard) -> void: _inspect(c.id))
+			_tray.add_child(card)
 		else:
-			var empty := AppTheme.label("Empty slot", "MutedLabel", 15)
-			empty.custom_minimum_size.y = 44
-			empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			row.add_child(empty)
-		_slots_row.add_child(slot)
+			_tray.add_child(_empty_slot(slot_width))
 	_status.text = "%d / %d picked" % [_selected.size(), PowerupLibrary.MAX_SLOTS]
 
 
-func _card(id: String) -> Button:
-	var info := PowerupLibrary.info(id)
-	var unlocked := GameSession.powerups.is_unlocked(id)
+func _empty_slot(width: float) -> Control:
+	var slot := PanelContainer.new()
+	slot.custom_minimum_size = Vector2(width, roundf(width * PowerupCard.ASPECT))
+	slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var style := ProfileUi.box(Color(AppTheme.PURPLE, 0.08), int(width * 0.075), 2, Color(AppTheme.PURPLE, 0.45))
+	slot.add_theme_stylebox_override("panel", style)
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var plus := AppTheme.label("+", "", int(width * 0.4), Color(AppTheme.PURPLE, 0.55))
+	plus.add_theme_font_override("font", AppTheme.heading_font())
+	plus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	plus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	slot.add_child(plus)
+	return slot
+
+
+func _filter_kind(kind: String) -> void:
+	_kind = kind
+	_refresh()
+
+
+func _filter_rarity(rarity: String) -> void:
+	_rarity = rarity
+	_refresh()
+
+
+## The card big: tap it to flip it over; add it to the hand or drop it.
+func _inspect(id: String) -> void:
+	var view := get_viewport().get_visible_rect().size
+	var box := AppTheme.vbox(12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	var card := PowerupCard.new(id, floorf(clampf(minf(minf(view.x, 520.0) * 0.72, (view.y - 210.0) / PowerupCard.ASPECT), 190.0, 340.0)))
+	card.hover_lift = false
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	card.pressed.connect(func(c: PowerupCard) -> void: c.flip(not c.face_down))
+	box.add_child(card)
+	var hint := AppTheme.pill("Tap the card to flip it over", AppTheme.INK, Color.WHITE, 15)
+	hint.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(hint)
+	var row := AppTheme.hbox(8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var picked := _selected.has(id)
-	var color := PowerupLibrary.color(id)
-	var b := Button.new()
-	b.focus_mode = Control.FOCUS_NONE
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.custom_minimum_size = Vector2(0, 150)
-	for state: String in ["normal", "hover", "pressed", "disabled"]:
-		var bg := Color.WHITE.lerp(color, 0.22 if picked else 0.08)
-		if state == "hover":
-			bg = bg.lightened(0.25)
-		if not unlocked:
-			bg = Color("ece9f2")
-		b.add_theme_stylebox_override(state, ProfileUi.box(bg, 18, 5 if picked else 3, color.darkened(0.25) if picked else AppTheme.INK))
-	b.pressed.connect(_toggle.bind(id))
-	var box := AppTheme.vbox(6)
-	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 10)
-	b.add_child(box)
-	var top := AppTheme.hbox(8)
-	top.add_child(_icon(id, 52))
-	var words := AppTheme.vbox(2)
-	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var title := AppTheme.label(str(info["name"]), "", 19)
-	title.add_theme_font_override("font", AppTheme.heading_font())
-	words.add_child(title)
-	var tags := AppTheme.hbox(4)
-	tags.add_child(AppTheme.pill(PowerupLibrary.KIND_LABELS[info["kind"]], color.darkened(0.15), Color.WHITE, 12))
-	if info["consumes_turn"]:
-		tags.add_child(AppTheme.pill("Uses turn", AppTheme.MUTED, Color.WHITE, 12))
-	if picked:
-		tags.add_child(AppTheme.pill("Picked", AppTheme.MINT, Color.WHITE, 12))
-	words.add_child(tags)
-	top.add_child(words)
-	box.add_child(top)
-	var desc := AppTheme.label(str(info["desc"]), "", 14, AppTheme.INK if unlocked else AppTheme.MUTED)
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(desc)
-	return b
+	row.add_child(ProfileUi.small_button("Drop from hand" if picked else "Add to hand", "Ghost" if picked else "Primary", _pick_from_viewer.bind(id), 48))
+	row.add_child(ProfileUi.small_button("Close", "Ghost", ui.close_dialog, 48))
+	box.add_child(row)
+	var backdrop := Control.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.gui_input.connect(_on_backdrop_input)
+	ProfileUi.overlay(ui, box, 520, backdrop)
 
 
-func _icon(id: String, size: float) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.texture = PowerupLibrary.icon(id)
-	icon.custom_minimum_size = Vector2(size, size)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return icon
+func _on_backdrop_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		ui.close_dialog()
+
+
+func _pick_from_viewer(id: String) -> void:
+	ui.close_dialog()
+	_toggle(id)
 
 
 func _toggle(id: String) -> void:
 	if _selected.has(id):
 		_selected.erase(id)
 	elif _selected.size() >= PowerupLibrary.MAX_SLOTS:
-		ui.toast("You can bring %d. Tap a picked one to drop it first." % PowerupLibrary.MAX_SLOTS, AppTheme.BLUE)
+		ui.toast("Your hand holds %d. Drop one first." % PowerupLibrary.MAX_SLOTS, AppTheme.BLUE)
 		return
 	else:
 		_selected.append(id)
-	var scroll: ScrollContainer = _page["scroll"]
-	var keep := scroll.scroll_vertical
-	_render()
-	await get_tree().process_frame
-	scroll.scroll_vertical = keep
+		AppTheme.pop_in(_tray)
+	_refresh()
 
 
 func _defaults() -> void:
 	_selected = PowerupLibrary.DEFAULT_LOADOUT.duplicate()
-	_render()
+	_refresh()
+
+
+func _deal() -> void:
+	_selected = PowerupLibrary.deal()
+	_refresh()
 
 
 func _save() -> void:
@@ -189,4 +228,4 @@ func _save() -> void:
 	if problem != "":
 		ui.toast(problem, AppTheme.RED)
 	else:
-		ui.toast("Loadout saved!", AppTheme.MINT)
+		ui.toast("Hand saved!", AppTheme.MINT)

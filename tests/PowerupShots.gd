@@ -21,6 +21,9 @@ func _ready() -> void:
 	var ui: UIRoot = main.get_node("UI")
 	ui.show_screen("powerups")
 	await _shot("01_library", 1.2)
+	ui.screen("powerups")._inspect("counterspell")
+	await _shot("01b_library_inspect", 0.8)
+	ui.close_dialog()
 
 	GameSession.start_practice(SalpakanAI.Difficulty.EASY)
 	await frames(5)

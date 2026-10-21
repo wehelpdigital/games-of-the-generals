@@ -63,6 +63,8 @@ func _ready() -> void:
 	_settings.load(SETTINGS_FILE)
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), bool(setting("sound_off", false)))
 	GameSession.match_loaded.connect(_on_match_loaded)
+	if WebTextInput.wanted():
+		add_child(WebTextInput.new())  # Reliable phone keyboards for text fields in the browser.
 
 
 func show_screen(screen_name: String, args := {}) -> void:

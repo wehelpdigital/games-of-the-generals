@@ -2,7 +2,7 @@
 //   node tools/web/checks.js flow  <url>   loader time, first-click latency, match start, FPS, stalls
 //   node tools/web/checks.js login <url>   title -> Log in -> type -> dashboard (LOGIN_USER / LOGIN_PASS)
 //   node tools/web/checks.js sweep <url>   every cosmetic once (?sweep=1) on software GL; counts shader failures
-//   node tools/web/checks.js phone <url>   iPhone emulation: tapping the login field must focus a text input
+//   node tools/web/checks.js phone <url>   iPhone emulation: tap the login fields, type, log in (LOGIN_USER / LOGIN_PASS)
 // <url> is the page, e.g. http://127.0.0.1:8099/play/index.html (serve an export with tools/web/serve.js) or
 // the live site. BROWSER overrides the Edge path. Coordinates assume the 1280x720 title and login layouts.
 const puppeteer = require('puppeteer-core');
@@ -115,13 +115,22 @@ const checks = {
 
   async phone(url) {
     const { browser, page } = await open(url, { phone: true });
-    await page.touchscreen.tap(345, 27); // Log in (390x844 portrait)
-    await sleep(900);
-    await page.touchscreen.tap(194, 398); // Username field
-    await sleep(900);
+    await page.touchscreen.tap(321, 42); // Log in (iPhone 13 portrait title)
+    if (await waitScreen(page, 'auth', 3000) < 0) throw new Error('Log in did not open the login screen.');
+    await sleep(500);
+    await page.touchscreen.tap(194, 351); // Username field
+    await sleep(500);
     const active = await page.evaluate(() => `${document.activeElement.tagName}/${document.activeElement.type}`);
     console.log(`after tapping the username field the focused element is ${active} (an INPUT opens the phone keyboard)`);
+    await page.keyboard.type(process.env.LOGIN_USER || '', { delay: 30 });
+    await page.touchscreen.tap(194, 416); // Password field
+    await sleep(500);
+    await page.keyboard.type(process.env.LOGIN_PASS || '', { delay: 30 });
+    await page.touchscreen.tap(194, 488); // Log in button
+    const ms = await waitScreen(page, 'dashboard', 10000);
+    console.log(ms >= 0 ? `phone login: dashboard after ${ms} ms` : 'PHONE LOGIN FAILED: no dashboard');
     await browser.close();
+    if (ms < 0) process.exit(1);
   },
 };
 

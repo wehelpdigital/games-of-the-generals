@@ -8,7 +8,7 @@ node tools/web/serve.js <dir> 8099
 node tools/web/checks.js flow  http://127.0.0.1:8099/play/index.html   # load, first click, match start, FPS, stalls
 LOGIN_USER=... LOGIN_PASS=... node tools/web/checks.js login http://127.0.0.1:8099/play/index.html
 node tools/web/checks.js sweep http://127.0.0.1:8099/play/index.html   # every cosmetic on software GL
-node tools/web/checks.js phone http://127.0.0.1:8099/play/index.html   # phone keyboard opens on a login field
+LOGIN_USER=... LOGIN_PASS=... node tools/web/checks.js phone http://127.0.0.1:8099/play/index.html   # phone: tap fields, type, log in
 ```
 
 After every export, stamp the build so browsers and the CDN pick up the new engine files:

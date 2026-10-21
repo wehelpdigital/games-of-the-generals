@@ -18,6 +18,8 @@ var _loading := false
 var _well: PanelContainer
 var _fold: Button
 var _badge: UnreadBadge
+var _online_box: HBoxContainer  # "(green dot) 12 online"
+var _online: Label
 var _collapsed := false
 var _folded_once := false
 
@@ -48,6 +50,24 @@ func _init() -> void:
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	header.add_child(icon)
 	header.add_child(AppTheme.label("Global Chat", "HeadingLabel", 26))
+	_online_box = AppTheme.hbox(5)
+	_online_box.visible = false
+	_online_box.tooltip_text = "Players active in the last few minutes"
+	_online_box.mouse_filter = Control.MOUSE_FILTER_PASS
+	var dot := Panel.new()
+	var dot_style := StyleBoxFlat.new()
+	dot_style.bg_color = AppTheme.MINT
+	dot_style.set_corner_radius_all(6)
+	dot.add_theme_stylebox_override("panel", dot_style)
+	dot.custom_minimum_size = Vector2(11, 11)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_online_box.add_child(dot)
+	_online = AppTheme.label("", "MutedLabel", 15)
+	_online.add_theme_color_override("font_color", AppTheme.MINT.darkened(0.3))
+	_online.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_online_box.add_child(_online)
+	header.add_child(_online_box)
 	header.add_child(AppTheme.spacer())
 	_live = AppTheme.pill("OFFLINE", AppTheme.MUTED, Color.WHITE, 13)
 	_live.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -106,6 +126,17 @@ func _init() -> void:
 	_refresh_input()
 
 
+## Players online, from GET /api/online (the server counts accounts active in the last minutes).
+func _refresh_online() -> void:
+	if not is_visible_in_tree():
+		return
+	var res := await ApiManager.request(HTTPClient.METHOD_GET, "/api/online", null, false)
+	if res.ok and res.data.has("online"):
+		var count := int(res.data["online"])
+		_online.text = "%s online" % AppTheme.num(count)
+		_online_box.visible = count > 0
+
+
 ## DashboardRegistry hook.
 func setup(dashboard: Screen) -> void:
 	ui = dashboard.ui
@@ -150,6 +181,7 @@ func unread() -> int:
 func refresh() -> void:
 	_refresh_input()
 	_refresh_live()
+	_refresh_online()
 	if not Social.is_live():
 		Social.connect_realtime()
 	if _loading:
@@ -164,6 +196,11 @@ func refresh() -> void:
 
 
 func _ready() -> void:
+	var timer := Timer.new()  # Keeps the online count fresh while the panel is shown.
+	timer.wait_time = 30.0
+	timer.autostart = true
+	timer.timeout.connect(_refresh_online)
+	add_child(timer)
 	if _chat.message_count() == 0 and not Social.global_messages.is_empty():
 		_chat.set_messages(Social.global_messages)
 

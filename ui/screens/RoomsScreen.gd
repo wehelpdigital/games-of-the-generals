@@ -1,7 +1,9 @@
 extends Screen
 ## Custom rooms: host a named room (optionally password-locked) or join one from the list. The
 ## list refreshes live from the `lobby` channel (LobbyUpdated), with a slow poll as a fallback.
-## Joining a locked room asks for its password; your own room offers "Open" instead of "Join".
+## Joining a locked room asks for its password; your own room offers "Open" instead of "Join", and
+## "Copy link": a one-time invite link that seats a friend without the password. Tap a host's
+## photo for their player card.
 
 const LOBBY_CHANNEL := "lobby"
 const POLL_SECONDS := 6.0
@@ -139,6 +141,12 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	var host: Dictionary = room.get("host") if room.get("host") is Dictionary else {}
 	var avatar := AvatarView.new(36.0 if UiScale.narrow(self) else 46.0)
 	avatar.set_user(host)
+	if not room.get("is_yours", false):
+		avatar.mouse_filter = Control.MOUSE_FILTER_STOP
+		avatar.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		avatar.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				PlayerCardSheet.open(ui, host))
 	line.add_child(avatar)
 	var info := AppTheme.vbox(0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -172,6 +180,16 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	if UiScale.narrow(self):
 		action.add_theme_font_size_override("font_size", 19)
 	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if room.get("is_yours", false):
+		var link := AppTheme.button("Copy link", "Ghost", _copy_link.bind(int(room.get("id", 0))), 40 if UiScale.narrow(self) else 46)
+		link.add_theme_font_size_override("font_size", 16 if UiScale.narrow(self) else 18)
+		link.tooltip_text = "A one-time link that lets a friend straight in (no password needed)"
+		link.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if UiScale.narrow(self):
+			link.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			info.add_child(link)  # Phones: under the room's name.
+		else:
+			line.add_child(link)
 	line.add_child(action)
 	return row
 
@@ -217,6 +235,16 @@ func join_room(room: Dictionary) -> void:
 	GameOptions.ask(ui, opts, func(_mode: String) -> void: _run(Social.join_room.bind(id, field.text if field else "")))
 	if field:
 		field.grab_focus.call_deferred()
+
+
+## Copies a one-time invite link to your room (never its password).
+func _copy_link(id: int) -> void:
+	var res: Dictionary = await Social.room_link(id)
+	if not res.ok:
+		ui.toast(str(res.error), AppTheme.RED)
+		return
+	DisplayServer.clipboard_set(str(res["url"]))
+	ui.toast("Invite link copied! It works once, for 30 minutes.", AppTheme.MINT)
 
 
 ## Your own room is a waiting match: open it to wait at the table.

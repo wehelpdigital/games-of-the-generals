@@ -1,6 +1,6 @@
 extends Screen
-## Global lobby: quick match, ranked, custom rooms, open matches from other players (join one),
-## host your own, or resume the match you're already in. Updates live from the public `lobby`
+## Global lobby: quick match, ranked, custom rooms, friends, open matches from other players (join
+## one), host your own, or resume the match you're already in. Updates live from the public `lobby`
 ## channel, with a slow poll as a fallback.
 
 const LOBBY_CHANNEL := "lobby"
@@ -31,6 +31,7 @@ func _ready() -> void:
 	var specs := [
 		[["Quick Match", "Primary", _quick_match], ["Ranked", "Accent", func() -> void: ui.show_screen("ranked", {"back": "lobby"})]],
 		[["Custom Rooms", "Secondary", func() -> void: ui.show_screen("rooms", {"back": "lobby"})], ["Host Match", "Ghost", _create_match]],
+		[["Play with Friends", "Success", func() -> void: ui.show_screen("friends", {"back": "lobby"})]],
 	]
 	for row_specs: Array in specs:
 		var actions := AppTheme.hbox(10)

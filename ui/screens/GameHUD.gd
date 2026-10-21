@@ -1,7 +1,8 @@
 extends Screen
 ## In-match HUD. Kept to the screen edges so it never covers the board: player chips and a turn
 ## banner on top, setup/resign buttons bottom-right, the hovered piece's rank bottom-centre, and
-## the end-of-match card.
+## the end-of-match card (with Rematch in online games). Tap the opponent's chip for their player
+## card (add friend, block, report).
 
 var _you: PanelContainer
 var _them: PanelContainer
@@ -16,6 +17,7 @@ var _column: VBoxContainer  # Landscape: a narrow column in the top-right corner
 var _bar: VBoxContainer  # Portrait: rows of buttons along the bottom edge.
 var _bar_row: HBoxContainer
 var _top: HBoxContainer
+var _chip_row: HBoxContainer  # Portrait, when the top bar is full: the player chips, under it.
 var _center: VBoxContainer
 var _portrait := false
 var _clips_button: Button
@@ -26,6 +28,7 @@ var _taunt_menu: VBoxContainer
 var _last_info: Dictionary = {}  # The finished match's game-over info (result card and recap).
 var _recap_run := 0  # Bumped to cancel a running "Watch all".
 var _slots: Dictionary = {}  # HudRegistry slot name -> container
+var _refit_queued := false
 
 
 func _ready() -> void:
@@ -43,7 +46,11 @@ func _ready() -> void:
 	top.add_child(_you)
 	top.add_child(AppTheme.spacer())
 	_them = AppTheme.pill("Opponent", AppTheme.PINK)
+	_them.mouse_filter = Control.MOUSE_FILTER_STOP
+	_them.gui_input.connect(_on_them_input)
 	top.add_child(_them)
+	_chip_row = AppTheme.hbox(8)
+	add_child(_chip_row)
 
 	var center := AppTheme.vbox(4)
 	_center = center
@@ -52,6 +59,7 @@ func _ready() -> void:
 	center.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(center)
 	_turn = AppTheme.pill("SETUP", AppTheme.YELLOW, AppTheme.INK, 26)
+	_turn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # Its own width, not the widest widget's under it.
 	center.add_child(_turn)
 	_status = AppTheme.label("", "", 18, Color.WHITE)
 	_status.add_theme_color_override("font_outline_color", AppTheme.INK)
@@ -134,6 +142,8 @@ func _build_slots(top: HBoxContainer, center: VBoxContainer, corner: VBoxContain
 	add_child(bottom_center)
 	_slots = {"top_left": top_left, "top_center": center, "left": left, "right": right,
 		"bottom_left": bottom_left, "bottom_center": bottom_center}
+	for holder: Control in [center, left, top]:
+		holder.minimum_size_changed.connect(_refit_soon)
 	for entry: Dictionary in HudRegistry.widgets:
 		var widget: Control = entry["script"].new()
 		_slots[entry["slot"]].add_child(widget)
@@ -169,6 +179,8 @@ func _refresh() -> void:
 	_set_pill(_them, _player_label(players.get(Ranks.opponent(my_side)), "Waiting..."), AppTheme.PINK)
 
 	var status := GameSession.status()
+	var opponent: Variant = players.get(Ranks.opponent(my_side))
+	_them.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if _card_user(opponent).size() > 0 else Control.CURSOR_ARROW
 	_setup_row.visible = status in ["waiting", "setup"]
 	_resign.visible = status in ["waiting", "setup", "active"]
 	_taunt_button.visible = status in ["setup", "active"]
@@ -191,6 +203,7 @@ func _refresh() -> void:
 			_set_turn("GAME OVER", AppTheme.PURPLE, Color.WHITE, false)
 		"cancelled":
 			_set_turn("CANCELLED", AppTheme.MUTED, Color.WHITE, false)
+	_refit_soon()
 
 
 ## Landscape: the action buttons form a narrow column in the top-right corner, beside the board's
@@ -204,16 +217,16 @@ func _layout() -> void:
 	_clips_button.visible = not _portrait and not short
 	for pill: PanelContainer in [_you, _them]:
 		var label := pill.get_child(0) as Label
-		label.clip_text = _portrait or short
-		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if _portrait or short else TextServer.OVERRUN_NO_TRIMMING
-		label.custom_minimum_size.x = 56.0 if _portrait else (120.0 if short else 0.0)
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		label.custom_minimum_size.x = 56.0  # Landscape: _fit_top() widens them up to the turn banner.
 		label.add_theme_font_size_override("font_size", 15 if _portrait else 18)
 		pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _portrait else Control.SIZE_SHRINK_BEGIN
+	(_turn.get_child(0) as Label).add_theme_font_size_override("font_size", 21 if short else 26)
 	_menu_button.add_theme_font_size_override("font_size", 20 if _portrait else 24)
 	for b: Control in [_taunt_button, _resign] + _setup_row.get_children():
 		b.custom_minimum_size.y = 44.0 if short else 0.0
-	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 74 if _portrait else 12)
-	_center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_place_center()
 	if _portrait:
 		_setup_row.vertical = false
 		for node: Node in [_taunt_menu, _setup_row]:
@@ -252,10 +265,101 @@ func _layout() -> void:
 	_stack_bottom.call_deferred()
 
 
+## Containers placed by their minimum size grow with their content but never shrink back by
+## themselves (a slot stayed 641 px wide on a 381 px phone after its content shrank): re-place them
+## whenever what's inside changes size.
+func _refit_soon() -> void:
+	if not _refit_queued:
+		_refit_queued = true
+		_refit.call_deferred()
+
+
+func _refit() -> void:
+	_refit_queued = false
+	if not is_inside_tree():
+		return
+	_place_center()
+	_stack_bottom()
+
+
+## The turn banner (with the top_center widgets under it): centred under the top bar in portrait;
+## in landscape level with it, between the player chips, which give up width (ending in "...") so
+## the banner never covers them. When even a short chip won't fit beside it, it moves under the bar.
+##
+## Portrait: when the top bar has no room left for the chips (online, with voice chat), they get a
+## row of their own under it, and the banner goes under that.
+func _place_center() -> void:
+	var bar_bottom := _top.offset_top + _top.get_combined_minimum_size().y
+	var top := 74.0 if _portrait else 12.0
+	_place_chips(_portrait and _chips_need_row())
+	if _chip_row.get_child_count() > 0:
+		_chip_row.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 12)
+		_chip_row.offset_top = bar_bottom + 6.0
+		_chip_row.offset_bottom = _chip_row.offset_top + _chip_row.get_combined_minimum_size().y
+		top = _chip_row.offset_bottom + 8.0
+	elif not _portrait and not _fit_top():
+		top = bar_bottom + 6.0
+	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, int(top))
+	_center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+
+
+## Whether the top bar's buttons and widgets leave less than a readable width for the two chips.
+func _chips_need_row() -> bool:
+	var sep := float(_top.get_theme_constant("separation"))
+	var used := 0.0
+	var count := 0
+	for child in _top.get_children():
+		if child is Control and (child as Control).visible and child != _you and child != _them:
+			used += (child as Control).get_combined_minimum_size().x
+			count += 1
+	# The chips may use the bar's right margin (as they always have on phones).
+	var room := get_viewport().get_visible_rect().size.x - _top.offset_left - used - sep * (count + 1)
+	return room < _you.get_combined_minimum_size().x + _them.get_combined_minimum_size().x
+
+
+## Moves the chips into the top bar (after the top_left widgets) or into their own row.
+func _place_chips(own_row: bool) -> void:
+	var holder := _chip_row if own_row else _top
+	if _you.get_parent() == holder:
+		return
+	_you.reparent(holder, false)
+	_them.reparent(holder, false)
+	if not own_row:
+		_top.move_child(_you, _slots["top_left"].get_index() + 1)
+		_top.move_child(_them, _top.get_child_count() - 1)
+
+
+## Landscape: sizes the You and Opponent chips to the room left and right of the turn banner.
+## Returns false when a chip can't keep even a few letters there.
+func _fit_top() -> bool:
+	var screen := get_viewport().get_visible_rect().size
+	var half := _turn.get_combined_minimum_size().x * 1.08 / 2.0 + 10.0  # Its pulse grows it 8 %.
+	var sep := float(_top.get_theme_constant("separation"))
+	var you_x := _top.offset_left
+	for child in _top.get_children():
+		if child == _you:
+			break
+		if child is Control and (child as Control).visible:
+			you_x += (child as Control).get_combined_minimum_size().x + sep
+	var rooms := {_you: screen.x / 2.0 - half - you_x, _them: screen.x + _top.offset_right - (screen.x / 2.0 + half)}
+	var fits := true
+	for pill: PanelContainer in [_you, _them]:
+		var label := pill.get_child(0) as Label
+		var padding := pill.get_combined_minimum_size().x - label.get_combined_minimum_size().x
+		var font := label.get_theme_font("font")
+		var natural := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x + 2.0
+		var room := floorf(float(rooms[pill]) - padding)
+		if room < 48.0:
+			fits = false
+		label.custom_minimum_size.x = clampf(room, 48.0, maxf(natural, 48.0)) if room >= 48.0 else minf(natural, 140.0)
+	return fits
+
+
 ## How far down the top bar and the turn banner (with the clock under it) reach, in HUD
 ## coordinates: overlays that must not hide them start below this.
 func top_reserved() -> float:
-	return maxf(_top.get_global_rect().end.y, _center.get_global_rect().end.y)
+	var bottom := maxf(_top.get_global_rect().end.y, _center.get_global_rect().end.y)
+	return maxf(bottom, _chip_row.get_global_rect().end.y) if _chip_row.get_child_count() > 0 else bottom
 
 
 ## Landscape: how far down the action column in the top-right corner reaches (0 in portrait, where
@@ -359,6 +463,24 @@ func _on_hover(piece: Piece3D) -> void:
 	_hint.visible = true
 
 
+## The opponent's chip opens their player card (online games, real players only).
+func _on_them_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	var players: Variant = GameSession.match_view.get("players")
+	if not players is Dictionary:
+		return
+	var user := _card_user((players as Dictionary).get(Ranks.opponent(GameSession.my_side())))
+	if not user.is_empty():
+		PlayerCardSheet.open(ui, user, GameSession.match_id())
+
+
+func _card_user(player: Variant) -> Dictionary:
+	if GameSession.kind != GameSession.Kind.ONLINE or not player is Dictionary or int((player as Dictionary).get("id", 0)) <= 0:
+		return {}
+	return player
+
+
 func _ready_up() -> void:
 	if GameSession.status() == "waiting":
 		ui.toast("Waiting for someone to join first.", AppTheme.BLUE)
@@ -422,6 +544,8 @@ func _show_result_card() -> void:
 		box.add_child(AppTheme.pill("ELO %s  (%+d)" % [AppTheme.num(mine.get("after")), delta], AppTheme.MINT if delta >= 0 else AppTheme.RED))
 	box.add_child(MatchRewardsView.new())  # Credits, XP, missions and achievements (Economy).
 	var practice := GameSession.kind == GameSession.Kind.PRACTICE
+	if GameSession.kind == GameSession.Kind.ONLINE and GameSession.match_id() > 0:
+		box.add_child(RematchButton.new(GameSession.match_id()))  # Same opponent, colours swapped.
 	box.add_child(AppTheme.button("Play again" if practice else "Back to lobby", "Primary", _play_again.bind(practice), 60))
 	var clashes: Array = info.get("clashes", [])
 	if not clashes.is_empty():

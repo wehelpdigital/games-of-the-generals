@@ -43,6 +43,99 @@ static func get_slab_mesh(size: Vector3, radius: float, bevel := 0.0, grow := 0.
 	return _cache[key]
 
 
+## A chunky prism from any simple outline `poly` (XY, z thickness `depth`) with beveled front and
+## back edges, like get_slab_mesh but for any shape (hexagons, shields, crimped caps). `smooth`
+## blends side normals across corners for round outlines; otherwise every side is flat, which
+## suits facets. `grow` inflates it for a matching inverted-hull outline.
+static func beveled_prism(poly: PackedVector2Array, depth: float, bevel: float, grow := 0.0, smooth := false) -> ArrayMesh:
+	var key := "prism/%d/%s/%s/%s/%s" % [str(poly).hash(), depth, bevel, grow, smooth]
+	if _cache.has(key):
+		return _cache[key]
+	if _signed_area(poly) < 0.0:
+		poly = poly.duplicate()
+		poly.reverse()
+	var hz := depth * 0.5 + grow
+	bevel = minf(bevel, hz * 0.9)
+	var outer := miter_offset(poly, grow)
+	var inner := miter_offset(poly, grow - bevel)
+	var n := poly.size()
+	var edge_normals := PackedVector2Array()
+	for i in n:
+		var e := poly[(i + 1) % n] - poly[i]
+		edge_normals.append(Vector2(e.y, -e.x).normalized())
+
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var tris := Geometry2D.triangulate_polygon(inner)
+	for i in range(0, tris.size(), 3):
+		var a := inner[tris[i]]
+		var b := inner[tris[i + 1]]
+		var c := inner[tris[i + 2]]
+		_tri(st, Vector3(a.x, a.y, hz), Vector3(b.x, b.y, hz), Vector3(c.x, c.y, hz), Vector3.BACK)
+		_tri(st, Vector3(a.x, a.y, -hz), Vector3(b.x, b.y, -hz), Vector3(c.x, c.y, -hz), Vector3.FORWARD)
+
+	var rings := [[inner, hz, 1.0], [outer, hz - bevel, 0.0], [outer, -hz + bevel, 0.0], [inner, -hz, -1.0]]
+	for r in 3:
+		var ring_a: Array = rings[r]
+		var ring_b: Array = rings[r + 1]
+		var lean := 0.0 if r == 1 else (1.0 if r == 0 else -1.0)
+		var a_poly: PackedVector2Array = ring_a[0]
+		var b_poly: PackedVector2Array = ring_b[0]
+		for i in n:
+			var j := (i + 1) % n
+			var a0 := Vector3(a_poly[i].x, a_poly[i].y, ring_a[1])
+			var a1 := Vector3(a_poly[j].x, a_poly[j].y, ring_a[1])
+			var b0 := Vector3(b_poly[i].x, b_poly[i].y, ring_b[1])
+			var b1 := Vector3(b_poly[j].x, b_poly[j].y, ring_b[1])
+			if a0.is_equal_approx(b0) and a1.is_equal_approx(b1):
+				continue
+			if smooth:
+				var v0 := (edge_normals[(i - 1 + n) % n] + edge_normals[i]).normalized()
+				var v1 := (edge_normals[i] + edge_normals[j]).normalized()
+				var n0 := Vector3(v0.x, v0.y, lean).normalized()
+				var n1 := Vector3(v1.x, v1.y, lean).normalized()
+				_tri_smooth(st, [a0, b0, b1], [n0, n0, n1])
+				_tri_smooth(st, [a0, b1, a1], [n0, n1, n1])
+			else:
+				var flat := Vector3(edge_normals[i].x, edge_normals[i].y, lean).normalized()
+				_tri(st, a0, b0, b1, flat)
+				_tri(st, a0, b1, a1, flat)
+	var mesh := st.commit()
+	_cache[key] = mesh
+	return mesh
+
+
+## Moves every vertex of a counter-clockwise outline `delta` along its corner bisector, keeping
+## the vertex count (so rings stay matched); negative insets. Fine for gently concave outlines.
+static func miter_offset(poly: PackedVector2Array, delta: float) -> PackedVector2Array:
+	if is_zero_approx(delta):
+		return poly
+	var n := poly.size()
+	var result := PackedVector2Array()
+	for i in n:
+		var a := poly[(i - 1 + n) % n]
+		var b := poly[i]
+		var c := poly[(i + 1) % n]
+		var n1 := Vector2((b - a).y, -(b - a).x).normalized()
+		var n2 := Vector2((c - b).y, -(c - b).x).normalized()
+		var bisector := (n1 + n2).normalized()
+		result.append(b + bisector * delta / maxf(bisector.dot(n2), 0.35))
+	return result
+
+
+## Regular polygon (counter-clockwise) of `sides` around the origin, first corner at `angle`.
+static func regular_polygon(sides: int, radius: float, angle := 0.0) -> PackedVector2Array:
+	var poly := PackedVector2Array()
+	for i in sides:
+		poly.append(Vector2.from_angle(angle + TAU * i / sides) * radius)
+	return poly
+
+
+## Star outline (counter-clockwise) with `points` tips; also used for crimped bottle-cap edges.
+static func star_polygon(points: int, outer: float, inner: float) -> PackedVector2Array:
+	return _star(points, outer, inner)
+
+
 ## Flat single-sided polygon on the XY plane facing +Z (for billboards and decals).
 static func flat_mesh(poly: PackedVector2Array) -> ArrayMesh:
 	var st := SurfaceTool.new()

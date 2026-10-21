@@ -19,6 +19,7 @@ const DEFAULTS := {
 	"glow": "none",
 	"trail": "none",
 	"kill": "classic",
+	"shape": "shape_classic",
 }
 
 var items: Dictionary = DEFAULTS.duplicate()

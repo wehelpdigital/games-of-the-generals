@@ -62,7 +62,9 @@ var auras := {Ranks.WHITE: AuraFX.NONE, Ranks.BLACK: AuraFX.NONE}
 var trails := {Ranks.WHITE: TrailFX.NONE, Ranks.BLACK: TrailFX.NONE}
 var kill_effects := {Ranks.WHITE: "classic", Ranks.BLACK: "classic"}
 var board_glows := {Ranks.WHITE: BoardGlowFX.NONE, Ranks.BLACK: BoardGlowFX.NONE}
+var chip_shapes := {Ranks.WHITE: ChipShapes.DEFAULT, Ranks.BLACK: ChipShapes.DEFAULT}
 var _glow_nodes: Dictionary = {}  # side -> Node3D
+var _toppers: Dictionary = {}     # side -> Toppers3D
 
 var _cells: Dictionary = {}    # Vector2i -> Piece3D
 ## Merged tile meshes keyed "<side>/<part>": each half (white rows 0–3, black rows 4–7) has a light
@@ -192,6 +194,9 @@ func set_board_theme(slug: String) -> void:
 	_bed.material_override = CosmeticLibrary.board_material(slug, "bed")
 	_divider.material_override = CosmeticLibrary.board_material(slug, "divider")
 	_apply_tiles()
+	for node: Toppers3D in _toppers.values():
+		if is_instance_valid(node):
+			node.set_board_theme(slug)
 
 
 func set_piece_skin(side: String, slug: String) -> void:
@@ -205,6 +210,26 @@ func set_piece_skin(side: String, slug: String) -> void:
 func set_territory(side: String, slug: String) -> void:
 	territories[side] = slug
 	_apply_tiles()
+
+
+## The geometry of `side`'s pieces (ChipShapes.STYLES).
+func set_chip_shape(side: String, slug: String) -> void:
+	chip_shapes[side] = ChipShapes.slug_or_default(slug)
+	for piece: Piece3D in pieces.values():
+		if piece.side == side:
+			piece.set_shape(chip_shapes[side])
+
+
+## Decorations beside `side`'s half of the board (Toppers3D; config is the loadout's `toppers`).
+## `local_images` lets flags show pictures that only exist on this device (the player's own side).
+func set_toppers(side: String, config: Variant, guild_logo_url := "", local_images := false) -> void:
+	var node: Toppers3D = _toppers.get(side)
+	if node == null or not is_instance_valid(node):
+		node = Toppers3D.new()
+		node.name = "Toppers_" + side
+		add_child(node)
+		_toppers[side] = node
+	node.configure(side, config if config is Dictionary else {}, guild_logo_url, local_images, board_theme)
 
 
 ## Which icon pack draws the rank symbols on `side`'s pieces.
@@ -334,6 +359,7 @@ func _sync_now(list: Array) -> void:
 			piece.icon_pack = icon_packs.get(side, "classic")
 			piece.aura_style = auras.get(side, AuraFX.NONE)
 			piece.trail_style = trails.get(side, TrailFX.NONE)
+			piece.shape = chip_shapes.get(side, ChipShapes.DEFAULT)
 			piece.setup(id, side, rank, side == my_side, piece_skins[side])
 			_pieces_root.add_child(piece)
 			pieces[id] = piece

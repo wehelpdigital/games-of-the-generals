@@ -1,10 +1,12 @@
 class_name Piece3D
 extends Node3D
-## One Salpakan piece: a chunky toy plaque on a team-coloured stand, with an enamel rank badge
-## (PieceIcons) and a label on its face, drawn cel-shaded with an ink outline.
+## One Salpakan piece: by default a chunky toy plaque on a team-coloured stand, with an enamel rank
+## badge (PieceIcons) and a label on its face, drawn cel-shaded with an ink outline. The chip shape
+## (ChipShapes: orbs, coins, dice...) swaps the geometry; the chip skin decides its materials.
 ##
-## The face points toward the piece's owner, so the opponent only ever sees the neutral back. During
-## play the server never sends enemy ranks, so enemy pieces are built with rank "" (blank face).
+## The face points toward the piece's owner (or straight up on flat tokens), so the opponent only
+## ever sees the neutral side. During play the server never sends enemy ranks, so enemy pieces are
+## built with rank "" (blank face).
 ##
 ## The root stays on the board plane and carries the x/z position; `_rig` carries lift, squash and
 ## the picking collider, so the contact shadow can stay on the board while the piece is in the air.
@@ -15,11 +17,8 @@ enum Highlight { NONE, HOVER, SELECTED, PENDING }
 
 const PICK_LAYER := 2  ## Physics layer bit used only for pointer raycasts.
 const LIFT_HEIGHT := 0.34
-const BASE_SIZE := Vector3(0.86, 0.48, 0.1)    ## Outline x/z, thickness.
-const PLAQUE_SIZE := Vector3(0.74, 0.62, 0.16)
-const PLAQUE_TILT := -0.52  ## Radians; leans the face back toward the owner's camera so ranks read from above.
-const OUTLINE_WIDTH := 0.03
-const ICON_SIZE := 0.48  ## Side of the rank badge on the face (the plaque is 0.74 × 0.62).
+const ICON_SIZE := 0.48  ## Side of the rank badge on the face (the classic plaque is 0.74 × 0.62).
+const EMBLEM_SCALE := 0.34
 const HIGHLIGHT_INK := {
 	Highlight.HOVER: Color("ffffff"),
 	Highlight.SELECTED: Color("ffd23f"),
@@ -35,22 +34,25 @@ var is_mine := false
 var icon_pack := "classic"
 var aura_style := AuraFX.NONE
 var trail_style := TrailFX.NONE
+var shape := ChipShapes.DEFAULT
 
 var _skin := CosmeticLibrary.DEFAULT_PIECES
+var _geo: Dictionary = {}        # ChipShapes.geometry(shape)
 var _aura: Node3D
 var _rig: Node3D
-var _body_mesh: MeshInstance3D   # Surface 0: plaque, surface 1: stand.
-var _hull: MeshInstance3D        # Inverted-hull ink outline around both.
+var _model: Node3D               # The shape, its face and emblem; idle animations move this.
+var _body_mesh: MeshInstance3D   # One surface per shape role (body, base, accent...).
+var _hull: MeshInstance3D        # Inverted-hull ink outline around the shape.
 var _face: Node3D
 var _emblem: MeshInstance3D
 var _shadow: MeshInstance3D
 var _pick_body: StaticBody3D
+var _pick_shape: CollisionShape3D
 var _tween: Tween
 var _highlight := Highlight.NONE
+var _idle_time := randf() * TAU
 
 static var _overlays: Dictionary = {}
-static var _shared_body: ArrayMesh
-static var _shared_hull: ArrayMesh
 
 
 func setup(id: String, piece_side: String, piece_rank: String, mine: bool, skin: String) -> Piece3D:
@@ -65,11 +67,19 @@ func setup(id: String, piece_side: String, piece_rank: String, mine: bool, skin:
 	return self
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Shadow shrinks and fades as the piece rises.
 	var h := clampf(_rig.position.y / LIFT_HEIGHT, 0.0, 1.5)
 	_shadow.scale = Vector3.ONE * (1.0 - 0.35 * h)
 	_shadow.transparency = 0.45 * h
+	match _geo.get("idle", ""):
+		"wobble":
+			_idle_time += delta
+			var s := sin(_idle_time * 3.2)
+			_model.scale = Vector3(1.0 + 0.035 * s, 1.0 - 0.05 * s, 1.0 + 0.035 * s)
+		"sway":
+			_idle_time += delta
+			_model.rotation.z = 0.05 * sin(_idle_time * 1.7)
 
 
 # --- Appearance -------------------------------------------------------------------------------
@@ -81,12 +91,25 @@ func set_rank(new_rank: String) -> void:
 
 func set_skin(slug: String) -> void:
 	_skin = slug
-	_body_mesh.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "body"))
-	_body_mesh.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "base"))
+	var roles: Array = _geo["roles"]
+	for i in roles.size():
+		_body_mesh.set_surface_override_material(i, ChipShapes.material(roles[i], _skin, side))
 	_emblem.set_surface_override_material(0, CosmeticLibrary.piece_material(_skin, side, "emblem"))
 	_emblem.set_surface_override_material(1, CosmeticLibrary.piece_material(_skin, side, "outline"))
 	_apply_outline()
 	_rebuild_face()
+
+
+## The piece's geometry (ChipShapes.STYLES); the skin, face and effects carry over.
+func set_shape(slug: String) -> void:
+	slug = ChipShapes.slug_or_default(slug)
+	if slug == shape and not _geo.is_empty():
+		return
+	shape = slug
+	if _rig == null:
+		return
+	_apply_shape()
+	set_skin(_skin)
 
 
 ## Which icon pack draws the rank symbol on the face (PieceIcons packs; "classic" by default).
@@ -244,47 +267,65 @@ func _build() -> void:
 
 	_rig = Node3D.new()
 	add_child(_rig)
+	_model = Node3D.new()
+	_rig.add_child(_model)
 
-	_build_shared_meshes()
 	_body_mesh = MeshInstance3D.new()
-	_body_mesh.mesh = _shared_body
-	_rig.add_child(_body_mesh)
+	_model.add_child(_body_mesh)
 	_hull = MeshInstance3D.new()
-	_hull.mesh = _shared_hull
 	_hull.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_rig.add_child(_hull)
-
-	var pivot := Node3D.new()
-	pivot.transform = _plaque_pivot()
-	_rig.add_child(pivot)
-
+	_model.add_child(_hull)
 	_face = Node3D.new()
-	_face.position = Vector3(0.0, PLAQUE_SIZE.y * 0.5, PLAQUE_SIZE.z * 0.5)
-	pivot.add_child(_face)
+	_model.add_child(_face)
 
-	# Every back is identical, so the opponent learns nothing from it.
+	# Every neutral side is identical, so the opponent learns nothing from it.
 	_emblem = MeshInstance3D.new()
 	_emblem.mesh = InsigniaFactory.get_sticker_mesh("sun")
-	_emblem.scale = Vector3.ONE * 0.34
-	_emblem.position = Vector3(0.0, PLAQUE_SIZE.y * 0.52, -PLAQUE_SIZE.z * 0.5)
-	_emblem.rotation.y = PI
 	_emblem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pivot.add_child(_emblem)
+	_model.add_child(_emblem)
 
 	_pick_body = StaticBody3D.new()
 	_pick_body.collision_mask = 0
 	_pick_body.set_meta("piece", self)
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(0.88, 0.82, 0.54)
-	shape.shape = box
-	shape.position.y = 0.41
-	_pick_body.add_child(shape)
+	_pick_shape = CollisionShape3D.new()
+	_pick_shape.shape = BoxShape3D.new()
+	_pick_body.add_child(_pick_shape)
 	_rig.add_child(_pick_body)
 	set_pickable(true)
 
+	_apply_shape()
 	set_skin(_skin)
 	set_aura(aura_style)
+
+
+## Swaps in the shared geometry of `shape`: meshes, face and emblem placement, picking box.
+func _apply_shape() -> void:
+	_geo = ChipShapes.geometry(shape)
+	_body_mesh.mesh = _geo["mesh"]
+	_hull.mesh = _geo["hull"]
+	_hull.visible = _geo["hull"] != null
+	_face.transform = _geo["face"]
+	_model.transform = Transform3D.IDENTITY
+	var pick: Array = _geo["pick"]
+	(_pick_shape.shape as BoxShape3D).size = pick[0]
+	_pick_shape.position = pick[1]
+	_update_emblem()
+
+
+## The neutral emblem: on the back of standing shapes; on face-up tokens it covers the face while
+## the rank is unknown (enemy pieces), so every hidden piece looks the same.
+func _update_emblem() -> void:
+	if _emblem == null or _geo.is_empty():
+		return
+	var back: Variant = _geo["back"]
+	if not _geo["emblem"]:
+		_emblem.visible = false
+	elif back is Transform3D:
+		_emblem.visible = true
+		_emblem.transform = back
+	else:
+		_emblem.visible = rank == "" or not Ranks.INFO.has(rank)
+		_emblem.transform = _geo["face"] * Transform3D(Basis().scaled(Vector3.ONE * EMBLEM_SCALE * 1.3), Vector3(0, 0, 0.004))
 
 
 func _rebuild_face() -> void:
@@ -292,6 +333,7 @@ func _rebuild_face() -> void:
 		return
 	for child in _face.get_children():
 		child.queue_free()
+	_update_emblem()
 	if rank == "" or not Ranks.INFO.has(rank):
 		return
 
@@ -330,29 +372,6 @@ func _apply_outline() -> void:
 
 static func _face_material(for_rank: String, pack: String) -> Material:
 	return PieceIcons.face_material(for_rank, pack)
-
-
-static func _plaque_pivot() -> Transform3D:
-	return Transform3D(Basis(Vector3.RIGHT, PLAQUE_TILT), Vector3(0.0, BASE_SIZE.z * 0.6, 0.0))
-
-
-## One body mesh (plaque + stand, two surfaces) and one outline hull, shared by every piece.
-static func _build_shared_meshes() -> void:
-	if _shared_body != null:
-		return
-	var stand := Transform3D(Basis(Vector3.RIGHT, -PI / 2.0), Vector3(0.0, BASE_SIZE.z * 0.5, 0.0))
-	var plaque := _plaque_pivot() * Transform3D(Basis(), Vector3(0.0, PLAQUE_SIZE.y * 0.5, 0.0))
-	_shared_body = ArrayMesh.new()
-	for part: Array in [[PLAQUE_SIZE, 0.14, 0.05, plaque], [BASE_SIZE, 0.13, 0.035, stand]]:
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		st.append_from(InsigniaFactory.get_slab_mesh(part[0], part[1], part[2]), 0, part[3])
-		st.commit(_shared_body)
-	var hull := SurfaceTool.new()
-	hull.begin(Mesh.PRIMITIVE_TRIANGLES)
-	hull.append_from(InsigniaFactory.get_slab_mesh(PLAQUE_SIZE, 0.14, 0.05, OUTLINE_WIDTH), 0, plaque)
-	hull.append_from(InsigniaFactory.get_slab_mesh(BASE_SIZE, 0.13, 0.035, OUTLINE_WIDTH), 0, stand)
-	_shared_hull = hull.commit()
 
 
 static func _overlay_material(value: Highlight) -> Material:

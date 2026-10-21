@@ -52,6 +52,7 @@ func refresh_cosmetics() -> void:
 
 
 func _apply_side(side: String, loadout: Dictionary) -> void:
+	board.set_chip_shape(side, loadout["shape"])
 	board.set_piece_skin(side, loadout["chip"])
 	board.set_territory(side, loadout["territory"])
 	board.set_icon_pack(side, loadout["icons"])

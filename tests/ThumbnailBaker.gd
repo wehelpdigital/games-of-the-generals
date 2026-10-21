@@ -3,7 +3,7 @@ extends Node
 ## ShopThumbs): a 2:1 still for every item, and for animated categories a strip of 8 frames. Each
 ## item is staged on the real board (Game3D in its own world) with a camera that suits it, rendered
 ## at twice the size and scaled down. Re-run after adding or changing items, then re-import:
-##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>]
+##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>] [--seasonal]
 ##   godot --headless --path . --import
 
 const OUT := "res://assets/shop_thumbs"
@@ -17,6 +17,7 @@ var _camera: Camera3D
 var _only := ""
 var _slug := ""
 var _count := 0
+var _seasonal := false  # --seasonal: only the holiday collections' items.
 
 
 func _ready() -> void:
@@ -28,6 +29,8 @@ func _ready() -> void:
 			_only = arg.trim_prefix("--only=")
 		elif arg.begins_with("--slug="):
 			_slug = arg.trim_prefix("--slug=")
+		elif arg == "--seasonal":
+			_seasonal = true
 	if not bake:
 		print("Pass --bake to (re)write the shop thumbnails.")
 		get_tree().quit()
@@ -52,6 +55,8 @@ func _ready() -> void:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("%s/%s" % [OUT, category]))
 		for slug: String in CosmeticCatalog.slugs(category):
 			if _slug != "" and slug != _slug:
+				continue
+			if _seasonal and str(CosmeticCatalog.info(category, slug).get("season", "")) == "":
 				continue
 			await _bake(category, slug)
 	print("baked %d pictures" % _count)

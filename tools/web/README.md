@@ -11,6 +11,12 @@ node tools/web/checks.js sweep http://127.0.0.1:8099/play/index.html   # every c
 node tools/web/checks.js phone http://127.0.0.1:8099/play/index.html   # phone keyboard opens on a login field
 ```
 
+After every export, stamp the build so browsers and the CDN pick up the new engine files:
+
+```sh
+node tools/web/stamp_build.js ../games-of-the-generals-web/public/play
+```
+
 Two URL options help with debugging:
 - `?perf=1` makes the game print FPS, frame times and draw calls to the console (`core/PerfProbe.gd`).
 - `?sweep=1` makes it wear every cosmetic in turn (`core/ShaderSweep.gd`).

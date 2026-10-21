@@ -491,10 +491,15 @@ let engine = null;
 		statusPercent.textContent = `${Math.floor(fraction * 100)}%`;
 	};
 
-	// Cache busting: the engine files keep their names across deploys, so they're fetched with
-	// the pack's ETag (or Last-Modified) as a version. A deploy changes it, and returning players
-	// still get the cached files until then.
+	// Cache busting: the engine files keep their names across deploys, so they're fetched with a
+	// build version. tools/web/stamp_build.js writes the files' hash into BUILD_STAMP after each
+	// export; the CDN in front of the site caches the files themselves (and their ETags), so the
+	// stamp is what reliably changes. Unstamped builds fall back to the pack's ETag.
+	const BUILD_STAMP = '__SALPAKAN_BUILD__';
 	function buildTag() {
+		if (!BUILD_STAMP.startsWith('__')) {
+			return Promise.resolve(BUILD_STAMP);
+		}
 		return fetch(GODOT_CONFIG['mainPack'] || `${GODOT_CONFIG['executable']}.pck`, { method: 'HEAD', cache: 'no-store' })
 			.then((response) => response.headers.get('etag') || response.headers.get('last-modified') || '')
 			.catch(() => '')

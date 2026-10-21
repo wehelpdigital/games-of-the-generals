@@ -5,7 +5,7 @@ extends Screen
 ## Wide screens: play column left, cards and side panels right. Portrait: one scrolling column.
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
-const LEFT_WIDTH := 404.0
+const LEFT_WIDTH := 372.0
 const WIDE_MIN := 1100.0  ## Below this width the dashboard is one scrolling column.
 const COLUMN_MAX := 680.0
 const SIDE_WIDTH := 310.0
@@ -275,7 +275,7 @@ func _fill_tiles() -> void:
 func _fit_tiles() -> void:
 	_tile_grid.columns = 4 if _tile_grid.get_child_count() > 6 and not _portrait else 3
 	for t: Control in _tile_grid.get_children():
-		t.custom_minimum_size.x = 84 if _tile_grid.columns == 4 else 96
+		t.custom_minimum_size.x = 76 if _tile_grid.columns == 4 else 96
 		for label: Node in t.find_children("*", "Label", true, false):
 			(label as Label).add_theme_font_size_override("font_size", 13 if _tile_grid.columns == 4 else 15)
 

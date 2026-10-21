@@ -36,7 +36,9 @@ func refresh() -> void:
 		_fan.add_child(card)
 	_box.add_child(_fan)
 	_spread()
-	_box.add_child(AppTheme.label("Your 5 for Select games. All %d cards are open to everyone." % PowerupLibrary.ids().size(), "MutedLabel", 14))
+	var note := AppTheme.label("Your 5 for Select games. All %d cards are open to everyone." % PowerupLibrary.ids().size(), "MutedLabel", 14)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # Wraps instead of widening the dashboard's middle column.
+	_box.add_child(note)
 
 
 ## Fans the cards out like a hand held up: overlapping, turned outwards, the outer ones lower.

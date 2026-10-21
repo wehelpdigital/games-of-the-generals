@@ -18,37 +18,37 @@ const DECAL_Y := 0.03
 const FONT_PATH := "res://assets/fonts/LilitaOne-Regular.ttf"
 
 const STYLES := {
-	"cream_pie": {"name": "Cream Pie", "rarity": "common", "desc": "A classic pie to the face of their army.",
+	"cream_pie": {"name": "Cream Pie", "rarity": "common", "collection": "toys_fun", "desc": "A classic pie to the face of their army.",
 		"swatch": [Color("fff8ec"), Color("d9a25f"), Color("e8243c")]},
-	"rotten_tomato": {"name": "Rotten Tomato", "rarity": "common", "desc": "Boo! Get off the board!",
+	"rotten_tomato": {"name": "Rotten Tomato", "rarity": "common", "collection": "toys_fun", "desc": "Boo! Get off the board!",
 		"swatch": [Color("e04a32"), Color("9bb84a"), Color("ffd23f")]},
-	"egg": {"name": "Egg Toss", "rarity": "common", "desc": "Crack! Yolk all over their side.",
+	"egg": {"name": "Egg Toss", "rarity": "common", "collection": "toys_fun", "desc": "Crack! Yolk all over their side.",
 		"swatch": [Color("fffaf0"), Color("ffc21a"), Color("e8d9b8")]},
-	"snowball": {"name": "Snowball", "rarity": "common", "desc": "A cold, fluffy POOF.",
+	"snowball": {"name": "Snowball", "rarity": "common", "collection": "ice_snow", "desc": "A cold, fluffy POOF.",
 		"swatch": [Color("f4fbff"), Color("bfe3ff"), Color("6fb6ff")]},
-	"water_balloon": {"name": "Water Balloon", "rarity": "common", "desc": "Sploosh! Everybody gets wet.",
+	"water_balloon": {"name": "Water Balloon", "rarity": "common", "collection": "ocean_water", "desc": "Sploosh! Everybody gets wet.",
 		"swatch": [Color("4fb8ff"), Color("bfe8ff"), Color("2f7fd8")]},
-	"mud_ball": {"name": "Mud Ball", "rarity": "common", "desc": "A big, sloppy SPLUT of mud.",
+	"mud_ball": {"name": "Mud Ball", "rarity": "common", "collection": "nature_garden", "desc": "A big, sloppy SPLUT of mud.",
 		"swatch": [Color("6b4a2b"), Color("8a6440"), Color("3f2a17")]},
-	"banana_peel": {"name": "Banana Peel", "rarity": "common", "desc": "Mind your step, General.",
+	"banana_peel": {"name": "Banana Peel", "rarity": "common", "collection": "toys_fun", "desc": "Mind your step, General.",
 		"swatch": [Color("ffe14d"), Color("c99a2e"), Color("6b4a2b")]},
-	"poop": {"name": "Cartoon Poo", "rarity": "rare", "desc": "PLOP. It has googly eyes. Flies included.",
+	"poop": {"name": "Cartoon Poo", "rarity": "rare", "collection": "toys_fun", "desc": "PLOP. It has googly eyes. Flies included.",
 		"swatch": [Color("8a5530"), Color("5a3218"), Color("9be15d")]},
-	"slime": {"name": "Slime Blob", "rarity": "rare", "desc": "A jiggly green blob that stares back.",
+	"slime": {"name": "Slime Blob", "rarity": "rare", "collection": "zombie_outbreak", "desc": "A jiggly green blob that stares back.",
 		"swatch": [Color("7dff5a"), Color("3fbf2a"), Color("d8ffc8")]},
-	"rubber_chicken": {"name": "Rubber Chicken", "rarity": "rare", "desc": "SQUAWK! Feathers everywhere.",
+	"rubber_chicken": {"name": "Rubber Chicken", "rarity": "rare", "collection": "toys_fun", "desc": "SQUAWK! Feathers everywhere.",
 		"swatch": [Color("ffd23f"), Color("ff3b3b"), Color("ff9f1c")]},
 	"paint_bomb": {"name": "Paint Bomb", "rarity": "rare", "collection": "street_graffiti", "desc": "KA-SPLASH! Three colours of paint.",
 		"swatch": [Color("ff4f8b"), Color("3d8bff"), Color("ffd23f"), Color("2d2a44")]},
-	"stink_cloud": {"name": "Stink Cloud", "rarity": "rare", "desc": "A lingering green PEE-YEW.",
+	"stink_cloud": {"name": "Stink Cloud", "rarity": "rare", "collection": "zombie_outbreak", "desc": "A lingering green PEE-YEW.",
 		"swatch": [Color("9be15d"), Color("cfff9a"), Color("5a8a2a")]},
-	"kiss": {"name": "Blown Kiss", "rarity": "rare", "desc": "MWAH! A lipstick kiss and floating hearts.",
+	"kiss": {"name": "Blown Kiss", "rarity": "rare", "collection": "cute_candy", "desc": "MWAH! A lipstick kiss and floating hearts.",
 		"swatch": [Color("ff3b6b"), Color("ff9ec7"), Color("e8243c")]},
-	"confetti_cannon": {"name": "Confetti Popper", "rarity": "epic", "desc": "TA-DA! Celebrate a little too early.",
+	"confetti_cannon": {"name": "Confetti Popper", "rarity": "epic", "collection": "toys_fun", "desc": "TA-DA! Celebrate a little too early.",
 		"swatch": [Color("ff4f8b"), Color("ffd23f"), Color("3d8bff"), Color("27c98f")]},
-	"honk": {"name": "Clown Horn", "rarity": "epic", "desc": "HONK! HONK! Right in their ear.",
+	"honk": {"name": "Clown Horn", "rarity": "epic", "collection": "toys_fun", "desc": "HONK! HONK! Right in their ear.",
 		"swatch": [Color("ff3b3b"), Color("ffc93c"), Color("1d1736")]},
-	"glitter_bomb": {"name": "Glitter Bomb", "rarity": "legendary", "desc": "A gift box that explodes into glitter. BLING!",
+	"glitter_bomb": {"name": "Glitter Bomb", "rarity": "legendary", "collection": "magical_sparkle", "desc": "A gift box that explodes into glitter. BLING!",
 		"swatch": [Color("ff8ec0"), Color("ffd23f"), Color("b05cff"), Color("6fe3ff")]},
 	# Holidays.
 	"candy_corn": {"name": "Candy Corn", "rarity": "common", "season": "halloween", "desc": "A handful of candy corn rains on their side. CRUNCH!",
@@ -67,6 +67,13 @@ const STYLES := {
 		"swatch": [Color("ff4f5a"), Color("ffcf3f"), Color("3d8bff"), Color("ffffff")]},
 	"palayok": {"name": "Palayok", "rarity": "rare", "season": "fiesta", "desc": "The fiesta clay pot breaks open and sweets spill everywhere.",
 		"swatch": [Color("c8643a"), Color("8a3a1e"), Color("ff8ec0"), Color("ffcf3f")]},
+	# Themed collections.
+	"wave_splash": {"name": "Wave Splash", "rarity": "rare", "collection": "great_wave", "desc": "A curl of sea water crashes down. Foam everywhere!",
+		"swatch": [Color("3f6aae"), Color("ffffff"), Color("8fc6ff")]},
+	"cannonball": {"name": "Cannonball", "rarity": "epic", "collection": "treasure_seas", "desc": "An iron ball with a lit fuse. KA-THOOM! Scorch marks and smoke.",
+		"swatch": [Color("2a2d40"), Color("ffb020"), Color("c9c2b0")]},
+	"smoke_bomb": {"name": "Smoke Bomb", "rarity": "rare", "collection": "ninja_clan", "desc": "POOF! A purple cloud swallows the spot and throwing stars scatter.",
+		"swatch": [Color("2a2350"), Color("8a7aa8"), Color("c9d2de")]},
 }
 
 ## What each taunt shouts when it lands: [word, fill colour].
@@ -83,6 +90,7 @@ const WORDS := {
 	"torotot": ["TOOOT!", Color("ff3d7f")], "love_letter": ["XOXO!", Color("ff7aa0")],
 	"red_envelope": ["LUCKY!", Color("ffcf3f")], "pumpkin_pie": ["SPLAT!", Color("e8892a")],
 	"beach_ball": ["BOING!", Color("3d8bff")], "palayok": ["CRASH!", Color("e07a4a")],
+	"wave_splash": ["SPLASH!", Color("8fc6ff")], "cannonball": ["KA-THOOM!", Color("ffb020")], "smoke_bomb": ["POOF!", Color("b8a8ff")],
 }
 
 const PARTY := [Color("ff4f8b"), Color("ffd23f"), Color("3d8bff"), Color("27c98f"), Color("b05cff"), Color("ff9f1c")]
@@ -207,6 +215,9 @@ func _land() -> void:
 		"pumpkin_pie": _splat_pumpkin_pie()
 		"beach_ball": _splat_beach_ball()
 		"palayok": _splat_palayok()
+		"wave_splash": _splat_wave()
+		"cannonball": _splat_cannonball()
+		"smoke_bomb": _splat_smoke_bomb()
 	var t := create_tween()
 	t.tween_interval(LINGER)
 	t.tween_callback(_fade_out)
@@ -580,6 +591,21 @@ func _build_projectile(slug: String) -> Node3D:
 			for i in 6:
 				var a := TAU * i / 6.0
 				_part(root, _box(Vector3(0.05, 0.02, 0.02)), Color("ffffff"), Vector3(cos(a) * 0.2, 0.0, sin(a) * 0.2), Vector3(0.0, -a, 0.0), Vector3.ONE, 0.0, 0.2)
+		"wave_splash":
+			_part(root, _sphere(0.2), Color("3f6aae"), Vector3.ZERO, Vector3.ZERO, Vector3(1.0, 0.9, 1.0), 1.07, 0.8)
+			_part(root, _torus(0.12, 0.17), Color("ffffff"), Vector3(0.0, 0.1, 0.0), Vector3(0.3, 0.0, 0.0), Vector3.ONE, 1.1, 0.3)
+			for i in 4:
+				var a := TAU * i / 4.0
+				_part(root, _sphere(0.05), Color("ffffff"), Vector3(cos(a) * 0.15, 0.16, sin(a) * 0.15), Vector3.ZERO, Vector3.ONE, 1.15, 0.3)
+		"cannonball":
+			_part(root, _sphere(0.18), Color("2a2d40"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.07, 0.8)
+			_part(root, _cyl(0.016, 0.016, 0.12), Color("c8a070"), Vector3(0.02, 0.22, 0.0), Vector3(0.0, 0.0, -0.3), Vector3.ONE, 1.2)
+			_part(root, _sphere(0.035), Color(1.8, 1.2, 0.3), Vector3(0.04, 0.29, 0.0), Vector3.ZERO, Vector3.ONE, 0.0, 0.0, true)
+		"smoke_bomb":
+			_part(root, _sphere(0.15), Color("2a2350"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.08, 0.6)
+			_part(root, _torus(0.14, 0.16), Color("8a7aa8"), Vector3.ZERO, Vector3(PI * 0.5, 0.0, 0.0), Vector3.ONE, 0.0, 0.4)
+			_part(root, _cyl(0.014, 0.014, 0.1), Color("c8a070"), Vector3(0.0, 0.18, 0.0), Vector3.ZERO, Vector3.ONE, 1.2)
+			_part(root, _sphere(0.03), Color(1.8, 1.2, 0.3), Vector3(0.0, 0.24, 0.0), Vector3.ZERO, Vector3.ONE, 0.0, 0.0, true)
 	return root
 
 
@@ -1101,3 +1127,50 @@ func _splat_palayok() -> void:
 		add_child(candy)
 		_keep.append(candy)
 	_particles(target_local + Vector3(0.0, 0.1, 0.0), 14, _circle_mesh(0.035), sweets, Vector2(1.5, 3.0))
+
+
+# --- Themed collections -----------------------------------------------------------------------
+
+func _splat_wave() -> void:
+	_drop_projectile()
+	_decal(Color(0.25, 0.42, 0.75, 0.75), 0.5, 9, 7, 0.2)
+	_decal(Color(1.0, 1.0, 1.0, 0.85), 0.2, 7, 0, 0.16, Vector3(0.1, 0.004, -0.06), false, false)
+	_dots(Color("ffffff"), 9, 0.42, Vector2(0.025, 0.045))
+	_particles(target_local, 28, _circle_mesh(0.045), [Color("ffffff"), Color("8fc6ff"), Color("3f6aae")], Vector2(2.2, 4.4), {"spread": 50.0})
+	_particles(target_local + Vector3(0.0, 0.1, 0.0), 8, _wave_mesh(), [Color("ffffff"), Color("dff3ff")], Vector2(0.6, 1.2),
+		{"gravity": Vector3(0.0, -1.0, 0.0), "lifetime": 1.3, "spin": 120.0})
+
+
+func _splat_cannonball() -> void:
+	_rest_projectile(Basis.IDENTITY, 0.18, 1.3)
+	_decal(Color(0.12, 0.1, 0.12, 0.7), 0.46, 11, 6, 0.28, Vector3.ZERO, false, false)
+	_particles(target_local + Vector3(0.0, 0.15, 0.0), 22, _circle_mesh(0.04), [Color("fff6c8"), Color("ffb020"), Color("ff6a1a")], Vector2(2.0, 4.0),
+		{"spread": 80.0, "lifetime": 0.7})
+	_particles(target_local + Vector3(0.0, 0.2, 0.0), 12, _circle_mesh(0.12), [Color(0.85, 0.82, 0.78, 0.8), Color(0.6, 0.58, 0.56, 0.7)], Vector2(0.4, 0.9),
+		{"gravity": Vector3(0.0, 0.6, 0.0), "lifetime": 1.8, "explosiveness": 0.6, "spread": 70.0})
+
+
+func _splat_smoke_bomb() -> void:
+	_drop_projectile()
+	_decal(Color(0.35, 0.3, 0.45, 0.45), 0.44, 8, 3, 0.2, Vector3.ZERO, false, false)
+	var smoke := Color(0.55, 0.5, 0.68, 0.6)
+	var cloud := Node3D.new()
+	for i in 5:
+		var a := TAU * i / 5.0
+		var puff := _mesh_node(_sphere(0.17 + 0.03 * (i % 2)), _toon(smoke, 0.2))
+		puff.position = Vector3(cos(a) * 0.16, 0.18 + 0.06 * (i % 2), sin(a) * 0.16)
+		cloud.add_child(puff)
+	var top := _mesh_node(_sphere(0.2), _toon(smoke, 0.2))
+	top.position = Vector3(0.0, 0.32, 0.0)
+	cloud.add_child(top)
+	cloud.position = target_local
+	cloud.scale = Vector3.ONE * 0.3
+	add_child(cloud)
+	_keep.append(cloud)
+	var t := create_tween()
+	t.tween_property(cloud, "scale", Vector3.ONE * 1.15, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(cloud, "scale", Vector3.ONE, 0.3)
+	_particles(target_local + Vector3(0.0, 0.25, 0.0), 8, _star_mesh(0.07), [Color("c9d2de"), Color("8a94a6")], Vector2(1.5, 2.6),
+		{"spin": 720.0, "spread": 80.0, "lifetime": 1.0})
+	_particles(target_local + Vector3(0.0, 0.3, 0.0), 14, _circle_mesh(0.1), [Color(0.6, 0.55, 0.75, 0.7), Color(0.45, 0.4, 0.6, 0.6)], Vector2(0.4, 1.0),
+		{"gravity": Vector3(0.0, 0.5, 0.0), "lifetime": 1.6, "explosiveness": 0.7, "spread": 90.0})

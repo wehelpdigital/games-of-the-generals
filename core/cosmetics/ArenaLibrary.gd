@@ -10,7 +10,7 @@ extends RefCounted
 
 const ARENAS := {
 	"classic": {
-		"name": "Sunny Plaza", "rarity": "common", "desc": "The original sunny peach plaza with polka dots.",
+		"name": "Sunny Plaza", "rarity": "common", "collection": "classics", "desc": "The original sunny peach plaza with polka dots.",
 		"swatch": [Color("ffd9b0"), Color("3f8cff"), Color("ffe1c4")],
 		"sky": [Color("3f8cff"), Color("ffe1c4"), Color("ebcfb5")], "ambient": Color("dccfee"), "ambient_energy": 0.62,
 		"light": Color("fff5e6"), "light_energy": 0.21,
@@ -18,7 +18,7 @@ const ARENAS := {
 		"particles": "",
 	},
 	"desert_canyon": {
-		"name": "Desert Canyon", "rarity": "common", "desc": "Rippled dunes, cacti and towering red mesas.",
+		"name": "Desert Canyon", "rarity": "common", "collection": "wild_west", "desc": "Rippled dunes, cacti and towering red mesas.",
 		"swatch": [Color("f2c98a"), Color("d9774a"), Color("4f9f55")],
 		"sky": [Color("4fa6ff"), Color("ffe0b0"), Color("f2c98a")], "ambient": Color("ffe6c8"), "ambient_energy": 0.62,
 		"light": Color("ffe8c8"), "light_energy": 0.25,
@@ -27,7 +27,7 @@ const ARENAS := {
 		"particles": "dust",
 	},
 	"sakura_garden": {
-		"name": "Sakura Garden", "rarity": "rare", "desc": "Cherry blossoms, stone lanterns and drifting petals.",
+		"name": "Sakura Garden", "rarity": "rare", "collection": "sakura_blossom", "desc": "Cherry blossoms, stone lanterns and drifting petals.",
 		"swatch": [Color("ffb3d1"), Color("8fd06b"), Color("e0453a")],
 		"sky": [Color("8ec9ff"), Color("ffd9ec"), Color("b9e3a5")], "ambient": Color("f3e0f0"), "ambient_energy": 0.6,
 		"light": Color("fff2ec"), "light_energy": 0.22,
@@ -36,7 +36,7 @@ const ARENAS := {
 		"particles": "petals",
 	},
 	"frozen_tundra": {
-		"name": "Frozen Tundra", "rarity": "rare", "desc": "Snowfields, ice spikes and snowy pines under falling snow.",
+		"name": "Frozen Tundra", "rarity": "rare", "collection": "ice_snow", "desc": "Snowfields, ice spikes and snowy pines under falling snow.",
 		"swatch": [Color("f4f9ff"), Color("7fdcff"), Color("2f6b5a")],
 		"sky": [Color("9cc9ff"), Color("eaf6ff"), Color("dbe9f7")], "ambient": Color("d8e8ff"), "ambient_energy": 0.66,
 		"light": Color("eef6ff"), "light_energy": 0.23,
@@ -45,7 +45,7 @@ const ARENAS := {
 		"particles": "snow",
 	},
 	"candy_land": {
-		"name": "Candy Land", "rarity": "rare", "desc": "Giant lollipops, gumdrops and a sprinkle storm.",
+		"name": "Candy Land", "rarity": "rare", "collection": "cute_candy", "desc": "Giant lollipops, gumdrops and a sprinkle storm.",
 		"swatch": [Color("ffd1e8"), Color("c9f5e3"), Color("ff5a8a")],
 		"sky": [Color("ff9ed2"), Color("fff0f7"), Color("ffd1e8")], "ambient": Color("ffe8f6"), "ambient_energy": 0.66,
 		"light": Color("fff4fa"), "light_energy": 0.22,
@@ -54,7 +54,7 @@ const ARENAS := {
 		"particles": "sprinkles",
 	},
 	"ocean_reef": {
-		"name": "Ocean Reef", "rarity": "rare", "desc": "Under the sea: coral, kelp, caustics and bubbles.",
+		"name": "Ocean Reef", "rarity": "rare", "collection": "ocean_water", "desc": "Under the sea: coral, kelp, caustics and bubbles.",
 		"swatch": [Color("1f7fae"), Color("ff7a9a"), Color("3fae6a")],
 		"sky": [Color("0b4f8f"), Color("2fa5c8"), Color("1f7fae")], "ambient": Color("9fe0ff"), "ambient_energy": 0.62,
 		"light": Color("dcf6ff"), "light_energy": 0.22,
@@ -63,7 +63,7 @@ const ARENAS := {
 		"particles": "bubbles",
 	},
 	"cloud_kingdom": {
-		"name": "Cloud Kingdom", "rarity": "epic", "desc": "Above the clouds, with floating islands and a rainbow.",
+		"name": "Cloud Kingdom", "rarity": "epic", "collection": "sky_weather", "desc": "Above the clouds, with floating islands and a rainbow.",
 		"swatch": [Color("ffffff"), Color("7ec8ff"), Color("ffcf3f")],
 		"sky": [Color("5fb8ff"), Color("e8f6ff"), Color("ffffff")], "ambient": Color("e6eeff"), "ambient_energy": 0.68,
 		"light": Color("fffaf0"), "light_energy": 0.23,
@@ -72,7 +72,7 @@ const ARENAS := {
 		"particles": "sparkles",
 	},
 	"jungle_temple": {
-		"name": "Jungle Temple", "rarity": "epic", "desc": "Mossy ruins and a stepped pyramid deep in the jungle.",
+		"name": "Jungle Temple", "rarity": "epic", "collection": "nature_garden", "desc": "Mossy ruins and a stepped pyramid deep in the jungle.",
 		"swatch": [Color("8d9478"), Color("3f9a4a"), Color("5fffb0")],
 		"sky": [Color("4f9c7a"), Color("d6f0b8"), Color("8fa77a")], "ambient": Color("d6f2c6"), "ambient_energy": 0.6,
 		"light": Color("fff4dc"), "light_energy": 0.24,
@@ -90,7 +90,7 @@ const ARENAS := {
 		"particles": "sparks",
 	},
 	"haunted_grove": {
-		"name": "Haunted Grove", "rarity": "epic", "desc": "Dead trees, tombstones, jack-o'-lanterns and creeping mist.",
+		"name": "Haunted Grove", "rarity": "epic", "collection": "spooky", "desc": "Dead trees, tombstones, jack-o'-lanterns and creeping mist.",
 		"swatch": [Color("2b2140"), Color("8d86a6"), Color("ff8a2a")],
 		"sky": [Color("120b26"), Color("4a2c6e"), Color("2b2140")], "ambient": Color("bcaee8"), "ambient_energy": 0.56,
 		"light": Color("cfd8ff"), "light_energy": 0.21,
@@ -99,7 +99,7 @@ const ARENAS := {
 		"particles": "wisps",
 	},
 	"lava_pit": {
-		"name": "Lava Pit", "rarity": "legendary", "desc": "Cracked volcanic rock over rivers of glowing lava.",
+		"name": "Lava Pit", "rarity": "legendary", "collection": "lava_fire", "desc": "Cracked volcanic rock over rivers of glowing lava.",
 		"swatch": [Color("2a1d1f"), Color("ff6a1a"), Color("ffd23f")],
 		"sky": [Color("1a0d10"), Color("5a1f12"), Color("2a1d1f")], "ambient": Color("ffbe9a"), "ambient_energy": 0.56,
 		"light": Color("ffc38f"), "light_energy": 0.25,

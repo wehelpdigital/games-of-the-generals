@@ -15,7 +15,6 @@ var _showcase: Dictionary = {}  # Guest title-screen showcase; replaces the play
 
 
 func _ready() -> void:
-	PerfProbe.mark("Game3D._ready")  # PERF-TEMP
 	_apply_render_quality()
 	Graphics.signals().changed.connect(_on_graphics_changed)
 	if Graphics.effective() != "high":
@@ -32,9 +31,7 @@ func _ready() -> void:
 	GameSession.game_over.connect(_on_game_over)
 	Loadout.changed.connect(_on_loadout_changed)
 	show_attract()
-	PerfProbe.mark("choice=%s web=%s handheld=%s" % [Graphics.get_choice(), OS.has_feature("web"), Graphics.is_handheld()])  # PERF-TEMP
-	PerfProbe.mark("graphics=%s live=%s rival=%s mine=%s" % [Graphics.effective(), Graphics.live_showcase(), JSON.stringify(_opponent_loadout).left(80), JSON.stringify(Loadout.items).left(200)])  # PERF-TEMP
-	if OS.has_feature("web") or PerfProbe.flag("warmup"):
+	if OS.has_feature("web"):
 		_warm_up()
 	else:
 		warmed = true
@@ -49,8 +46,6 @@ func show_attract() -> void:
 	# A random "rival" so menus show combos. Not in the browser: every new look compiles shaders
 	# with the page frozen (see Graphics), so there the rival wears the default look.
 	_opponent_loadout = Loadout.random_loadout() if Graphics.live_showcase() else {}
-	if PerfProbe.flag("plain"):  # PERF-TEMP
-		_opponent_loadout = {}
 	refresh_cosmetics()
 	_show_attract_board()
 
@@ -255,12 +250,6 @@ func _apply_render_quality() -> void:
 	if OS.has_feature("web") or OS.has_feature("mobile"):
 		key_light.directional_shadow_max_distance = 18.0
 	Graphics.apply(get_viewport(), key_light, env)
-	if PerfProbe.flag("noshadow"):  # PERF-TEMP
-		key_light.shadow_enabled = false
-	if PerfProbe.flag("noglow"):  # PERF-TEMP
-		env.glow_enabled = false
-	if PerfProbe.flag("nomsaa"):  # PERF-TEMP
-		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 
 
 ## Below High graphics, glowing effects and particles don't cast shadows: each shadow caster needs
@@ -350,7 +339,6 @@ func _warm_up() -> void:
 				waiting.append(node)
 		pending = waiting
 		_report_warm_up(seen.size(), all_keys.size() + EFFECT_STEPS)
-		PerfProbe.mark("warm %d/%d pending=%d" % [seen.size(), all_keys.size(), pending.size()])  # PERF-TEMP
 		await RenderingServer.frame_post_draw
 	await _warm_up_effects(all_keys.size(), all_keys.size() + EFFECT_STEPS)
 	warmed = true

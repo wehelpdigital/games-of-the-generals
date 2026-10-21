@@ -80,8 +80,6 @@ func _ready() -> void:
 
 
 func start() -> void:
-	if PerfProbe.flag("plain"):  # PERF-TEMP
-		return
 	_look = {}
 	show_slide(0 if _index < 0 else _index)
 	_timer.start()
@@ -92,7 +90,6 @@ func stop() -> void:
 
 
 func show_slide(index: int) -> void:
-	PerfProbe.mark("slide %d" % index)  # PERF-TEMP
 	_index = posmod(index, SLIDES.size())
 	var slide: Dictionary = SLIDES[_index]
 	_title.text = slide["title"]

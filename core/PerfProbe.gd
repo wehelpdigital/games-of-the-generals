@@ -26,21 +26,6 @@ static func mark(label: String) -> void:
 		print("MARK %s t=%d" % [label, Time.get_ticks_msec()])
 
 
-static var _query := "?"
-
-
-## Temporary experiment switches from the page URL (e.g. ?perf=1&noshadow=1).  # PERF-TEMP
-static func flag(name: String) -> bool:
-	if _query == "?":
-		_query = ""
-		if OS.has_feature("web"):
-			var q: Variant = JavaScriptBridge.eval("window.location.search", true)
-			_query = q if q is String else ""
-		for arg in OS.get_cmdline_user_args():
-			_query += "&" + arg.trim_prefix("--")
-	return _query.contains(name + "=1") or _query.contains("&" + name)
-
-
 static func requested() -> bool:
 	if "--perf" in OS.get_cmdline_user_args():
 		return true

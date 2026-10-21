@@ -56,9 +56,7 @@ static func effective() -> String:
 	if level != "auto":
 		return level
 	if _auto == "":
-		if PerfProbe.flag("medium"):  # PERF-TEMP: browser behaviour in the desktop app
-			_auto = "medium"
-		elif is_handheld():
+		if is_handheld():
 			_auto = "low"
 		elif OS.has_feature("web"):
 			_auto = "medium"

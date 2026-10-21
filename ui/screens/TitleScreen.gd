@@ -114,7 +114,6 @@ func _notify_web_loader() -> void:
 		await ui.game.warmed_up  # The scene's shaders compile behind the loader (Game3D._warm_up).
 	await get_tree().create_timer(0.15).timeout
 	JavaScriptBridge.eval("window.salpakanBooted && window.salpakanBooted()", true)
-	PerfProbe.mark("booted")  # PERF-TEMP
 	if visible:
 		_logo.intro()  # The first intro played behind the loader.
 

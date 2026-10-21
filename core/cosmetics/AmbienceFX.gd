@@ -16,7 +16,6 @@ const PEOPLE_SCALE := 1.7
 ## Walkers follow a U around the owner's half on the frame rim: up the left side from the centre
 ## line, along the owner's edge, back up the right side. Its corners and total length:
 const RIM_PATH := [Vector2(-RIM_X, 0.15), Vector2(-RIM_X, RIM_Z), Vector2(RIM_X, RIM_Z), Vector2(RIM_X, 0.15)]
-const INK := Color("1d1736")
 
 ## Device setting "Reduce ambience": fewer particles and fewer fly-bys.
 static var reduced := false
@@ -81,8 +80,6 @@ const STYLES := {
 		"swatch": [Color("ffffff"), Color("b8ecff"), Color("ffb3ec")]},
 }
 
-static var _baked: Dictionary = {}
-static var _materials: Dictionary = {}
 
 var style := NONE
 var _actors: Array[Dictionary] = []  # {node, tick: Callable(actor, t, delta)}
@@ -541,60 +538,17 @@ void fragment() {
 
 # --- Models --------------------------------------------------------------------------------------
 
-## A baked toon model with an ink outline. Roles are "rrggbb", optionally "|g<glow>" or "|a<alpha>".
-func _model(key: String, parts: Array) -> Node3D:
-	if not _baked.has(key):
-		_baked[key] = ShapeKit.bake(parts)
-	var baked: Dictionary = _baked[key]
-	var root := Node3D.new()
-	var mesh := MeshInstance3D.new()
-	mesh.mesh = baked["mesh"]
-	var roles: Array = baked["roles"]
-	for i in roles.size():
-		mesh.set_surface_override_material(i, _material(str(roles[i])))
-	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	root.add_child(mesh)
-	if baked["hull"] != null:
-		var hull := MeshInstance3D.new()
-		hull.mesh = baked["hull"]
-		hull.material_override = CosmeticLibrary.outline_material(INK)
-		hull.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		root.add_child(hull)
-	return root
-
-
-static func _material(role: String) -> Material:
-	if _materials.has(role):
-		return _materials[role]
-	var bits := role.split("|")
-	var m := CosmeticLibrary.toon(Color(bits[0]), 0.2)
-	for extra: String in bits.slice(1):
-		if extra.begins_with("g"):
-			m.emission_enabled = true
-			m.emission = Color(bits[0])
-			m.emission_energy_multiplier = float(extra.substr(1))
-		elif extra.begins_with("a"):
-			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			m.albedo_color.a = float(extra.substr(1))
-	_materials[role] = m
-	return m
-
-
-static func _pt(role: String, maker: Callable, pos: Vector3, rot := Vector3.ZERO, hull := 0.018) -> Dictionary:
-	return ShapeKit.part(role, maker, Transform3D(Basis.from_euler(rot), pos), hull)
-
-
 ## Two flapping wings around a body; returns {root, left, right} pivots.
 func _winged(key: String, body: Array, wing: Array, span: float) -> Dictionary:
-	var root := _model(key + "/body", body)
+	var root := PropKit.model(key + "/body", body)
 	var left := Node3D.new()
 	left.position = Vector3(-span, 0.0, 0.0)
-	left.add_child(_model(key + "/wing", wing))
+	left.add_child(PropKit.model(key + "/wing", wing))
 	root.add_child(left)
 	var right := Node3D.new()
 	right.position = Vector3(span, 0.0, 0.0)
 	right.scale = Vector3(-1.0, 1.0, 1.0)
-	right.add_child(_model(key + "/wing", wing))
+	right.add_child(PropKit.model(key + "/wing", wing))
 	root.add_child(right)
 	return {"root": root, "left": left, "right": right}
 
@@ -612,14 +566,14 @@ func _flock(bats: bool) -> void:
 	var key := "bat" if bats else "bird"
 	var body_color := "2a1f3a" if bats else "3a3150"
 	var body := [
-		_pt(body_color, ShapeKit.capsule(0.045, 0.2), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
-		_pt(body_color, ShapeKit.sphere(0.045), Vector3(0.0, 0.03, -0.1)),
+		PropKit.pt(body_color, ShapeKit.capsule(0.045, 0.2), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt(body_color, ShapeKit.sphere(0.045), Vector3(0.0, 0.03, -0.1)),
 	]
 	if not bats:
-		body.append(_pt("ffb020", ShapeKit.cone(0.02, 0.06, 8), Vector3(0.0, 0.03, -0.16), Vector3(-PI / 2.0, 0.0, 0.0), 0.0))
+		body.append(PropKit.pt("ffb020", ShapeKit.cone(0.02, 0.06, 8), Vector3(0.0, 0.03, -0.16), Vector3(-PI / 2.0, 0.0, 0.0), 0.0))
 	var wing_poly := PackedVector2Array([Vector2(0.0, 0.03), Vector2(-0.2, 0.0), Vector2(-0.26, -0.05), Vector2(-0.12, -0.04), Vector2(0.0, -0.05)]) if bats \
 		else PackedVector2Array([Vector2(0.0, 0.04), Vector2(-0.22, 0.01), Vector2(-0.18, -0.03), Vector2(0.0, -0.04)])
-	var wing := [_pt("4a3a6a" if bats else "5a4f78", ShapeKit.prism(wing_poly, 0.012, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.01)]
+	var wing := [PropKit.pt("4a3a6a" if bats else "5a4f78", ShapeKit.prism(wing_poly, 0.012, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.01)]
 	for i in count:
 		var parts := _winged(key, body, wing, 0.04)
 		var root: Node3D = parts["root"]
@@ -670,9 +624,9 @@ func _tick_flock(actor: Dictionary, t: float, _delta: float) -> void:
 func _butterfly(i: int) -> void:
 	var colors := ["ff7ab8", "ffd23f", "6fc3ff", "b05cff", "4dffb0"]
 	var color: String = colors[i % colors.size()]
-	var body := [_pt("2a1f3a", ShapeKit.capsule(0.015, 0.1), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0), 0.0)]
+	var body := [PropKit.pt("2a1f3a", ShapeKit.capsule(0.015, 0.1), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0), 0.0)]
 	var wing_poly := PackedVector2Array([Vector2(0.0, 0.0), Vector2(-0.08, 0.07), Vector2(-0.12, 0.02), Vector2(-0.07, -0.05), Vector2(0.0, -0.03)])
-	var wing := [_pt(color, ShapeKit.prism(wing_poly, 0.006, 0.002), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.008)]
+	var wing := [PropKit.pt(color, ShapeKit.prism(wing_poly, 0.006, 0.002), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.008)]
 	var parts := _winged("butterfly_" + color, body, wing, 0.012)
 	var root: Node3D = parts["root"]
 	root.scale = Vector3.ONE * 2.8
@@ -696,9 +650,9 @@ func _tick_butterfly(actor: Dictionary, t: float, _delta: float) -> void:
 
 func _paper_plane(i: int) -> void:
 	var poly := PackedVector2Array([Vector2(0.0, -0.22), Vector2(0.13, 0.12), Vector2(0.0, 0.07), Vector2(-0.13, 0.12)])
-	var plane := _model("paper_plane", [
-		_pt("ffffff", ShapeKit.prism(poly, 0.012, 0.003), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.012),
-		_pt("dde4f0", ShapeKit.prism(PackedVector2Array([Vector2(0.0, -0.2), Vector2(0.015, 0.1), Vector2(-0.015, 0.1)]), 0.05, 0.002), Vector3(0.0, -0.025, 0.0), Vector3(-PI / 2.0, 0.0, 0.0), 0.0),
+	var plane := PropKit.model("paper_plane", [
+		PropKit.pt("ffffff", ShapeKit.prism(poly, 0.012, 0.003), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.012),
+		PropKit.pt("dde4f0", ShapeKit.prism(PackedVector2Array([Vector2(0.0, -0.2), Vector2(0.015, 0.1), Vector2(-0.015, 0.1)]), 0.05, 0.002), Vector3(0.0, -0.025, 0.0), Vector3(-PI / 2.0, 0.0, 0.0), 0.0),
 	])
 	plane.scale = Vector3.ONE * 2.0
 	var center := Vector3(randf_range(-2.0, 2.0), 2.2 + i * 0.35, randf_range(1.2, 2.8))
@@ -719,14 +673,14 @@ func _tick_plane(actor: Dictionary, t: float, _delta: float) -> void:
 
 
 func _ufo() -> void:
-	var saucer := _model("ufo", [
-		_pt("c9d2de", ShapeKit.sphere(0.5, 0.18, 28), Vector3.ZERO),
-		_pt("9aa6b8", ShapeKit.torus(0.42, 0.55, 28, 6), Vector3(0.0, -0.01, 0.0)),
-		_pt("9cf6ff|a0.7", ShapeKit.sphere(0.2, 0.26, 20), Vector3(0.0, 0.09, 0.0)),
-		_pt("4dffb0|g2.0", ShapeKit.sphere(0.04), Vector3(0.38, -0.02, 0.0), Vector3.ZERO, 0.0),
-		_pt("ff5cd6|g2.0", ShapeKit.sphere(0.04), Vector3(-0.38, -0.02, 0.0), Vector3.ZERO, 0.0),
-		_pt("ffd23f|g2.0", ShapeKit.sphere(0.04), Vector3(0.0, -0.02, 0.38), Vector3.ZERO, 0.0),
-		_pt("6f8bff|g2.0", ShapeKit.sphere(0.04), Vector3(0.0, -0.02, -0.38), Vector3.ZERO, 0.0),
+	var saucer := PropKit.model("ufo", [
+		PropKit.pt("c9d2de", ShapeKit.sphere(0.5, 0.18, 28), Vector3.ZERO),
+		PropKit.pt("9aa6b8", ShapeKit.torus(0.42, 0.55, 28, 6), Vector3(0.0, -0.01, 0.0)),
+		PropKit.pt("9cf6ff|a0.7", ShapeKit.sphere(0.2, 0.26, 20), Vector3(0.0, 0.09, 0.0)),
+		PropKit.pt("4dffb0|g2.0", ShapeKit.sphere(0.04), Vector3(0.38, -0.02, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("ff5cd6|g2.0", ShapeKit.sphere(0.04), Vector3(-0.38, -0.02, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("ffd23f|g2.0", ShapeKit.sphere(0.04), Vector3(0.0, -0.02, 0.38), Vector3.ZERO, 0.0),
+		PropKit.pt("6f8bff|g2.0", ShapeKit.sphere(0.04), Vector3(0.0, -0.02, -0.38), Vector3.ZERO, 0.0),
 	])
 	var beam := MeshInstance3D.new()
 	var cone := CylinderMesh.new()
@@ -776,13 +730,13 @@ func _balloon(i: int) -> void:
 	var colors := [["ff4d6d", "ffd23f"], ["3d8bff", "ffffff"], ["4dffb0", "b05cff"]]
 	var pair: Array = colors[i % colors.size()]
 	var parts := [
-		_pt(pair[0], ShapeKit.sphere(0.32, 0.72, 20), Vector3(0.0, 0.62, 0.0)),
-		_pt(pair[1], ShapeKit.torus(0.27, 0.33, 24, 6), Vector3(0.0, 0.62, 0.0)),
-		_pt("8a5a2a", ShapeKit.box(Vector3(0.16, 0.12, 0.16), 0.02, 0.01), Vector3(0.0, 0.08, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
-		_pt("5a3a24", ShapeKit.cylinder(0.006, 0.006, 0.36, 4), Vector3(0.07, 0.3, 0.0), Vector3(0.0, 0.0, 0.18), 0.0),
-		_pt("5a3a24", ShapeKit.cylinder(0.006, 0.006, 0.36, 4), Vector3(-0.07, 0.3, 0.0), Vector3(0.0, 0.0, -0.18), 0.0),
+		PropKit.pt(pair[0], ShapeKit.sphere(0.32, 0.72, 20), Vector3(0.0, 0.62, 0.0)),
+		PropKit.pt(pair[1], ShapeKit.torus(0.27, 0.33, 24, 6), Vector3(0.0, 0.62, 0.0)),
+		PropKit.pt("8a5a2a", ShapeKit.box(Vector3(0.16, 0.12, 0.16), 0.02, 0.01), Vector3(0.0, 0.08, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("5a3a24", ShapeKit.cylinder(0.006, 0.006, 0.36, 4), Vector3(0.07, 0.3, 0.0), Vector3(0.0, 0.0, 0.18), 0.0),
+		PropKit.pt("5a3a24", ShapeKit.cylinder(0.006, 0.006, 0.36, 4), Vector3(-0.07, 0.3, 0.0), Vector3(0.0, 0.0, -0.18), 0.0),
 	]
-	var balloon := _model("balloon_%d" % (i % colors.size()), parts)
+	var balloon := PropKit.model("balloon_%d" % (i % colors.size()), parts)
 	var x: float = [-HALF_X - 0.9, HALF_X + 0.9, 0.0][i % 3]
 	var z: float = [1.2, 2.6, -0.4][i % 3]
 	_actor(balloon, _tick_balloon, {"x": x, "z": z, "phase": i * 7.0, "period": randf_range(18.0, 24.0)})
@@ -798,11 +752,11 @@ func _tick_balloon(actor: Dictionary, t: float, _delta: float) -> void:
 
 
 func _cloud(i: int) -> void:
-	var cloud := _model("cloud", [
-		_pt("ffffff", ShapeKit.sphere(0.55, 0.6, 16), Vector3(0.0, 0.0, 0.0), Vector3.ZERO, 0.0),
-		_pt("ffffff", ShapeKit.sphere(0.42, 0.48, 16), Vector3(0.55, -0.05, 0.1), Vector3.ZERO, 0.0),
-		_pt("ffffff", ShapeKit.sphere(0.45, 0.5, 16), Vector3(-0.55, -0.04, -0.05), Vector3.ZERO, 0.0),
-		_pt("eef4ff", ShapeKit.sphere(0.36, 0.4, 16), Vector3(0.2, 0.22, -0.1), Vector3.ZERO, 0.0),
+	var cloud := PropKit.model("cloud", [
+		PropKit.pt("ffffff", ShapeKit.sphere(0.55, 0.6, 16), Vector3(0.0, 0.0, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.42, 0.48, 16), Vector3(0.55, -0.05, 0.1), Vector3.ZERO, 0.0),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.45, 0.5, 16), Vector3(-0.55, -0.04, -0.05), Vector3.ZERO, 0.0),
+		PropKit.pt("eef4ff", ShapeKit.sphere(0.36, 0.4, 16), Vector3(0.2, 0.22, -0.1), Vector3.ZERO, 0.0),
 	])
 	var shadow := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
@@ -853,22 +807,22 @@ func _tick_ghost(actor: Dictionary, t: float, _delta: float) -> void:
 
 func _person(key: String, coat: String, head: String, hat: Array, extra: Array = []) -> Node3D:
 	var parts := [
-		_pt(coat, ShapeKit.capsule(0.075, 0.22), Vector3(0.0, 0.13, 0.0)),
-		_pt(head, ShapeKit.sphere(0.065), Vector3(0.0, 0.3, 0.0)),
-		_pt("1d1736", ShapeKit.sphere(0.012), Vector3(-0.022, 0.31, -0.058), Vector3.ZERO, 0.0),
-		_pt("1d1736", ShapeKit.sphere(0.012), Vector3(0.022, 0.31, -0.058), Vector3.ZERO, 0.0),
+		PropKit.pt(coat, ShapeKit.capsule(0.075, 0.22), Vector3(0.0, 0.13, 0.0)),
+		PropKit.pt(head, ShapeKit.sphere(0.065), Vector3(0.0, 0.3, 0.0)),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.012), Vector3(-0.022, 0.31, -0.058), Vector3.ZERO, 0.0),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.012), Vector3(0.022, 0.31, -0.058), Vector3.ZERO, 0.0),
 	]
 	parts.append_array(hat)
 	parts.append_array(extra)
-	return _model(key, parts)
+	return PropKit.model(key, parts)
 
 
 func _villager(i: int) -> void:
 	var coats := ["ff8a5a", "3d8bff", "4dbf6a", "b05cff", "ffd23f"]
 	var hats := [
-		[_pt("8a5a2a", ShapeKit.cylinder(0.11, 0.11, 0.015, 16), Vector3(0.0, 0.36, 0.0)), _pt("8a5a2a", ShapeKit.cylinder(0.05, 0.06, 0.07, 12), Vector3(0.0, 0.4, 0.0))],
-		[_pt("ff4d6d", ShapeKit.cone(0.07, 0.12, 12), Vector3(0.0, 0.42, 0.0))],
-		[_pt("ffffff", ShapeKit.sphere(0.07, 0.07, 12), Vector3(0.0, 0.36, 0.0))],
+		[PropKit.pt("8a5a2a", ShapeKit.cylinder(0.11, 0.11, 0.015, 16), Vector3(0.0, 0.36, 0.0)), PropKit.pt("8a5a2a", ShapeKit.cylinder(0.05, 0.06, 0.07, 12), Vector3(0.0, 0.4, 0.0))],
+		[PropKit.pt("ff4d6d", ShapeKit.cone(0.07, 0.12, 12), Vector3(0.0, 0.42, 0.0))],
+		[PropKit.pt("ffffff", ShapeKit.sphere(0.07, 0.07, 12), Vector3(0.0, 0.36, 0.0))],
 	]
 	var person := _person("villager_%d" % i, coats[i % coats.size()], "ffd6b0", hats[i % hats.size()])
 	_actor(person, _tick_villager, {"forward": i % 2 == 0, "speed": randf_range(0.35, 0.55), "offset": i * 3.7})
@@ -884,9 +838,9 @@ func _tick_villager(actor: Dictionary, t: float, _delta: float) -> void:
 
 func _army() -> void:
 	var soldier := [
-		_pt("1d1736", ShapeKit.cylinder(0.065, 0.06, 0.16, 14), Vector3(0.0, 0.44, 0.0)),
-		_pt("ffd23f", ShapeKit.sphere(0.018), Vector3(0.0, 0.4, -0.06), Vector3.ZERO, 0.0),
-		_pt("8a8f9e", ShapeKit.cylinder(0.01, 0.01, 0.3, 6), Vector3(0.09, 0.27, 0.0), Vector3.ZERO, 0.008),
+		PropKit.pt("1d1736", ShapeKit.cylinder(0.065, 0.06, 0.16, 14), Vector3(0.0, 0.44, 0.0)),
+		PropKit.pt("ffd23f", ShapeKit.sphere(0.018), Vector3(0.0, 0.4, -0.06), Vector3.ZERO, 0.0),
+		PropKit.pt("8a8f9e", ShapeKit.cylinder(0.01, 0.01, 0.3, 6), Vector3(0.09, 0.27, 0.0), Vector3.ZERO, 0.008),
 	]
 	var count := 5 if reduced else 8
 	for i in count:
@@ -894,8 +848,8 @@ func _army() -> void:
 		var key := "soldier"
 		if i == 0:
 			# The drummer leads.
-			extra = [soldier[0], soldier[1], _pt("ffffff", ShapeKit.cylinder(0.07, 0.07, 0.08, 14), Vector3(0.0, 0.14, -0.09), Vector3(PI / 2.0, 0.0, 0.0)),
-				_pt("e8341c", ShapeKit.torus(0.06, 0.075, 14, 4), Vector3(0.0, 0.14, -0.09), Vector3(PI / 2.0, 0.0, 0.0), 0.0)]
+			extra = [soldier[0], soldier[1], PropKit.pt("ffffff", ShapeKit.cylinder(0.07, 0.07, 0.08, 14), Vector3(0.0, 0.14, -0.09), Vector3(PI / 2.0, 0.0, 0.0)),
+				PropKit.pt("e8341c", ShapeKit.torus(0.06, 0.075, 14, 4), Vector3(0.0, 0.14, -0.09), Vector3(PI / 2.0, 0.0, 0.0), 0.0)]
 			key = "drummer"
 		var person := _person(key, "e8341c", "ffd6b0", [], extra)
 		_actor(person, _tick_column, {"index": i, "count": count, "gap": 0.42, "speed": 0.5, "step_rate": 6.0})
@@ -903,20 +857,20 @@ func _army() -> void:
 
 func _parade() -> void:
 	var float_parts := [
-		_pt("ff4d6d", ShapeKit.box(Vector3(0.62, 0.3, 0.12), 0.04, 0.015), Vector3(0.0, 0.1, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
-		_pt("ffd23f", ShapeKit.box(Vector3(0.66, 0.34, 0.03), 0.05, 0.01), Vector3(0.0, 0.17, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
-		_pt("1d1736", ShapeKit.cylinder(0.05, 0.05, 0.03, 12), Vector3(-0.2, 0.04, -0.17), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
-		_pt("1d1736", ShapeKit.cylinder(0.05, 0.05, 0.03, 12), Vector3(0.2, 0.04, -0.17), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
-		_pt("8a8f9e", ShapeKit.cylinder(0.008, 0.008, 0.4, 6), Vector3(0.0, 0.38, 0.0), Vector3.ZERO, 0.0),
-		_pt("4dffb0", ShapeKit.sphere(0.14, 0.17, 16), Vector3(0.0, 0.64, 0.0)),
-		_pt("b05cff", ShapeKit.sphere(0.1, 0.12, 16), Vector3(0.18, 0.54, 0.0)),
+		PropKit.pt("ff4d6d", ShapeKit.box(Vector3(0.62, 0.3, 0.12), 0.04, 0.015), Vector3(0.0, 0.1, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("ffd23f", ShapeKit.box(Vector3(0.66, 0.34, 0.03), 0.05, 0.01), Vector3(0.0, 0.17, 0.0), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("1d1736", ShapeKit.cylinder(0.05, 0.05, 0.03, 12), Vector3(-0.2, 0.04, -0.17), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("1d1736", ShapeKit.cylinder(0.05, 0.05, 0.03, 12), Vector3(0.2, 0.04, -0.17), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("8a8f9e", ShapeKit.cylinder(0.008, 0.008, 0.4, 6), Vector3(0.0, 0.38, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("4dffb0", ShapeKit.sphere(0.14, 0.17, 16), Vector3(0.0, 0.64, 0.0)),
+		PropKit.pt("b05cff", ShapeKit.sphere(0.1, 0.12, 16), Vector3(0.18, 0.54, 0.0)),
 	]
-	var parade_float := _model("parade_float", float_parts)
+	var parade_float := PropKit.model("parade_float", float_parts)
 	var band := 2 if reduced else 4
 	_actor(parade_float, _tick_column, {"index": 0, "count": band + 1, "gap": 0.5, "speed": 0.42, "step_rate": 0.0, "lead_gap": 0.6})
-	var trumpet := [_pt("ffd23f|g0.4", ShapeKit.cone(0.035, 0.12, 10), Vector3(0.0, 0.3, -0.12), Vector3(-PI / 2.0, 0.0, 0.0), 0.008)]
+	var trumpet := [PropKit.pt("ffd23f|g0.4", ShapeKit.cone(0.035, 0.12, 10), Vector3(0.0, 0.3, -0.12), Vector3(-PI / 2.0, 0.0, 0.0), 0.008)]
 	for i in band:
-		var hat := [_pt("ffd23f", ShapeKit.cylinder(0.06, 0.065, 0.06, 12), Vector3(0.0, 0.38, 0.0)), _pt("ffffff", ShapeKit.sphere(0.025), Vector3(0.0, 0.43, 0.0), Vector3.ZERO, 0.0)]
+		var hat := [PropKit.pt("ffd23f", ShapeKit.cylinder(0.06, 0.065, 0.06, 12), Vector3(0.0, 0.38, 0.0)), PropKit.pt("ffffff", ShapeKit.sphere(0.025), Vector3(0.0, 0.43, 0.0), Vector3.ZERO, 0.0)]
 		var player := _person("bandsman", "3d8bff", "ffd6b0", hat, trumpet)
 		_actor(player, _tick_column, {"index": i + 1, "count": band + 1, "gap": 0.5, "speed": 0.42, "step_rate": 7.0, "lead_gap": 0.6})
 	var confetti := FxTextures.particles("square", false, _scaled(30), 1.4, 0.06)

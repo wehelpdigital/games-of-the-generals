@@ -227,17 +227,78 @@ func face_toward(viewer_side: String) -> Tween:
 	return t
 
 
-func eliminate() -> Tween:
+## Leaves the board. `death` is how (action kill effects pick one, see KillFX.ACTIONS); `away` is
+## the board-local direction the blow came from the winner, for knock-backs and slices.
+func eliminate(death := "", away := Vector3.ZERO) -> Tween:
 	set_pickable(false)
 	set_highlight(Highlight.NONE)
 	eliminated.emit(self)
 	var t := _new_tween()
-	t.tween_property(_rig, "scale", Vector3.ONE * 1.18, 0.07)
-	t.tween_property(_rig, "scale", Vector3.ONE * 0.01, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	t.parallel().tween_property(_rig, "rotation:y", _rig.rotation.y + PI, 0.32)
-	t.parallel().tween_property(_rig, "position:y", -0.1, 0.32)
+	match death:
+		"burn":
+			# Scorched: a shiver, then it crumbles down into the blast.
+			for k in 3:
+				t.tween_property(_rig, "rotation:z", 0.14 * (1.0 if k % 2 == 0 else -1.0), 0.04)
+			t.tween_property(_rig, "scale", Vector3(1.2, 0.05, 1.2), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "rotation:z", 0.0, 0.1)
+		"sink":
+			t.tween_property(_rig, "rotation:z", 0.3, 0.1)
+			t.tween_property(_rig, "position:y", -1.1, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "rotation:x", -0.5, 0.45)
+		"lift":
+			t.tween_property(_rig, "position:y", 3.2, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "rotation:y", _rig.rotation.y + TAU * 2.0, 0.9)
+			t.parallel().tween_property(_rig, "scale", Vector3.ONE * 0.3, 0.9).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+		"squash":
+			t.tween_property(_rig, "scale", Vector3(1.5, 0.08, 1.5), 0.07)
+			t.tween_interval(0.45)
+			t.tween_property(_rig, "scale", Vector3(0.01, 0.01, 0.01), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		"split":
+			_split(away)
+			t.tween_interval(0.75)
+		"fly":
+			var dir := Vector3(away.x, 0.0, away.z).normalized() if Vector2(away.x, away.z).length() > 0.01 else Vector3.FORWARD
+			var land := position + dir * 4.5
+			t.tween_property(self, "position", Vector3(land.x, 0.0, land.z), 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			t.parallel().tween_method(_fly_height, 0.0, 1.0, 0.7)
+			t.parallel().tween_property(_rig, "rotation", Vector3(TAU * 2.0, TAU, 0.0), 0.7)
+			t.parallel().tween_property(_rig, "scale", Vector3.ONE * 0.2, 0.25).set_delay(0.45)
+		"shatter":
+			t.tween_interval(0.04)
+			t.tween_property(_rig, "scale", Vector3.ONE * 0.01, 0.06)
+		"vanish":
+			t.tween_property(_rig, "rotation:y", _rig.rotation.y + TAU * 3.0, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "scale", Vector3.ONE * 0.01, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "position:y", 0.3, 0.55)
+		_:
+			t.tween_property(_rig, "scale", Vector3.ONE * 1.18, 0.07)
+			t.tween_property(_rig, "scale", Vector3.ONE * 0.01, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+			t.parallel().tween_property(_rig, "rotation:y", _rig.rotation.y + PI, 0.32)
+			t.parallel().tween_property(_rig, "position:y", -0.1, 0.32)
 	t.tween_callback(queue_free)
 	return t
+
+
+## Knock-back arc: up and down while the root slides away.
+func _fly_height(k: float) -> void:
+	_rig.position.y = 1.8 * 4.0 * k * (1.0 - k) - 0.6 * k * k
+
+
+## Ninja slice: two copies of the model, slimmed into halves, fall apart across the blow.
+func _split(away: Vector3) -> void:
+	var across := Vector3(away.x, 0.0, away.z).cross(Vector3.UP)
+	across = across.normalized() if across.length() > 0.01 else Vector3.RIGHT
+	var local_across := (basis.inverse() * across).normalized()
+	_model.visible = false
+	for sign: float in [-1.0, 1.0]:
+		var half: Node3D = _model.duplicate()
+		half.visible = true
+		_rig.add_child(half)
+		half.scale = Vector3.ONE - local_across.abs() * 0.45
+		var t := half.create_tween().set_parallel(true)
+		t.tween_property(half, "position", local_across * sign * 0.35 + Vector3(0.0, -0.15, 0.0), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(half, "rotation", Vector3(local_across.z, 0.0, -local_across.x) * sign * 0.9, 0.5)
+		t.tween_property(half, "scale", Vector3.ONE * 0.01, 0.25).set_delay(0.45)
 
 
 func _append_landing(t: Tween) -> void:

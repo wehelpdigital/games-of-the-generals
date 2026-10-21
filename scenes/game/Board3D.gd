@@ -447,14 +447,25 @@ func _play_result(result: Dictionary) -> void:
 		"defender":
 			winner_side = defender.side if defender else Ranks.opponent(mover.side)
 			fall_at = Vector3(mover.position.x, 0.0, mover.position.z)
-	KillFX.play(self, fall_at + Vector3(0.0, 0.45, 0.0), kill_effects.get(winner_side, "classic"),
-		CLASH_COLORS.get(outcome, Color.WHITE), 1.25 if outcome == "both" else 1.0)
+	var style: String = kill_effects.get(winner_side, "classic")
+	var death := ""
+	var away := Vector3.ZERO
+	if outcome != "both" and KillFX.is_action(style):
+		# Action kill: the winning chip performs it, so it starts where the winner stands and the
+		# loser only goes down at the moment of impact.
+		var winner_at: Vector3 = mover.position if outcome == "attacker" else (defender.position if defender else to_pos)
+		winner_at = Vector3(winner_at.x, 0.0, winner_at.z)
+		away = fall_at - winner_at
+		death = KillFX.death_of(style)
+		await _delay(KillFX.play_action(self, winner_at + Vector3(0.0, 0.45, 0.0), fall_at + Vector3(0.0, 0.45, 0.0), style))
+	else:
+		KillFX.play(self, fall_at + Vector3(0.0, 0.45, 0.0), style, CLASH_COLORS.get(outcome, Color.WHITE), 1.25 if outcome == "both" else 1.0)
 	clash_impact.emit(0.9 if outcome == "both" else 0.6)
 	for id: Variant in clash.get("eliminated", []):
 		var victim: Piece3D = pieces.get(str(id))
 		if victim != null:
 			_remove(victim)
-			victim.eliminate()
+			victim.eliminate(death, away)
 	if outcome == "attacker":
 		_place(mover, to)
 		await _delay(0.1)

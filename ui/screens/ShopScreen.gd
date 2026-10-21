@@ -1202,7 +1202,9 @@ func _refresh_preview_actions() -> void:
 	if _preview_category == LOOK:
 		for b: Button in _board_actions(_preview_slug, 42, false):
 			_preview_actions.add_child(b)
-		_preview_actions.add_child(AppTheme.button("Back to shop", "Ghost", _close_preview, 42))
+		var back := AppTheme.button("Back to shop", "Ghost", _close_preview, 42)
+		back.add_theme_font_size_override("font_size", 17)
+		_preview_actions.add_child(back)
 		return
 	_preview_actions.add_child(_action(_preview_category, _preview_slug, 42))
 	if _preview_category in ["trail", "kill", "taunt"]:

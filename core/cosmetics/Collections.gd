@@ -1,12 +1,15 @@
 class_name Collections
 extends RefCounted
-## Themed collections: matching sets of cosmetics in one style (woodblock waves, pirate seas,
-## samurai, neon city...). Unlike Seasons they never go off sale; a collection is only a label that
-## groups items on the shop's Collections shelf and lets players try the whole look at once.
+## Shop themes: every cosmetic belongs to one, so the shop's Themes tab can shelve the whole
+## catalogue. A theme is a pop-culture style set (woodblock waves, pirate seas, samurai, neon
+## city...), a general look (Lava & Fire, Ocean & Water, Toys & Fun...), one of the holiday
+## collections (Seasons; those items keep their own sale windows), or Classics for the rest. Unlike
+## Seasons a theme never goes off sale: it is only a label that groups items and lets players try
+## a whole look at once (FeaturedBoards).
 ##
-## Items join a collection with a "collection" key in their library entry (exported to the
-## server's catalog, where admins can retag items). Every name and design here is a generic genre
-## or art style, never a franchise.
+## Items join a theme with a "collection" key in their library entry, which is exported to the
+## server's catalog; admins can retag items there, and the shop follows the server's tag. Every
+## name and design here is a generic genre or art style, never a franchise.
 
 const LIST := {
 	"great_wave": {"name": "Great Wave", "color": Color("2a4a8a"),
@@ -53,56 +56,107 @@ const LIST := {
 		"blurb": "Spray paint, brick walls, skate ramps and the sound of the city."},
 	"fantasy_kingdom": {"name": "Fantasy Kingdom", "color": Color("6a4ad6"),
 		"blurb": "Castle walls, heraldry, knights and a dragon circling the towers."},
+	# General looks.
+	"sakura_blossom": {"name": "Cherry Blossom", "color": Color("ff7ab0"),
+		"blurb": "Blossom gardens, paper lanterns and pink petals on the breeze."},
+	"lava_fire": {"name": "Lava & Fire", "color": Color("e8401c"),
+		"blurb": "Molten rock, volcanic glass, embers and roaring flames."},
+	"ocean_water": {"name": "Ocean & Water", "color": Color("1fa0c8"),
+		"blurb": "Coral reefs, tides, pearls and bubbles."},
+	"ice_snow": {"name": "Ice & Snow", "color": Color("4f9ae8"),
+		"blurb": "Glaciers, frost, crystal chips, snowfall and northern lights."},
+	"nature_garden": {"name": "Nature & Garden", "color": Color("3fa85a"),
+		"blurb": "Meadows, jungle ruins, potted plants, birds and butterflies."},
+	"sky_weather": {"name": "Sky & Storms", "color": Color("3d6bd6"),
+		"blurb": "Clouds, rain, lightning, twisters and things that fly."},
+	"spooky": {"name": "Spooky", "color": Color("5a3a9a"),
+		"blurb": "Haunted groves, ghosts, bats and mist, all year round."},
+	"cute_candy": {"name": "Cute & Candy", "color": Color("f0609a"),
+		"blurb": "Bubblegum, sprinkles, hearts, rainbows and teddy bears."},
+	"military_classic": {"name": "Military Classic", "color": Color("5a7a3a"),
+		"blurb": "Challenge coins, dog tags, field cards, drums and toy soldiers."},
+	"royal_gold": {"name": "Royal & Gold", "color": Color("c8941a"),
+		"blurb": "Gold, jade, gems, a golden banner and the champion's trophy."},
+	"toys_fun": {"name": "Toys & Fun", "color": Color("ff8a1f"),
+		"blurb": "Dice, rubber ducks, party poppers, parades and a clown horn."},
+	"classics": {"name": "Classics", "color": Color("8a5a3a"),
+		"blurb": "The originals: toy-box wood, marble, the classic plaque and the comic POW!"},
 }
-## Shelf order in the shop.
+## Shelf order in the shop: pop-culture sets, then general looks, then the holidays (Seasons).
 const ORDER := ["great_wave", "treasure_seas", "samurai_ronin", "ninja_clan", "cyber_neon", "giant_robots",
 	"kaiju_attack", "space_opera", "synthwave", "arcade_8bit", "wild_west", "steampunk", "norse_vikings",
 	"ancient_egypt", "greek_gods", "philippine_myths", "comic_hero", "zombie_outbreak", "magical_sparkle",
 	"concert_stage", "street_graffiti", "fantasy_kingdom"]
+const STYLES := ["sakura_blossom", "lava_fire", "ocean_water", "ice_snow", "nature_garden", "sky_weather", "spooky",
+	"cute_candy", "military_classic", "royal_gold", "toys_fun", "classics"]
 ## Categories a whole look wears (taunts aren't worn; toppers fill the three spots).
 const LOOK_CATEGORIES := ["arena", "board", "territory", "chip", "shape", "icons", "aura", "glow", "trail", "kill", "ambience"]
 
-static var _items: Dictionary = {}  # slug -> [[category, slug], ...] (built once)
+static var _items: Dictionary = {}  # theme -> [[category, slug], ...] (built on first use)
 
 
+## A theme the shop knows: a style set, a general look or a holiday.
 static func exists(slug: String) -> bool:
-	return LIST.has(slug)
+	return LIST.has(slug) or Seasons.exists(slug)
+
+
+static func is_holiday(slug: String) -> bool:
+	return Seasons.exists(slug) and not LIST.has(slug)
 
 
 static func name_of(slug: String) -> String:
+	if is_holiday(slug):
+		return Seasons.name_of(slug)
 	return str(LIST.get(slug, {}).get("name", slug.capitalize()))
 
 
 static func color_of(slug: String) -> Color:
+	if is_holiday(slug):
+		return Seasons.color_of(slug)
 	return LIST.get(slug, {}).get("color", AppTheme.PURPLE)
 
 
 static func blurb_of(slug: String) -> String:
+	if is_holiday(slug):
+		return str(Seasons.OCCASIONS[slug].get("blurb", ""))
 	return str(LIST.get(slug, {}).get("blurb", ""))
 
 
-## [[category, slug], ...] of every item in the collection, in shop category order.
+## The theme an item is shelved under: the server's tag (admins can retag), else its own.
+static func theme_of(category: String, slug: String) -> String:
+	var server: Variant = Loadout.shop_info(category, slug).get("collection")
+	if server != null and exists(str(server)):
+		return str(server)
+	return CosmeticCatalog.collection_of(category, slug)
+
+
+## [[category, slug], ...] of every item in the theme, in shop category order.
 static func items(slug: String) -> Array:
 	if _items.is_empty():
 		for entry: Dictionary in CosmeticCatalog.CATEGORIES:
 			var category: String = entry["key"]
 			for item_slug: String in CosmeticCatalog.slugs(category):
-				var tag := CosmeticCatalog.collection_of(category, item_slug)
-				if tag != "":
-					if not _items.has(tag):
-						_items[tag] = []
-					(_items[tag] as Array).append([category, item_slug])
+				var tag := theme_of(category, item_slug)
+				if not _items.has(tag):
+					_items[tag] = []
+				(_items[tag] as Array).append([category, item_slug])
 	return _items.get(slug, [])
 
 
-## Collections that have items, in shelf order.
+## Regroups after the server's tags arrive (Loadout.shop_updated).
+static func refresh() -> void:
+	_items.clear()
+
+
+## Themes that have items, in shelf order.
 static func listed() -> Array:
-	return ORDER.filter(func(slug: String) -> bool: return not items(slug).is_empty())
+	var all: Array = ORDER + STYLES + Seasons.ORDER
+	return all.filter(func(slug: String) -> bool: return not items(slug).is_empty())
 
 
 ## Today's spotlight for the Featured page: a different collection every day.
 static func spotlight(today := {}) -> String:
-	var all := listed()
+	var all := listed().filter(func(slug: String) -> bool: return slug in ORDER)
 	if all.is_empty():
 		return ""
 	var date: Dictionary = today if not today.is_empty() else Time.get_date_dict_from_system()
@@ -120,37 +174,43 @@ static func cover(slug: String) -> Array:
 	return all[0] if not all.is_empty() else []
 
 
-## The whole look: every worn category the collection has (its first item of each) and up to three
-## toppers, on top of `base` (usually the player's own look).
+## The whole look: the rarest item of each worn category the theme has and up to three toppers,
+## on top of `base` (usually the player's own look).
 static func look(slug: String, base: Dictionary) -> Dictionary:
 	var result := base.duplicate(true)
 	var slots: Array = []
-	for pair: Array in items(slug):
-		var category: String = pair[0]
-		var item_slug: String = pair[1]
-		if category == "topper":
-			if slots.size() < ToppersLibrary.MAX_SLOTS:
-				var slot := {"kind": ToppersLibrary.kind_of(item_slug), "slug": item_slug}
-				if slot["kind"] == "flag":
-					slot["flag"] = FlagFactory.DEFAULT_DESIGN.duplicate()
-				slots.append(slot)
-		elif category in LOOK_CATEGORIES and not (result.has("_set_" + category)):
-			result[category] = item_slug
-			result["_set_" + category] = true
-	for key: String in result.keys():
-		if str(key).begins_with("_set_"):
-			result.erase(key)
+	for pair: Array in look_items(slug):
+		if pair[0] == "topper":
+			var slot := {"kind": ToppersLibrary.kind_of(pair[1]), "slug": pair[1]}
+			if slot["kind"] == "flag":
+				slot["flag"] = FlagFactory.DEFAULT_DESIGN.duplicate()
+			slots.append(slot)
+		else:
+			result[pair[0]] = pair[1]
 	if not slots.is_empty():
 		result["toppers"] = {"slots": slots}
 	return result
 
 
-## The look's items as [category, slug] pairs (what "Wear it all" equips).
+## The look's items as [category, slug] pairs: the rarest of each worn category, then the rarest
+## three toppers.
 static func look_items(slug: String) -> Array:
-	var worn: Array = []
-	var seen := {}
+	var best := {}
+	var toppers: Array = []
 	for pair: Array in items(slug):
-		if pair[0] == "topper" or (pair[0] in LOOK_CATEGORIES and not seen.has(pair[0])):
-			worn.append(pair)
-			seen[pair[0]] = true
+		var category: String = pair[0]
+		if category == "topper":
+			toppers.append(pair)
+		elif category in LOOK_CATEGORIES and (not best.has(category) or _rank(pair) > _rank(best[category])):
+			best[category] = pair
+	toppers.sort_custom(func(a: Array, b: Array) -> bool: return _rank(a) > _rank(b))
+	var worn: Array = []
+	for category: String in LOOK_CATEGORIES:
+		if best.has(category):
+			worn.append(best[category])
+	worn.append_array(toppers.slice(0, ToppersLibrary.MAX_SLOTS))
 	return worn
+
+
+static func _rank(pair: Array) -> int:
+	return CosmeticCatalog.RARITY_ORDER.get(str(CosmeticCatalog.info(pair[0], pair[1]).get("rarity", "common")), 0)

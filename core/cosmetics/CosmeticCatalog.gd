@@ -89,9 +89,14 @@ static func season_of(category: String, slug: String) -> String:
 	return str(info(category, slug).get("season", ""))
 
 
-## The themed collection an item belongs to (Collections.LIST), or "" for none.
+## The shop theme an item belongs to (Collections): its "collection", else its holiday, else
+## "classics".
 static func collection_of(category: String, slug: String) -> String:
-	return str(info(category, slug).get("collection", ""))
+	var item := info(category, slug)
+	for key: String in ["collection", "season"]:
+		if str(item.get(key, "")) != "":
+			return str(item[key])
+	return "classics"
 
 
 static func label(category: String) -> String:

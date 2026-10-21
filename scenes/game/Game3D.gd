@@ -162,6 +162,12 @@ func preview_item(category: String, slug: String) -> void:
 	rig.frame(PREVIEW_SHOTS.get(category, "half"))
 
 
+## Shop preview of a whole look (a Featured Board) on your side, seen whole. Nothing is equipped.
+func preview_look(look: Dictionary) -> void:
+	set_showcase(Loadout.complete(look))
+	rig.frame("wide")
+
+
 func end_preview() -> void:
 	set_showcase({})
 	rig.attract = true

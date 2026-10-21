@@ -1,8 +1,11 @@
 extends Screen
 ## The cosmetics shop: a full-screen catalogue for browsing and buying. Equipping lives on
 ## My Board (`my_board`), so the shop stays simple: a category rail (a swipeable tab row on
-## phones), a Featured page (the season on sale and today's picks), roomy item cards with a
-## picture or clip and a Buy button, and a detail sheet with Preview on board and Try on My Board.
+## phones), a Featured page (the season on sale, the Featured Boards carousel, the theme of the
+## day and today's picks), a Themes tab that shelves every item by theme (Collections), roomy item
+## cards with a picture or clip and a Buy button, and a detail sheet with Preview on board and Try
+## on My Board. Featured Boards (FeaturedBoards) are whole looks: preview them, try them on, wear
+## the pieces you own or buy the set as one bundle.
 ## Prices, ownership and purchases come from the server through Loadout; in test mode everything
 ## is free. Guests are sent to sign up.
 ##
@@ -11,6 +14,8 @@ extends Screen
 ## search every item, buy it, and go back to the same spot in the shop.
 
 const FEATURED := "featured"
+const THEMES := "themes"
+const LOOK := "look"  # Preview mode showing a Featured Board's whole look.
 const SEASONAL := "seasonal"
 const EXTRAS := "extras"
 const PAGE_COLOR := Color("f6e8d4")
@@ -40,6 +45,9 @@ var _thumb_height := 120.0
 var _wide := true
 var _buying := false
 var _sheet_key := ""  # "category/slug" of the open detail sheet, refreshed after a purchase.
+var _theme := ""  # The theme shelf open on the Themes tab ("" lists every theme).
+var _carousel := -1  # Featured page: which Featured Board the carousel shows.
+var _carousel_box: VBoxContainer
 # Preview mode.
 var _preview_bar: PanelContainer
 var _preview_slug := ""
@@ -153,8 +161,11 @@ func open(args: Dictionary) -> void:
 	ui.game.visible = false  # The catalogue covers the screen; the 3D world rests underneath.
 	if args.has("category"):
 		_category = str(args["category"])
+	var tag := str(args.get("theme", _theme if _category == THEMES else ""))
+	if args.has("theme"):
+		_category = THEMES
 	_layout()
-	_switch(_category)
+	_switch(_category, tag if Collections.exists(tag) else "")
 	_update_wallet()
 	AppTheme.pop_in(_content)
 	Loadout.refresh_shop()  # Prices and ownership; the cards refresh when it answers.
@@ -213,7 +224,7 @@ func _layout() -> void:
 
 
 func _sections() -> Array:
-	var entries: Array = [{"key": FEATURED, "label": "Featured"}, {"key": SEASONAL, "label": "Seasonal"}]
+	var entries: Array = [{"key": FEATURED, "label": "Featured"}, {"key": THEMES, "label": "Themes"}, {"key": SEASONAL, "label": "Seasonal"}]
 	entries.append_array(CosmeticCatalog.CATEGORIES)
 	entries.append({"key": EXTRAS, "label": "More"})
 	return entries
@@ -234,6 +245,8 @@ func _rail_button(entry: Dictionary) -> Button:
 	match key:
 		FEATURED:
 			glyph = TileIcon.new("star", Vector2(30, 30))
+		THEMES:
+			glyph = TileIcon.new("board", Vector2(30, 30))
 		SEASONAL:
 			glyph = TileIcon.new("crown", Vector2(30, 30))
 		EXTRAS:
@@ -276,6 +289,7 @@ func _update_wallet() -> void:
 
 
 func _on_shop_updated() -> void:
+	Collections.refresh()  # The server's theme tags may differ from the built-in ones.
 	_update_wallet()
 	if visible:
 		_refresh()
@@ -285,11 +299,12 @@ func _on_shop_updated() -> void:
 
 # --- Pages ---------------------------------------------------------------------------------------
 
-func _switch(key: String) -> void:
+func _switch(key: String, tag := "") -> void:
 	if _shop_search.text != "":
 		_shop_search.text = ""  # Picking a category ends the search.
 	ShopThumbs.clear()  # Only the page on screen keeps its pictures decoded.
 	_category = key
+	_theme = tag
 	for k: String in _rail_buttons:
 		var on := k == key
 		(_rail_buttons[k] as Button).theme_type_variation = "AccentButton" if on else "GhostButton"
@@ -310,6 +325,11 @@ func _refresh() -> void:
 	match _category:
 		FEATURED:
 			_build_featured()
+		THEMES:
+			if _theme != "":
+				_build_theme(_theme)
+			else:
+				_build_themes()
 		SEASONAL:
 			_build_seasonal()
 		EXTRAS:
@@ -344,19 +364,28 @@ func _grid_of(pairs: Array) -> GridContainer:
 	return grid
 
 
-## The landing page: the occasion on sale now, then today's picks.
+## The landing page: the occasion on sale now, the Featured Boards, the theme of the day, then
+## today's picks.
 func _build_featured() -> void:
 	var today := Time.get_date_dict_from_system()
 	for occasion: String in Seasons.ORDER:
 		if Seasons.is_live(occasion, today):
 			_content.add_child(_season_banner(occasion, true))
+	_content.add_child(_section_title("Featured Boards", "Complete looks, from the arena to the toppers. Buy the set for about 20% off, or wear the pieces you own."))
+	_carousel_box = AppTheme.vbox(10)
+	_content.add_child(_carousel_box)
+	_fill_carousel()
+	var spotlight := Collections.spotlight(today)
+	if spotlight != "":
+		_content.add_child(_section_title("Theme of the day"))
+		_content.add_child(_theme_banner(spotlight, true))
 	_content.add_child(_section_title("Featured today", "Hand-picked looks, new every day."))
 	_content.add_child(_grid_of(_featured_items()))
 	_content.add_child(_section_title("Browse", "Every kind of look, one tap away."))
 	var shortcuts := HFlowContainer.new()
 	shortcuts.add_theme_constant_override("h_separation", 8)
 	shortcuts.add_theme_constant_override("v_separation", 8)
-	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
+	for entry: Dictionary in [{"key": THEMES, "label": "Themes"}] + CosmeticCatalog.CATEGORIES:
 		var b := AppTheme.button(entry["label"], "Ghost", _switch.bind(entry["key"]), 44)
 		b.add_theme_font_size_override("font_size", 16)
 		shortcuts.add_child(b)
@@ -415,13 +444,18 @@ func _build_category(category: String) -> void:
 ## Every item, in any category, whose name, category or description matches the search.
 func _build_search_results() -> void:
 	var query := _search_query()
+	var themes := Collections.listed().filter(func(t: String) -> bool: return Collections.name_of(t).to_lower().contains(query))
+	if not themes.is_empty():
+		_content.add_child(_section_title("Themes"))
+		_content.add_child(_theme_grid(themes.slice(0, 8)))
 	var pairs: Array = []
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
 		var category: String = entry["key"]
 		var label := str(entry["label"]).to_lower()
 		for slug: String in CosmeticCatalog.slugs(category):
 			var item := CosmeticCatalog.info(category, slug)
-			if str(item.get("name", slug)).to_lower().contains(query) or label.contains(query) or str(item.get("desc", "")).to_lower().contains(query):
+			if str(item.get("name", slug)).to_lower().contains(query) or label.contains(query) or str(item.get("desc", "")).to_lower().contains(query) \
+					or Collections.name_of(Collections.theme_of(category, slug)).to_lower().contains(query):
 				pairs.append([category, slug])
 			if pairs.size() >= 40:
 				break
@@ -430,6 +464,266 @@ func _build_search_results() -> void:
 	_content.add_child(_section_title("%d item%s match \"%s\"" % [pairs.size(), "" if pairs.size() == 1 else "s", _shop_search.text.strip_edges()]))
 	if not pairs.is_empty():
 		_content.add_child(_grid_of(pairs))
+
+
+## The Themes tab: a tile for every theme (pop-culture sets, styles, holidays); tap one for its shelf.
+func _build_themes() -> void:
+	_content.add_child(_section_title("Themes", "Every item in the shop, grouped by look. Each theme has a Featured Board: the whole look, ready to try on."))
+	var listed := Collections.listed()
+	for group: Array in [["Pop-culture sets", Collections.ORDER], ["Styles", Collections.STYLES], ["Holidays", Seasons.ORDER]]:
+		var slugs: Array = (group[1] as Array).filter(func(t: String) -> bool: return t in listed)
+		if not slugs.is_empty():
+			_content.add_child(_section_title(group[0]))
+			_content.add_child(_theme_grid(slugs))
+
+
+## One theme's shelf: its banner, its Featured Board(s), then every item.
+func _build_theme(tag: String) -> void:
+	var back := AppTheme.button("< All themes", "Ghost", _switch.bind(THEMES), 44)
+	back.add_theme_font_size_override("font_size", 16)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_content.add_child(back)
+	_content.add_child(_theme_banner(tag, false))
+	for board: String in FeaturedBoards.of_theme(tag):
+		_content.add_child(_board_showcase(board))
+	var pairs := Collections.items(tag)
+	var owned := pairs.filter(func(pair: Array) -> bool: return Loadout.owns(pair[0], pair[1])).size()
+	_content.add_child(_section_title("All %d items" % pairs.size(), "You own %d of them." % owned if not Loadout.test_mode() else ""))
+	_content.add_child(_grid_of(pairs))
+
+
+func _open_theme(tag: String) -> void:
+	_switch(THEMES, tag)
+
+
+func _theme_grid(themes: Array) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = clampi(_columns - 1, 2, 4)
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for tag: String in themes:
+		grid.add_child(_theme_tile(tag))
+	return grid
+
+
+## A theme's tile: its Featured Board's picture (or its cover item), name and item count.
+func _theme_tile(tag: String) -> PanelContainer:
+	var card := PanelContainer.new()
+	var style := ProfileUi.box(Collections.color_of(tag), 20, 3)
+	style.set_content_margin_all(8)
+	style.content_margin_bottom = 10
+	card.add_theme_stylebox_override("panel", style)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_on_tap(card, _open_theme.bind(tag))
+	var box := AppTheme.vbox(4)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(box)
+	box.add_child(_theme_picture(tag, _thumb_height))
+	var title := _outlined(Collections.name_of(tag), 20)
+	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.clip_text = true
+	box.add_child(title)
+	box.add_child(_outlined("%d items" % Collections.items(tag).size(), 14))
+	return card
+
+
+## White text with an ink outline, for coloured banners and tiles.
+func _outlined(text: String, size: int) -> Label:
+	var label := AppTheme.label(text, "", size, Color.WHITE)
+	if size >= 20:
+		label.add_theme_font_override("font", AppTheme.heading_font())
+	label.add_theme_color_override("font_outline_color", AppTheme.INK)
+	label.add_theme_constant_override("outline_size", 8 if size >= 20 else 5)
+	return label
+
+
+func _theme_picture(tag: String, height: float) -> ThumbView:
+	var boards := FeaturedBoards.of_theme(tag)
+	if not boards.is_empty() and ShopThumbs.texture("featured", boards[0]) != null:
+		return ThumbView.new("featured", boards[0], height, [Collections.color_of(tag)])
+	var cover := Collections.cover(tag)
+	if cover.is_empty():
+		return ThumbView.new("", "", height, [Collections.color_of(tag)])
+	return ThumbView.new(cover[0], cover[1], height, CosmeticCatalog.info(cover[0], cover[1]).get("swatch", []))
+
+
+## A theme's banner: name, blurb and counts, with its picture beside them on wide screens. Linked
+## (Featured page) it opens the theme; on the theme's own shelf it offers the whole look.
+func _theme_banner(tag: String, linked: bool) -> PanelContainer:
+	var card := PanelContainer.new()
+	var style := ProfileUi.box(Collections.color_of(tag), 22, 4)
+	style.set_content_margin_all(16)
+	card.add_theme_stylebox_override("panel", style)
+	var row := ProfileUi.flex(16)
+	card.add_child(row)
+	if not ProfileUi.narrow:
+		var picture := _theme_picture(tag, 120.0)
+		picture.custom_minimum_size.x = 240.0
+		row.add_child(picture)
+	var words := AppTheme.vbox(4)
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var title := _outlined(Collections.name_of(tag), 30)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	words.add_child(title)
+	var blurb := _outlined(Collections.blurb_of(tag), 16)
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	words.add_child(blurb)
+	var line := "%d items" % Collections.items(tag).size()
+	if Collections.is_holiday(tag):
+		line += "  ·  " + ("On sale now" if Seasons.is_live(tag) else "Returns %s" % Seasons.returns_text(tag))
+	words.add_child(_outlined(line, 15))
+	row.add_child(words)
+	var boards := FeaturedBoards.of_theme(tag)
+	var go: Button
+	if linked:
+		go = ProfileUi.colored_button("Shop the theme", AppTheme.PAPER, AppTheme.INK, _open_theme.bind(tag), 50)
+	elif not boards.is_empty():
+		go = ProfileUi.colored_button("Try the whole look", AppTheme.PAPER, AppTheme.INK, _open_preview.bind(LOOK, boards[0]), 50)
+	if go != null:
+		go.add_theme_font_size_override("font_size", 18)
+		go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(go)
+	return card
+
+
+# --- Featured Boards -----------------------------------------------------------------------------
+
+## The carousel: one big showcase card at a time (all-year sets and the holiday sets on sale),
+## starting on today's pick.
+func _fill_carousel() -> void:
+	ProfileUi.clear(_carousel_box)
+	var boards := _carousel_boards()
+	if boards.is_empty():
+		return
+	if _carousel < 0:
+		_carousel = int(Time.get_unix_time_from_system() / 86400.0)
+	_carousel = posmod(_carousel, boards.size())
+	_carousel_box.add_child(_board_showcase(boards[_carousel]))
+	var nav := AppTheme.hbox(10)
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_child(AppTheme.button("<", "Ghost", _step_carousel.bind(-1), 44))
+	nav.add_child(AppTheme.label("%d / %d" % [_carousel + 1, boards.size()], "MutedLabel", 16))
+	nav.add_child(AppTheme.button(">", "Ghost", _step_carousel.bind(1), 44))
+	_carousel_box.add_child(nav)
+
+
+func _carousel_boards() -> Array:
+	return FeaturedBoards.all().filter(func(slug: String) -> bool: return FeaturedBoards.season_of(slug) == "" or FeaturedBoards.available(slug))
+
+
+func _step_carousel(step: int) -> void:
+	_carousel += step
+	ShopThumbs.clear()
+	_fill_carousel()
+
+
+## A Featured Board's showcase: the whole-board picture, its name, theme and price, and the
+## actions (preview, try on My Board, buy the set or wear what you own).
+func _board_showcase(slug: String) -> PanelContainer:
+	var tag := FeaturedBoards.theme_of(slug)
+	var card := PanelContainer.new()
+	var style := ProfileUi.box(AppTheme.PAPER, 22, 4)
+	style.set_content_margin_all(14)
+	card.add_theme_stylebox_override("panel", style)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := ProfileUi.flex(16)
+	card.add_child(row)
+	var width := _frame.size.x - (214.0 + 18.0 if _wide else 0.0) - 80.0
+	var picture := ThumbView.new("featured", slug, clampf(width * (0.27 if not ProfileUi.narrow else 0.5), 140.0, 300.0), [Collections.color_of(tag)])
+	picture.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picture.size_flags_stretch_ratio = 1.15
+	row.add_child(picture)
+	var info := AppTheme.vbox(8)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var tags := HFlowContainer.new()
+	tags.add_theme_constant_override("h_separation", 6)
+	tags.add_theme_constant_override("v_separation", 6)
+	tags.add_child(AppTheme.pill("FEATURED BOARD", AppTheme.PINK, Color.WHITE, 13))
+	tags.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
+	info.add_child(tags)
+	var title := AppTheme.label(FeaturedBoards.name_of(slug), "HeadingLabel", 30)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(title)
+	info.add_child(ProfileUi.wrap(FeaturedBoards.blurb(slug), 16))
+	info.add_child(ProfileUi.wrap(_set_price_text(slug), 16, AppTheme.INK))
+	var actions := HFlowContainer.new()
+	actions.add_theme_constant_override("h_separation", 8)
+	actions.add_theme_constant_override("v_separation", 8)
+	for b: Button in _board_actions(slug, 46, true):
+		actions.add_child(b)
+	info.add_child(actions)
+	row.add_child(info)
+	return card
+
+
+func _set_price_text(slug: String) -> String:
+	var count := FeaturedBoards.items(slug).size()
+	if Loadout.test_mode():
+		return "%d items. Test mode: the whole set is free." % count
+	if FeaturedBoards.owns_all(slug):
+		return "%d items. You own the whole set." % count
+	var text := "Set price %s cr (%s cr one by one)" % [AppTheme.num(FeaturedBoards.set_price(slug)), AppTheme.num(FeaturedBoards.items_value(slug, true))]
+	var owned := FeaturedBoards.owned_count(slug)
+	return text + (".  You own %d of %d." % [owned, count] if owned > 0 else ".  %d items." % count)
+
+
+## The set's buttons: Preview (on cards), Try on My Board, then Buy the set, Wear the set or
+## Wear what I own.
+func _board_actions(slug: String, height: float, with_preview: bool) -> Array:
+	var list: Array = []
+	var main: Button
+	if FeaturedBoards.owns_all(slug):
+		main = AppTheme.button("Wear the set", "Success", _wear_set.bind(slug), height)
+	elif not ApiManager.is_logged_in():
+		main = AppTheme.button("Log in to buy", "Secondary", func() -> void: ui.require_login("shop"), height)
+	elif not FeaturedBoards.available(slug):
+		main = AppTheme.button("Returns %s" % Seasons.returns_text(FeaturedBoards.season_of(slug)), "Ghost", Callable(), height)
+		main.disabled = true
+	else:
+		main = AppTheme.button("Buy the set · %s" % AppTheme.num(FeaturedBoards.set_price(slug)), "Primary", _buy_set.bind(slug), height)
+		main.disabled = _buying
+	list.append(main)
+	if not FeaturedBoards.owns_all(slug) and FeaturedBoards.owned_count(slug) > 0:
+		list.append(AppTheme.button("Wear what I own", "Ghost", _wear_set.bind(slug), height))
+	if with_preview:
+		list.append(AppTheme.button("Preview this board", "Secondary", _open_preview.bind(LOOK, slug), height))
+	list.append(AppTheme.button("Try on My Board", "Accent", _try_board.bind(slug), height))
+	for b: Button in list:
+		b.add_theme_font_size_override("font_size", 17)
+	return list
+
+
+func _buy_set(slug: String) -> void:
+	if _buying:
+		return
+	_buying = true
+	_refresh()
+	_refresh_preview_actions()
+	var res: Dictionary = await Loadout.buy("bundle", slug)
+	_buying = false
+	if res.ok:
+		ui.toast("Unlocked the %s set! Tap Wear the set to put it on." % FeaturedBoards.name_of(slug), AppTheme.MINT)
+	elif res.status == 401:
+		ui.require_login("shop")
+	else:
+		ui.toast(str(res.get("error", "")) if str(res.get("error", "")) != "" else "Not enough credits.", AppTheme.RED)
+	_refresh()
+	_refresh_preview_actions()
+
+
+## Puts on every piece of the set you own, then shows it on My Board.
+func _wear_set(slug: String) -> void:
+	var worn := FeaturedBoards.wear_owned(slug)
+	ui.toast("Wearing %d pieces of %s." % [worn, FeaturedBoards.name_of(slug)] if worn > 0 else "You don't own any of this set yet.", AppTheme.MINT if worn > 0 else AppTheme.PURPLE)
+	if worn > 0:
+		ui.show_screen("my_board")
+
+
+func _try_board(slug: String) -> void:
+	ui.close_dialog()
+	ui.show_screen("my_board", {"try_look": slug})
 
 
 ## Every holiday collection, on-sale ones first, then by how soon each comes back.
@@ -565,6 +859,12 @@ func _card(category: String, slug: String) -> PanelContainer:
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.clip_text = true
 	box.add_child(name_label)
+	if _category != THEMES:
+		var tag := Collections.theme_of(category, slug)
+		var theme_label := AppTheme.label(Collections.name_of(tag), "", 14, Collections.color_of(tag).darkened(0.25))
+		theme_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		theme_label.clip_text = true
+		box.add_child(theme_label)
 	var line := AppTheme.hbox(6)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var rarity := str(item.get("rarity", "common"))
@@ -695,6 +995,9 @@ func _open_sheet(category: String, slug: String) -> void:
 	var occasion := Loadout.season_of(category, slug)
 	if occasion != "":
 		badges.add_child(AppTheme.pill(Seasons.name_of(occasion).to_upper(), Seasons.color_of(occasion), Color.WHITE, 14))
+	var tag := Collections.theme_of(category, slug)
+	if tag != occasion:
+		badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 14))
 	if Loadout.shop_info(category, slug).get("featured", false):
 		badges.add_child(AppTheme.pill("FEATURED", AppTheme.PINK, Color.WHITE, 14))
 	box.add_child(badges)
@@ -717,6 +1020,11 @@ func _open_sheet(category: String, slug: String) -> void:
 		try.add_theme_font_size_override("font_size", 17)
 		row.add_child(try)
 	box.add_child(row)
+	var more := AppTheme.button("More from %s" % Collections.name_of(tag), "Ghost", func() -> void:
+		_close_sheet()
+		_open_theme(tag), 46)
+	more.add_theme_font_size_override("font_size", 16)
+	box.add_child(more)
 	var shade := ColorRect.new()  # Catches taps beside the sheet (the overlay already dims).
 	shade.color = Color(0, 0, 0, 0)
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -843,6 +1151,9 @@ func _hide_preview() -> void:
 
 
 func _show_preview_item() -> void:
+	if _preview_category == LOOK:
+		_show_preview_look()
+		return
 	var item := CosmeticCatalog.info(_preview_category, _preview_slug)
 	_preview_title.text = str(item.get("name", _preview_slug.capitalize()))
 	for child in _preview_badges.get_children():
@@ -853,8 +1164,24 @@ func _show_preview_item() -> void:
 	if item.has("desc"):
 		_preview_title.tooltip_text = str(item["desc"])
 	_refresh_preview_actions()
+	var tag := Collections.theme_of(_preview_category, _preview_slug)
+	_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
 	ui.game.preview_item(_preview_category, _preview_slug)
 	_play_preview_effect()
+	_mark_results()
+
+
+## A Featured Board on the board: the whole look on your side, seen whole.
+func _show_preview_look() -> void:
+	var tag := FeaturedBoards.theme_of(_preview_slug)
+	_preview_title.text = FeaturedBoards.name_of(_preview_slug)
+	_preview_title.tooltip_text = FeaturedBoards.blurb(_preview_slug)
+	for child in _preview_badges.get_children():
+		child.queue_free()
+	_preview_badges.add_child(AppTheme.pill("FEATURED BOARD", AppTheme.PINK, Color.WHITE, 13))
+	_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
+	_refresh_preview_actions()
+	ui.game.preview_look(FeaturedBoards.look(_preview_slug))
 	_mark_results()
 
 
@@ -863,6 +1190,11 @@ func _refresh_preview_actions() -> void:
 		return
 	for child in _preview_actions.get_children():
 		child.queue_free()
+	if _preview_category == LOOK:
+		for b: Button in _board_actions(_preview_slug, 42, false):
+			_preview_actions.add_child(b)
+		_preview_actions.add_child(AppTheme.button("Back to shop", "Ghost", _close_preview, 42))
+		return
 	_preview_actions.add_child(_action(_preview_category, _preview_slug, 42))
 	if _preview_category in ["trail", "kill", "taunt"]:
 		_preview_actions.add_child(AppTheme.button("Replay", "Accent", _play_preview_effect, 42))
@@ -882,7 +1214,7 @@ func _play_preview_effect() -> void:
 
 
 func _step_preview(direction: int) -> void:
-	var all := CosmeticCatalog.slugs(_preview_category)
+	var all := FeaturedBoards.all() if _preview_category == LOOK else CosmeticCatalog.slugs(_preview_category)
 	if all.is_empty():
 		return
 	var index := all.find(_preview_slug)
@@ -898,6 +1230,15 @@ func _fill_results() -> void:
 	# One row of this category's items while browsing; more room once you search.
 	(_results.get_parent() as Control).custom_minimum_size.y = 80.0 if query != "" else 40.0
 	var found := 0
+	if query == "" and _preview_category == LOOK:
+		for slug: String in FeaturedBoards.all():
+			var b := AppTheme.button(FeaturedBoards.name_of(slug), "Ghost", _open_preview.bind(LOOK, slug), 34)
+			b.add_theme_font_size_override("font_size", 14)
+			b.icon = ShopThumbs.icon("featured", slug, 44)
+			b.set_meta("item", "%s/%s" % [LOOK, slug])
+			_results.add_child(b)
+		_mark_results()
+		return
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
 		var category: String = entry["key"]
 		if query == "" and category != _preview_category:

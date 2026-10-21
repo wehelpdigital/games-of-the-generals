@@ -7,7 +7,8 @@ extends Screen
 ##
 ## The locker is a side panel in landscape and a foldable sheet at the bottom in portrait; the
 ## camera keeps the board centred in the room that's left and can be pinched and dragged.
-## "Try on" (from the shop) shows an item you don't own yet, without equipping it.
+## "Try on" (from the shop) shows an item you don't own yet, without equipping it, or a Featured
+## Board's whole look ("try_look") with Buy the set and Wear what I own.
 
 const ORDER := ["arena", "board", "territory", "chip", "shape", "icons", "aura", "glow", "trail", "kill", "ambience", "topper", "taunt"]
 ## Beside the side panel, close shots step back so more of the board shows (wide shots already fit).
@@ -39,7 +40,7 @@ var _tile_width := 104.0
 var _selected_slot := -1
 var _editor: FlagEditor
 var _editing_slot := -1
-var _trying: Array = []  # [category, slug] while trying an item on.
+var _trying: Array = []  # [category, slug] while trying an item on; ["look", set] for a whole look.
 var _buying := false
 
 
@@ -148,6 +149,8 @@ func open(args: Dictionary) -> void:
 		_place_topper(str(args["place"]))
 	if str(args.get("try_slug", "")) != "":
 		_try_on(str(args.get("try_category", "")), str(args["try_slug"]))
+	elif FeaturedBoards.exists(str(args.get("try_look", ""))):
+		_try_look(str(args["try_look"]))
 	AppTheme.pop_in(_panel)
 	Loadout.refresh_shop()
 
@@ -465,10 +468,25 @@ func _try_on(category: String, slug: String) -> void:
 			ui.game.preview_effect(category)
 
 
+## Shows a Featured Board's whole look on your side, seen whole, without equipping anything.
+func _try_look(slug: String) -> void:
+	_trying = ["look", slug]
+	ui.game.preview_look(FeaturedBoards.look(slug))
+	ui.game.rig.zoom_by(0.8 if _portrait else 1.15)
+	_try_label.text = "Trying on: %s (the whole set)" % FeaturedBoards.name_of(slug)
+	_try_bar.visible = true
+	_show_try_actions()
+	_place_try_bar()
+	AppTheme.pop_in(_try_bar)
+
+
 func _show_try_actions() -> void:
 	if _trying.is_empty():
 		return
 	ProfileUi.clear(_try_actions)
+	if _trying[0] == "look":
+		_show_look_actions(_trying[1])
+		return
 	var category: String = _trying[0]
 	var slug: String = _trying[1]
 	var action: Button
@@ -489,9 +507,32 @@ func _show_try_actions() -> void:
 	_try_actions.add_child(stop)
 
 
+func _show_look_actions(slug: String) -> void:
+	var buttons: Array = []
+	if FeaturedBoards.owns_all(slug):
+		buttons.append(AppTheme.button("Wear the set", "Success", _wear_tried, 42))
+	else:
+		var buy := AppTheme.button("Buy the set · %s" % AppTheme.num(FeaturedBoards.set_price(slug)), "Primary", _buy_tried, 42)
+		buy.disabled = _buying or not FeaturedBoards.available(slug)
+		buttons.append(buy)
+		if FeaturedBoards.owned_count(slug) > 0:
+			buttons.append(AppTheme.button("Wear what I own", "Ghost", _wear_tried, 42))
+	buttons.append(AppTheme.button("Stop", "Ghost", func() -> void:
+		_end_try()
+		_frame_shot(Game3D.PREVIEW_SHOTS.get(_category, "half")), 42))
+	for b: Button in buttons:
+		b.add_theme_font_size_override("font_size", 16)
+		_try_actions.add_child(b)
+
+
 func _wear_tried() -> void:
 	var pair := _trying.duplicate()
 	_end_try()
+	if pair[0] == "look":
+		var worn := FeaturedBoards.wear_owned(pair[1])
+		ui.toast("Wearing %d pieces of %s." % [worn, FeaturedBoards.name_of(pair[1])], AppTheme.MINT)
+		_frame_shot("wide")
+		return
 	_pick(pair[0], pair[1])
 
 
@@ -501,10 +542,12 @@ func _buy_tried() -> void:
 	_buying = true
 	_show_try_actions()
 	var pair := _trying.duplicate()
-	var res: Dictionary = await Loadout.buy(pair[0], pair[1])
+	var look: bool = pair[0] == "look"
+	var res: Dictionary = await Loadout.buy("bundle" if look else pair[0], pair[1])
 	_buying = false
 	if res.ok:
-		ui.toast("Unlocked %s!" % str(CosmeticCatalog.info(pair[0], pair[1]).get("name", pair[1])), AppTheme.MINT)
+		var title: String = FeaturedBoards.name_of(pair[1]) + " set" if look else str(CosmeticCatalog.info(pair[0], pair[1]).get("name", pair[1]))
+		ui.toast("Unlocked %s!" % title, AppTheme.MINT)
 		if not _trying.is_empty() and _trying[1] == pair[1]:
 			_wear_tried()
 	else:

@@ -4,12 +4,15 @@ extends Node
 ## item is staged on the real board (Game3D in its own world) with a camera that suits it, rendered
 ## at twice the size and scaled down. Re-run after adding or changing items, then re-import:
 ##   godot --path . --rendering-driver opengl3 --resolution 480x240 res://tests/ThumbnailBaker.tscn -- --bake [--only=<category>] [--slug=<slug>] [--seasonal] [--missing]
+## `--featured` bakes the Featured Boards' whole-board pictures instead (featured/<slug>.webp).
 ##   godot --headless --path . --import
 
 const OUT := "res://assets/shop_thumbs"
 const STILL := Vector2i(240, 120)
 const FRAME := Vector2i(192, 96)
 const RENDER := Vector2i(480, 240)
+const FEATURED := Vector2i(480, 240)  ## Featured Boards: a bigger picture of the whole board.
+const FEATURED_RENDER := Vector2i(960, 480)
 
 var _view: SubViewport
 var _game: Game3D
@@ -19,6 +22,7 @@ var _slug := ""
 var _count := 0
 var _seasonal := false  # --seasonal: only the holiday collections' items.
 var _missing := false  # --missing: only items without a picture yet.
+var _featured := false  # --featured: the Featured Boards' pictures.
 
 
 func _ready() -> void:
@@ -34,6 +38,8 @@ func _ready() -> void:
 			_seasonal = true
 		elif arg == "--missing":
 			_missing = true
+		elif arg == "--featured":
+			_featured = true
 	if not bake:
 		print("Pass --bake to (re)write the shop thumbnails.")
 		get_tree().quit()
@@ -51,6 +57,14 @@ func _ready() -> void:
 	_camera = _game.rig.camera
 	_camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	AmbienceFX.reduced = false
+	if _featured:
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("%s/featured" % OUT))
+		for slug: String in FeaturedBoards.all():
+			if _slug == "" or slug == _slug:
+				await _bake_featured(slug)
+		print("baked %d pictures" % _count)
+		get_tree().quit()
+		return
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
 		var category: String = entry["key"]
 		if _only != "" and category != _only:
@@ -148,6 +162,28 @@ func _bake(category: String, slug: String) -> void:
 	while _game.board.is_animating():
 		await get_tree().process_frame
 	await _wait(0.4)
+
+
+## A Featured Board: the whole look on your side with a full army, seen from behind your half so
+## the arena, toppers and ambience all show.
+func _bake_featured(slug: String) -> void:
+	_view.size = FEATURED_RENDER
+	_game.set_showcase(FeaturedBoards.look(slug), Loadout.complete({}))
+	_game.board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
+	var army: Array = []
+	var ranks := ["G5", "G4", "COL", "MAJ", "CPT", "1LT", "2LT", "SGT", "PVT", "SPY", "FLG"]
+	for y in range(0, 3):
+		for x in Ranks.COLS:
+			if (x + y) % 4 != 1:
+				army.append({"id": "f%d_%d" % [x, y], "side": Ranks.WHITE, "x": x, "y": y, "rank": ranks[(x * 3 + y) % ranks.size()]})
+	_game.board.sync_pieces(army)
+	_aim(Vector3(0.0, 7.4, 12.2), Vector3(0.0, 0.1, 0.4), 44.0)
+	await _wait(1.6)
+	var fx: Node = _game.board.get("_ambience_nodes").get(Ranks.WHITE)
+	if fx != null and fx.get("_flock_time") != null:
+		fx.set("_flock_start", float(fx.get("_time")) - float(fx.get("_flock_time")) * 0.4)
+	await _wait(0.3)
+	_save(_grab(FEATURED), "featured", slug)
 
 
 ## The frame that differs most from the clip's average look: the one with the most going on

@@ -28,6 +28,15 @@ func _ready() -> void:
 	ApiManager.user = {"username": "tester", "credits": 1200}
 	ui.show_screen("shop")
 	await _shot("shop_featured", 1.2)
+	shop.call("_switch", "themes")
+	await _shot("shop_themes", 1.0)
+	check((shop.get("_content") as Control).get_child_count() > 3, "the Themes tab lists theme shelves")
+	shop.call("_open_theme", "great_wave")
+	await _shot("shop_theme_great_wave", 1.0)
+	shop.call("_open_preview", "look", "fb_treasure_seas")
+	await _shot("preview_look", 1.8)
+	shop.call("_close_preview")
+	shop.call("_switch", "featured")
 	for category: String in ["shape", "kill", "ambience", "topper"]:
 		shop.call("_switch", category)
 		await _shot("shop_%s" % category, 1.0)
@@ -96,9 +105,17 @@ func _export_catalog() -> void:
 			items[slug] = {"name": str(all[slug].get("name", slug)), "rarity": str(all[slug].get("rarity", "common")), "desc": str(all[slug].get("desc", ""))}
 			if str(all[slug].get("season", "")) != "":
 				items[slug]["season"] = str(all[slug]["season"])  # The server sells it during that occasion.
-			if str(all[slug].get("collection", "")) != "":
-				items[slug]["collection"] = str(all[slug]["collection"])  # Groups it on the Collections shelf.
+			items[slug]["collection"] = CosmeticCatalog.collection_of(key, slug)  # Its shelf on the Themes tab.
 		out[key] = {"label": entry["label"], "items": items}
+	# Featured Boards sell as bundles: the items' server slugs and a price about 20% off.
+	var bundles: Dictionary = {}
+	for slug: String in FeaturedBoards.all():
+		var set_items: Array = FeaturedBoards.items(slug).map(func(pair: Array) -> String: return FeaturedBoards.server_slug(pair[0], pair[1]))
+		bundles[slug] = {"name": FeaturedBoards.name_of(slug), "rarity": "legendary", "desc": "Featured Board: " + FeaturedBoards.blurb(slug),
+			"collection": FeaturedBoards.theme_of(slug), "items": set_items, "price": FeaturedBoards.default_price(slug)}
+		if FeaturedBoards.season_of(slug) != "":
+			bundles[slug]["season"] = FeaturedBoards.season_of(slug)
+	out["bundle"] = {"label": "Featured Boards", "items": bundles}
 	var file := FileAccess.open(_catalog, FileAccess.WRITE)
 	file.store_string(JSON.stringify(out, "  ", true) + "\n")
 	file.close()

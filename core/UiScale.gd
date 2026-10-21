@@ -8,8 +8,9 @@ extends RefCounted
 ## (small / normal / large) multiplies the result.
 ##
 ## Device kinds: "phone" (short side < 600 CSS px and a touch screen), "tablet" (touch, larger) and
-## "desktop". Tests can pretend to be a device with the user arg --device=phone_portrait,
-## phone_landscape, tablet_portrait, tablet_landscape or desktop.
+## "desktop". Tests can pretend to be a touch device with the user arg --device=phone_portrait,
+## phone_landscape, tablet_portrait, tablet_landscape or desktop (run them with a matching
+## --resolution; TEST_DEVICES lists the usual sizes).
 
 signal changed
 
@@ -74,7 +75,7 @@ static func css_viewport(window: Window) -> Vector2:
 		if _test_device == "":
 			_test_device = "-"
 	if TEST_DEVICES.has(_test_device):
-		return TEST_DEVICES[_test_device]
+		return Vector2(window.size)  # Tests pretend the window's pixels are CSS pixels.
 	if OS.has_feature("web"):
 		var w: Variant = JavaScriptBridge.eval("window.innerWidth", true)
 		var h: Variant = JavaScriptBridge.eval("window.innerHeight", true)

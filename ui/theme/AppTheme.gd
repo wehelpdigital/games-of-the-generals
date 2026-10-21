@@ -158,6 +158,17 @@ static func centered(child: Control, max_width := 520.0) -> Control:
 	return scroll
 
 
+## Card padding: the theme's roomy 26 px, or 14 px on phone-width screens.
+static func set_card_padding(card: Control, compact: bool) -> void:
+	if compact:
+		var style := card.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+		if style:
+			style.set_content_margin_all(14)
+			card.add_theme_stylebox_override("panel", style)
+	else:
+		card.remove_theme_stylebox_override("panel")
+
+
 ## A card centred on a scrolling page with a margin. Phones get a slimmer margin and padding so
 ## the card can use nearly the full width.
 static func page_scroll(owner: Control, card: Control, max_width: float) -> ScrollContainer:

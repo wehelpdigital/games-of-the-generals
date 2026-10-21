@@ -23,6 +23,8 @@ var _blurb: Label
 var _content: VBoxContainer
 var _grid: GridContainer
 var _count: PanelContainer
+var _footer: HFlowContainer
+var _tab_scroll: ScrollContainer  # Phones: the category tabs become one swipeable row.
 var _wallet: PanelContainer
 var _preview_button: Button
 var _shop_search: LineEdit
@@ -37,7 +39,7 @@ var _preview_from := ""  # The category the shop was showing when Preview was pr
 var _bar_head: BoxContainer
 var _preview_title: Label
 var _preview_badges: HBoxContainer
-var _preview_actions: HBoxContainer
+var _preview_actions: HFlowContainer
 var _search: LineEdit
 var _results: HFlowContainer
 
@@ -51,12 +53,17 @@ func _ready() -> void:
 	var box := AppTheme.vbox(10)
 	_panel.add_child(box)
 
-	var header := AppTheme.hbox(10)
-	header.add_child(AppTheme.label("Shop", "HeadingLabel"))
-	header.add_child(AppTheme.spacer())
+	var header := HFlowContainer.new()  # The pills wrap under the title on phones.
+	header.add_theme_constant_override("h_separation", 10)
+	header.add_theme_constant_override("v_separation", 6)
+	var title := AppTheme.label("Shop", "HeadingLabel")
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
 	_wallet = AppTheme.pill("", AppTheme.MINT, Color.WHITE, 16)
+	_wallet.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(_wallet)
 	_count = AppTheme.pill("", AppTheme.PURPLE, Color.WHITE, 16)
+	_count.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(_count)
 	box.add_child(header)
 
@@ -74,7 +81,11 @@ func _ready() -> void:
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_tabs[key] = tab
 		_tab_grid.add_child(tab)
-	box.add_child(_tab_grid)
+	_tab_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tab_scroll = ScrollContainer.new()
+	_tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_scroll.add_child(_tab_grid)
+	box.add_child(_tab_scroll)
 
 	_shop_search = AppTheme.field("Search the shop: orb, lava, kraken, snow...")
 	_shop_search.custom_minimum_size.y = 42
@@ -94,14 +105,17 @@ func _ready() -> void:
 	scroll.add_child(_content)
 	box.add_child(scroll)
 
-	var footer := AppTheme.hbox(8)
+	_footer = HFlowContainer.new()  # Wraps into two rows on phones.
+	_footer.add_theme_constant_override("h_separation", 8)
+	_footer.add_theme_constant_override("v_separation", 8)
 	_preview_button = AppTheme.button("Play effect", "Accent", _play_preview, 48)
-	footer.add_child(_preview_button)
-	footer.add_child(AppTheme.button("Randomize", "Secondary", _randomize, 48))
-	footer.add_child(AppTheme.button("Reset", "Ghost", _reset, 48))
-	footer.add_child(AppTheme.spacer())
-	footer.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48))
-	box.add_child(footer)
+	_footer.add_child(_preview_button)
+	_footer.add_child(AppTheme.button("Randomize", "Secondary", _randomize, 48))
+	_footer.add_child(AppTheme.button("Reset", "Ghost", _reset, 48))
+	var back := AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48)
+	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_footer.add_child(back)
+	box.add_child(_footer)
 
 	_build_preview_bar()
 	get_viewport().size_changed.connect(_layout)
@@ -144,10 +158,33 @@ func _layout() -> void:
 		_panel.offset_right = _panel.offset_left + minf(560.0, view.x * 0.46)
 		_tab_grid.columns = 5 if _panel.offset_right - _panel.offset_left >= 480.0 else 4
 	else:
-		_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 10)
-		_panel.offset_top = -view.y * 0.58
-		_tab_grid.columns = 3 if view.x < 520.0 else 4
+		var gap := 6 if view.x < 520.0 else 10
+		_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, gap)
+		_panel.offset_top = -view.y * (0.74 if view.x < 520.0 else 0.62)
+		_tab_grid.columns = 4
+	var narrow := view.x < 520.0
+	if narrow:
+		_tab_grid.columns = _tab_grid.get_child_count()  # One row you can swipe sideways.
+	_tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if narrow else ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_scroll.custom_minimum_size.y = 0.0
+	_fit_tab_scroll.call_deferred()
+	_blurb.visible = not narrow or _category == "icons"  # Phones keep the blurb only for the icon credits.
+	_count.visible = not narrow
+	for b: Control in _footer.get_children():
+		b.custom_minimum_size.y = 42.0 if narrow else 0.0
+		(b as Button).add_theme_font_size_override("font_size", 18 if narrow else 24)
+	for card: Control in [_panel, _preview_bar]:
+		AppTheme.set_card_padding(card, narrow)
 	_layout_preview()
+
+
+func _fit_tab_scroll() -> void:
+	_tab_scroll.custom_minimum_size.y = _tab_grid.get_combined_minimum_size().y
+
+
+## Item cards: two across, one on phone-width screens so names and prices stay readable.
+func _card_columns() -> int:
+	return 1 if _frame.size.x < 420.0 else 2
 
 
 func _update_header() -> void:
@@ -178,6 +215,8 @@ func _switch(category: String) -> void:
 	_selected_slot = -1
 	for key: String in _tabs:
 		_tabs[key].theme_type_variation = "AccentButton" if key == category else "GhostButton"
+	if _tabs.has(category):
+		_tab_scroll.ensure_control_visible.call_deferred(_tabs[category])
 	_blurb.text = "Shoutouts, guild charters and other extras." if category == EXTRAS else ""
 	if category == SEASONAL:
 		_blurb.text = "Holiday collections. Each one is on sale during its occasion; preview anything, any time."
@@ -200,7 +239,7 @@ func _refresh() -> void:
 		_blurb.visible = false
 		_build_search_results()
 		return
-	_blurb.visible = true
+	_blurb.visible = _frame.size.x >= 520.0 or _category == "icons"  # Phones: only the icon credits.
 	if _category == EXTRAS:
 		_build_extras()
 		return
@@ -212,7 +251,7 @@ func _refresh() -> void:
 	if _category == "topper":
 		_content.add_child(_topper_slots())
 	_grid = GridContainer.new()
-	_grid.columns = 2
+	_grid.columns = _card_columns()
 	_grid.add_theme_constant_override("h_separation", 10)
 	_grid.add_theme_constant_override("v_separation", 10)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -233,7 +272,7 @@ func _search_query() -> String:
 func _build_search_results() -> void:
 	var query := _search_query()
 	_grid = GridContainer.new()
-	_grid.columns = 2
+	_grid.columns = _card_columns()
 	_grid.add_theme_constant_override("h_separation", 10)
 	_grid.add_theme_constant_override("v_separation", 10)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -296,7 +335,7 @@ func _build_seasonal() -> void:
 			continue
 		_content.add_child(_season_header(occasion, found.size(), Seasons.is_live(occasion, today)))
 		var grid := GridContainer.new()
-		grid.columns = 2
+		grid.columns = _card_columns()
 		grid.add_theme_constant_override("h_separation", 10)
 		grid.add_theme_constant_override("v_separation", 10)
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -654,7 +693,9 @@ func _build_preview_bar() -> void:
 	nav.add_child(info)
 	nav.add_child(AppTheme.button(">", "Ghost", _step_preview.bind(1), 44))
 	_bar_head.add_child(nav)
-	_preview_actions = AppTheme.hbox(6)
+	_preview_actions = HFlowContainer.new()  # Wraps on phones (Equip / Replay / Back to shop).
+	_preview_actions.add_theme_constant_override("h_separation", 6)
+	_preview_actions.add_theme_constant_override("v_separation", 6)
 	_bar_head.add_child(_preview_actions)
 
 	_search = AppTheme.field("Search every item: orbs, lava, dragon, snow...")

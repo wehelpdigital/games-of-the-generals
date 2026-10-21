@@ -31,8 +31,8 @@ func _draw() -> void:
 	var diameter := minf(size.x, size.y)
 	var center := size / 2.0
 	var radius := diameter / 2.0
-	draw_circle(center, radius, AppTheme.INK)
-	draw_circle(center, radius * 0.86, PlayerRanks.color_of(tier))
+	draw_circle(center, radius, AppTheme.INK, true, -1.0, true)
+	draw_circle(center, radius * 0.86, PlayerRanks.color_of(tier), true, -1.0, true)
 	var shape: String = MARKS[tier][0]
 	var count: int = MARKS[tier][1]
 	var ink := AppTheme.INK if tier > 1 else Color.WHITE
@@ -69,8 +69,8 @@ func _chevron(pos: Vector2, half_width: float, color: Color) -> void:
 
 func _sun(pos: Vector2, radius: float, color: Color) -> void:
 	_polygon(_star_points(pos, radius, radius * 0.62, 8), color)
-	draw_circle(pos, radius * 0.38, PlayerRanks.color_of(tier))
-	draw_circle(pos, radius * 0.24, color)
+	draw_circle(pos, radius * 0.38, PlayerRanks.color_of(tier), true, -1.0, true)
+	draw_circle(pos, radius * 0.24, color, true, -1.0, true)
 
 
 func _star_points(pos: Vector2, outer: float, inner: float, points: int) -> PackedVector2Array:
@@ -84,3 +84,5 @@ func _star_points(pos: Vector2, outer: float, inner: float, points: int) -> Pack
 
 func _polygon(points: PackedVector2Array, color: Color) -> void:
 	draw_colored_polygon(points, color)
+	# Polygons have hard pixel edges; a thin antialiased outline in the same colour smooths them.
+	draw_polyline(points + PackedVector2Array([points[0]]), color, 1.0, true)

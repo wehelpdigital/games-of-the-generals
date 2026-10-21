@@ -298,8 +298,8 @@ class Radar:
 	func _draw() -> void:
 		var center := size / 2.0
 		var radius := minf(size.x, size.y) / 2.0 - 4.0
-		draw_circle(center, radius + 4.0, AppTheme.INK)
-		draw_circle(center, radius, Color("1f3b2f"))
+		draw_circle(center, radius + 4.0, AppTheme.INK, true, -1.0, true)
+		draw_circle(center, radius, Color("1f3b2f"), true, -1.0, true)
 		for i in 3:
 			draw_arc(center, radius * (i + 1) / 3.0, 0.0, TAU, 64, Color(AppTheme.MINT, 0.35), 2.0, true)
 		draw_line(center - Vector2(radius, 0), center + Vector2(radius, 0), Color(AppTheme.MINT, 0.25), 1.5)
@@ -317,5 +317,5 @@ class Radar:
 		draw_line(center, center + Vector2.from_angle(angle) * radius, AppTheme.MINT, 3.0, true)
 		for blip in _blips:
 			var fade: float = clampf(blip["life"] / 1.4, 0.0, 1.0)
-			draw_circle(center + blip["pos"] * radius, 6.0, Color(AppTheme.YELLOW, fade))
-		draw_circle(center, 7.0, AppTheme.MINT)
+			draw_circle(center + blip["pos"] * radius, 6.0, Color(AppTheme.YELLOW, fade), true, -1.0, true)
+		draw_circle(center, 7.0, AppTheme.MINT, true, -1.0, true)

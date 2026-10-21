@@ -99,7 +99,7 @@ func _draw() -> void:
 	var radius := diameter / 2.0
 	var inner := radius
 	if ring_color.a > 0.0:
-		draw_circle(center, radius, ring_color)
+		draw_circle(center, radius, ring_color, true, -1.0, true)
 		inner = radius - maxf(2.0, diameter * 0.07)
 	var picture := _texture if _texture else _cartoon
 	if picture:
@@ -109,13 +109,16 @@ func _draw() -> void:
 		var uv_scale := Vector2(side, side) / tex_size
 		var points := PackedVector2Array()
 		var uvs := PackedVector2Array()
-		for i in 48:
-			var unit := Vector2.from_angle(TAU * i / 48.0)
+		for i in 96:  # Enough segments that big avatars stay round.
+			var unit := Vector2.from_angle(TAU * i / 96.0)
 			points.append(center + unit * inner)
 			uvs.append(uv_origin + (unit * 0.5 + Vector2(0.5, 0.5)) * uv_scale)
 		draw_colored_polygon(points, Color.WHITE, uvs, picture)
+		# The textured disc has a hard pixel edge: trace it with a thin antialiased ring.
+		var edge := ring_color if ring_color.a > 0.0 else Color(AppTheme.INK, 0.35)
+		draw_arc(center, inner, 0.0, TAU, 96, edge, maxf(1.5, diameter * 0.02), true)
 		return
-	draw_circle(center, inner, FALLBACK_COLORS[absi(display_name.hash()) % FALLBACK_COLORS.size()])
+	draw_circle(center, inner, FALLBACK_COLORS[absi(display_name.hash()) % FALLBACK_COLORS.size()], true, -1.0, true)
 	var font := AppTheme.heading_font()
 	var font_size := maxi(8, int(inner * 0.85))
 	var text := _initials()

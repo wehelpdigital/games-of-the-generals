@@ -351,8 +351,8 @@ class Banner:
 				_gradient(Rect2(0, 0, w, 5), Color("fff1b0"), Color("c98a00"))
 				_gradient(Rect2(0, h - 8, w, 5), Color("fff1b0"), Color("c98a00"))
 			"galaxy", "stars":
-				draw_circle(Vector2(w * 0.25, h * 0.6), h * 0.9, Color(Color("ff4fd8"), 0.08))
-				draw_circle(Vector2(w * 0.7, h * 0.3), h * 1.1, Color(Color("3dc8ff"), 0.07))
+				draw_circle(Vector2(w * 0.25, h * 0.6), h * 0.9, Color(Color("ff4fd8"), 0.08), true, -1.0, true)
+				draw_circle(Vector2(w * 0.7, h * 0.3), h * 1.1, Color(Color("3dc8ff"), 0.07), true, -1.0, true)
 			"rainbow":
 				var bands := 14
 				var band := w / bands
@@ -365,7 +365,7 @@ class Banner:
 			"embers":
 				for i in 5:
 					var bx := fmod(i * 0.23 + _t * 0.05, 1.0) * w
-					draw_circle(Vector2(bx, h + 6), h * 0.55, Color(Color("ff7a00"), 0.25 + 0.1 * sin(_t * 2.0 + i)))
+					draw_circle(Vector2(bx, h + 6), h * 0.55, Color(Color("ff7a00"), 0.25 + 0.1 * sin(_t * 2.0 + i)), true, -1.0, true)
 		for p in _particles:
 			var fade: float = clampf(p["life"] / p["max"], 0.0, 1.0)
 			var color: Color = p["color"]
@@ -382,7 +382,7 @@ class Banner:
 					var twinkle := absf(sin(_t * 5.0 + p["seed"])) * fade * (1.0 - fade) * 4.0
 					_sparkle(p["pos"], p["r"] * (0.6 + twinkle * 0.5), Color(color, clampf(twinkle, 0.0, 1.0)))
 				_:
-					draw_circle(p["pos"], p["r"], Color(color, fade))
+					draw_circle(p["pos"], p["r"], Color(color, fade), true, -1.0, true)
 		draw_rect(Rect2(0, h - 3, w, 3), AppTheme.INK)
 		draw_rect(Rect2(0, h, w, 5), Color(AppTheme.INK, 0.22))
 

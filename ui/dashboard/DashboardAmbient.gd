@@ -151,9 +151,9 @@ func _draw() -> void:
 		"bats":
 			# A big harvest moon behind the bats.
 			var moon := Vector2(size.x * 0.54, size.y * 0.3)
-			draw_circle(moon, 130.0, Color(1.0, 0.75, 0.35, 0.1))
-			draw_circle(moon, 80.0, Color(1.0, 0.85, 0.5, 0.3))
-			draw_circle(moon + Vector2(-20, -12), 14.0, Color(0.9, 0.7, 0.4, 0.22))
+			draw_circle(moon, 130.0, Color(1.0, 0.75, 0.35, 0.1), true, -1.0, true)
+			draw_circle(moon, 80.0, Color(1.0, 0.85, 0.5, 0.3), true, -1.0, true)
+			draw_circle(moon + Vector2(-20, -12), 14.0, Color(0.9, 0.7, 0.4, 0.22), true, -1.0, true)
 	for bit in _bits:
 		var pos: Vector2 = bit["pos"]
 		var s: float = bit["size"]
@@ -178,8 +178,8 @@ func _draw() -> void:
 				_burst(pos, float(bit["age"]), s, color)
 			"fireflies":
 				var glow := 0.5 + 0.5 * sin(_time * 2.4 + float(bit["phase"]))
-				draw_circle(pos, s * 3.2, Color(color, 0.12 * glow))
-				draw_circle(pos, s, Color(color, 0.35 + 0.6 * glow))
+				draw_circle(pos, s * 3.2, Color(color, 0.12 * glow), true, -1.0, true)
+				draw_circle(pos, s, Color(color, 0.35 + 0.6 * glow), true, -1.0, true)
 			"neon":
 				var rect := Rect2(pos - Vector2(s, s) / 2.0, Vector2(s, s))
 				draw_rect(rect.grow(3), Color(color, 0.18), false, 3.0)
@@ -188,9 +188,9 @@ func _draw() -> void:
 				_bat(pos, s, color, sin(_time * 14.0 + float(bit["phase"])))
 			"sun":
 				draw_arc(pos, s, 0.0, TAU, 16, color, 1.5, true)
-				draw_circle(pos + Vector2(-s, -s) * 0.3, s * 0.2, Color(1, 1, 1, 0.7))
+				draw_circle(pos + Vector2(-s, -s) * 0.3, s * 0.2, Color(1, 1, 1, 0.7), true, -1.0, true)
 			_:
-				draw_circle(pos, s, color)
+				draw_circle(pos, s, color, true, -1.0, true)
 
 
 func _quad(pos: Vector2, half: Vector2, rot: float, color: Color) -> void:
@@ -220,11 +220,11 @@ func _heart(pos: Vector2, s: float, color: Color) -> void:
 		var y := 13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t)
 		points.append(pos + Vector2(x, -y) * s / 17.0)
 	draw_colored_polygon(points, color)
-	draw_circle(pos + Vector2(-s * 0.35, -s * 0.3), s * 0.16, Color(1, 1, 1, 0.55))
+	draw_circle(pos + Vector2(-s * 0.35, -s * 0.3), s * 0.16, Color(1, 1, 1, 0.55), true, -1.0, true)
 
 
 func _lantern(pos: Vector2, s: float) -> void:
-	draw_circle(pos, s * 1.5, Color(1.0, 0.55, 0.2, 0.1))
+	draw_circle(pos, s * 1.5, Color(1.0, 0.55, 0.2, 0.1), true, -1.0, true)
 	var points := PackedVector2Array()
 	for i in 20:
 		var a := TAU * i / 20.0
@@ -252,11 +252,11 @@ func _burst(pos: Vector2, age: float, reach: float, color: Color) -> void:
 	var k := clampf(age / 1.4, 0.0, 1.0)
 	var fade := 1.0 - k
 	if age < 0.12:
-		draw_circle(pos, 18.0 * (1.0 - age / 0.12), Color(1, 1, 1, 0.8))
+		draw_circle(pos, 18.0 * (1.0 - age / 0.12), Color(1, 1, 1, 0.8), true, -1.0, true)
 	for i in 18:
 		var dir := Vector2.from_angle(TAU * i / 18.0)
 		var p := pos + dir * reach * ease(k, 0.4) + Vector2(0, 30.0 * k * k)
-		draw_circle(p, 3.2 * fade + 0.8, Color(color, fade))
+		draw_circle(p, 3.2 * fade + 0.8, Color(color, fade), true, -1.0, true)
 		draw_line(p, p - dir * 10.0 * fade, Color(color, fade * 0.5), 2.0, true)
 
 
@@ -283,8 +283,8 @@ func _bat(pos: Vector2, s: float, color: Color, flap: float) -> void:
 		pos + Vector2(s, -wing), pos + Vector2(s * 0.45, s * 0.34), pos + Vector2(0, s * 0.22), pos + Vector2(-s * 0.45, s * 0.34),
 	])
 	draw_colored_polygon(points, color)
-	draw_circle(pos + Vector2(-s * 0.08, -s * 0.02), s * 0.05, Color("ffcf3f"))
-	draw_circle(pos + Vector2(s * 0.08, -s * 0.02), s * 0.05, Color("ffcf3f"))
+	draw_circle(pos + Vector2(-s * 0.08, -s * 0.02), s * 0.05, Color("ffcf3f"), true, -1.0, true)
+	draw_circle(pos + Vector2(s * 0.08, -s * 0.02), s * 0.05, Color("ffcf3f"), true, -1.0, true)
 
 
 ## Retro perspective grid glowing along the bottom of the screen, scrolling toward the viewer.
@@ -318,8 +318,8 @@ func _draw_light_string() -> void:
 		previous = p
 		var c: Color = colors[i % colors.size()]
 		var twinkle := 0.55 + 0.45 * sin(_time * 3.0 + i * 1.7)
-		draw_circle(p + Vector2(0, 9), 13.0, Color(c, 0.18 * twinkle))
-		draw_circle(p + Vector2(0, 9), 5.5, Color(c, 0.5 + 0.5 * twinkle))
+		draw_circle(p + Vector2(0, 9), 13.0, Color(c, 0.18 * twinkle), true, -1.0, true)
+		draw_circle(p + Vector2(0, 9), 5.5, Color(c, 0.5 + 0.5 * twinkle), true, -1.0, true)
 
 
 ## Slowly turning sun rays from the top-right corner.
@@ -331,5 +331,5 @@ func _draw_sun_rays() -> void:
 		var points := PackedVector2Array([origin, origin + Vector2.from_angle(a - 0.08) * reach,
 			origin + Vector2.from_angle(a + 0.08) * reach])
 		draw_colored_polygon(points, Color(1.0, 0.95, 0.6, 0.09))
-	draw_circle(origin, 120.0, Color(1.0, 0.86, 0.35, 0.35))
-	draw_circle(origin, 80.0, Color(1.0, 0.9, 0.45, 0.55))
+	draw_circle(origin, 120.0, Color(1.0, 0.86, 0.35, 0.35), true, -1.0, true)
+	draw_circle(origin, 80.0, Color(1.0, 0.9, 0.45, 0.55), true, -1.0, true)

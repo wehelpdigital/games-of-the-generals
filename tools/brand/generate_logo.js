@@ -5,7 +5,7 @@
 // Writes:
 //   assets/brand/src/logo.svg, emblem.svg     static vector logo / emblem (not imported by Godot)
 //   assets/brand/src/layers/*.svg              pieces GameLogo animates separately
-//   assets/brand/src/layout.json               where each layer sits in the 1000×720 logo space
+//   assets/brand/src/layout.json               where each layer sits in the 1000×740 logo space
 //   icon.svg                                   app icon (kept simple so Godot's ThorVG renders it)
 //   web/shell.html                             web/shell.src.html + the animated inline logo + font
 //
@@ -22,7 +22,7 @@ const C = {
   ink: '#1d1736', paper: '#fff8ec', pink: '#ff4f8b', blue: '#3d8bff', yellow: '#ffcf3f',
   mint: '#27c98f', gold: '#ffb703', purple: '#8b5cf6',
 };
-const VIEW = { w: 1000, h: 720 };
+const VIEW = { w: 1000, h: 740 };
 const INK_W = 14;          // Ink outline width of shapes.
 const RIM = 18;            // Extra width of the paper rim around the ink.
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -99,8 +99,9 @@ const RIBBON = (() => {
   const xs = RIBBON_TEXT.flatMap((l) => l.corners.map((c) => c[0]));
   const textW = Math.max(...xs) - Math.min(...xs);
   const w = textW + 116;
-  const h = 104;
-  return { cx: 500, cy: 586, w, h, angle: -4 };
+  const padBottom = 20; // Extra band below the lettering so it doesn't sit on the bottom edge.
+  const h = 104 + padBottom;
+  return { cx: 500, cy: 586 + padBottom / 2, w, h, padBottom, angle: -4 };
 })();
 
 function bboxOf(points, pad) {
@@ -203,7 +204,7 @@ function ribbonGroup(p = '') {
   const text = RIBBON_TEXT.map((l) => `<g transform="${l.transform}"><path d="${l.d}"/></g>`).join('');
   const textBox = bboxOf(RIBBON_TEXT.flatMap((l) => l.corners), 0);
   const tx = -(textBox.x + textBox.w / 2);
-  const ty = -(textBox.y + textBox.h / 2);
+  const ty = -(textBox.y + textBox.h / 2) - RIBBON.padBottom / 2;
   return `<g transform="translate(${RIBBON.cx} ${RIBBON.cy}) rotate(${RIBBON.angle})"><g class="ribbon">`
     + shadow(tail(-1)) + shadow(tail(1)) + shadow(band)
     + rim(tail(-1)) + rim(tail(1)) + rim(band)

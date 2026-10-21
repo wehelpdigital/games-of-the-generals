@@ -69,14 +69,14 @@ function writeIco(pngs, out) {
     await render(page, svg, Math.round(w * LAYER_SCALE), Math.round(h * LAYER_SCALE), path.join(layerOut, `${name}.png`));
   }
   const logo = read('logo.svg');
-  await render(page, logo, 1000, 720, path.join(SRC, 'logo.png'));
+  await render(page, logo, 1000, 740, path.join(SRC, 'logo.png'));
   // Boot splash: square with padding, drawn over the splash colour with "Keep" stretch.
   await render(page, logo, 1536, 1536, path.join(ROOT, 'assets/brand/splash.png'), 'transparent', 0.62);
 
   if (preview) {
     fs.mkdirSync(preview, { recursive: true });
-    await render(page, logo, 1000, 720, path.join(preview, 'logo_dark.png'), 'radial-gradient(#4a2f94,#1d1736)');
-    await render(page, logo, 1000, 720, path.join(preview, 'logo_light.png'), '#f1d6b8');
+    await render(page, logo, 1000, 740, path.join(preview, 'logo_dark.png'), 'radial-gradient(#4a2f94,#1d1736)');
+    await render(page, logo, 1000, 740, path.join(preview, 'logo_light.png'), '#f1d6b8');
     await render(page, fs.readFileSync(path.join(ROOT, 'icon.svg'), 'utf8'), 256, 256, path.join(preview, 'icon_chrome.png'));
     await render(page, read('emblem.svg'), 400, 400, path.join(preview, 'emblem.png'));
   }
@@ -86,8 +86,8 @@ function writeIco(pngs, out) {
     fs.mkdirSync(out, { recursive: true });
     fs.copyFileSync(path.join(SRC, 'logo.svg'), path.join(out, 'logo.svg'));
     fs.copyFileSync(path.join(SRC, 'emblem.svg'), path.join(out, 'emblem.svg'));
-    await render(page, logo, 800, 576, path.join(out, 'logo.png'));
-    await render(page, logo, 1600, 1152, path.join(out, 'logo@2x.png'));
+    await render(page, logo, 800, 592, path.join(out, 'logo.png'));
+    await render(page, logo, 1600, 1184, path.join(out, 'logo@2x.png'));
     const icon = fs.readFileSync(path.join(ROOT, 'icon.svg'), 'utf8');
     for (const size of [180, 192, 512]) {
       await render(page, icon, size, size, path.join(out, `icon-${size}.png`));

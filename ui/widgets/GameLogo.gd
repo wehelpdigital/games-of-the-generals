@@ -6,14 +6,14 @@ extends Control
 ## rendered from the vector logo (tools/brand), drawn with mipmaps so they stay crisp at any size.
 ## The same logo, animated in CSS, is on the web loader (web/shell.src.html).
 ##
-##     var logo := GameLogo.new(220)   # Height in pixels; the width follows the logo's 1000:720.
+##     var logo := GameLogo.new(220)   # Height in pixels; the width follows the logo's 1000:740.
 
-const VIEW := Vector2(1000, 720)  # Logo space; matches assets/brand/src/layout.json.
+const VIEW := Vector2(1000, 740)  # Logo space; matches assets/brand/src/layout.json.
 const LAYERS := {
 	"shield": Rect2(312, 10, 376, 392),
 	"star": Rect2(385, 76, 230, 229),
 	"wordmark": Rect2(25, 340, 946, 211),
-	"ribbon": Rect2(117, 453, 767, 276),
+	"ribbon": Rect2(116, 453, 768, 296),
 }
 const TEXTURES := {
 	"shield": preload("res://assets/brand/layers/shield.png"),

@@ -214,6 +214,7 @@ func _place_try_bar() -> void:
 	if not _portrait:
 		width = minf(width, view.x - PANEL_WIDTH - 60.0)
 	_try_bar.custom_minimum_size.x = width
+	_try_label.custom_minimum_size.x = 70.0 if _portrait else 120.0  # Phones: room for two buttons.
 	_try_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE)
 	var left := 14.0 if _portrait else maxf(14.0, (view.x - PANEL_WIDTH - 28.0 - width) / 2.0)
 	_try_bar.position = Vector2(roundf(left if not _portrait else (view.x - width) / 2.0), TOP_BAR + 4.0)

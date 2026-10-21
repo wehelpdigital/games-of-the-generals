@@ -6,6 +6,11 @@ extends RefCounted
 
 ## Portrait phones lay screens out at this width, then scale them up to fill the screen.
 const PHONE_WIDTH := 600.0
+## Below this width (UI pixels) rows drop secondary columns and pages trim their padding.
+const NARROW := 520.0
+
+## Set by fit(): true on phone-width screens, so row builders can keep to the essentials.
+static var narrow := false
 
 
 ## Covers the viewport with `frame`. In portrait the frame is PHONE_WIDTH wide and scaled up, so
@@ -17,6 +22,7 @@ static func fit(frame: Control, view: Vector2, design_width := PHONE_WIDTH) -> b
 	frame.position = Vector2.ZERO
 	frame.scale = Vector2(k, k)
 	frame.size = view / k
+	narrow = frame.size.x < NARROW
 	return portrait
 
 
@@ -173,7 +179,7 @@ static func position_chip(rank: int) -> Control:
 	else:
 		chip = AppTheme.pill(str(rank) if rank > 0 else "-", Color(AppTheme.INK, 0.08), AppTheme.INK, 17)
 		chip.add_theme_stylebox_override("panel", _plain_chip())
-	chip.custom_minimum_size = Vector2(50, 0)
+	chip.custom_minimum_size = Vector2(40 if narrow else 50, 0)
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return chip
 
@@ -194,7 +200,7 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 	row.add_child(line)
 	if position >= 0:
 		line.add_child(position_chip(position))
-	var avatar := AvatarView.new(44)
+	var avatar := AvatarView.new(36 if narrow else 44)
 	avatar.set_user(entry)
 	avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(avatar)
@@ -221,10 +227,10 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 		sub_label.clip_text = true
 		names.add_child(sub_label)
 	line.add_child(names)
-	for stat: Array in stats:
+	for stat: Array in stats.slice(0, max_stats()):
 		var cell := AppTheme.vbox(0)
 		cell.alignment = BoxContainer.ALIGNMENT_CENTER
-		cell.custom_minimum_size.x = stat[1]
+		cell.custom_minimum_size.x = stat[1] * (0.8 if narrow else 1.0)
 		var value := AppTheme.label(str(stat[0]), "", 19)
 		value.add_theme_font_override("font", AppTheme.heading_font())
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -236,8 +242,27 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 		line.add_child(cell)
 	if extra:
 		extra.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		line.add_child(extra)
+		if narrow and extra.get_combined_minimum_size().x > 90.0:
+			extra.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			names.add_child(extra)  # Phones: wide extras (buttons) go under the name, not beside it.
+		else:
+			line.add_child(extra)
 	return row
+
+
+## A row that stacks into a centred column on phone-width screens (photo above the details).
+static func flex(separation := 12) -> BoxContainer:
+	var box := BoxContainer.new()
+	box.vertical = narrow
+	box.add_theme_constant_override("separation", separation)
+	if narrow:
+		box.alignment = BoxContainer.ALIGNMENT_CENTER
+	return box
+
+
+## How many stat columns rows show: phones keep the first two.
+static func max_stats() -> int:
+	return 2 if narrow else 99
 
 
 static func highlight_style() -> StyleBoxFlat:
@@ -329,7 +354,13 @@ static func fit_page(p: Dictionary, view: Vector2) -> bool:
 	var frame: Control = p["frame"]
 	var portrait := fit(frame, view)
 	var card: PanelContainer = p["card"]
-	card.custom_minimum_size.x = minf(float(p["max_width"]), frame.size.x - 28.0)
+	var margin := 6 if narrow else 14
+	var holder: MarginContainer = frame.get_child(0)
+	for side in ["left", "right", "top", "bottom"]:
+		holder.add_theme_constant_override("margin_" + side, margin)
+	var style := card.get_theme_stylebox("panel") as StyleBoxFlat
+	style.set_content_margin_all(12 if narrow else 20)
+	card.custom_minimum_size.x = minf(float(p["max_width"]), frame.size.x - margin * 2.0)
 	return portrait
 
 

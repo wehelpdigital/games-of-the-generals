@@ -56,7 +56,7 @@ func _tier_row(t: int, mine: int, xp: int) -> PanelContainer:
 		row.add_theme_stylebox_override("panel", ProfileUi.highlight_style())
 	var line := AppTheme.hbox(14)
 	row.add_child(line)
-	var insignia := RankInsignia.new(t, 56)
+	var insignia := RankInsignia.new(t, 44 if ProfileUi.narrow else 56)
 	insignia.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if mine >= 0 and t > mine:
 		insignia.modulate = Color(1, 1, 1, 0.55)
@@ -87,7 +87,11 @@ func _tier_row(t: int, mine: int, xp: int) -> PanelContainer:
 		chip = AppTheme.pill("LOCKED" if mine >= 0 else "", Color(AppTheme.INK, 0.12), AppTheme.MUTED, 14)
 		chip.visible = mine >= 0
 	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(chip)
+	if ProfileUi.narrow:
+		chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		words.add_child(chip)  # Phones: the status chip goes under the rank's details.
+	else:
+		line.add_child(chip)
 	return row
 
 

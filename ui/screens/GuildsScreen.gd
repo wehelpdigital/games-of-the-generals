@@ -64,11 +64,12 @@ func _render_top() -> void:
 		_top.add_child(row)
 		return
 	var card := AppTheme.card("Row")
-	var line := AppTheme.hbox(12)
+	var line := ProfileUi.flex(12)
 	card.add_child(line)
 	var unlocked := ApiManager.is_logged_in() and Profile.tier() >= PlayerRanks.GUILD_MIN_TIER
 	var crown := TileIcon.new("crown" if unlocked else "lock", Vector2(46, 46))
 	crown.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	crown.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	line.add_child(crown)
 	var words := AppTheme.vbox(2)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -127,7 +128,7 @@ func _guild_row(guild: Dictionary, position: int, note: String) -> PanelContaine
 	row.add_child(line)
 	if position > 0:
 		line.add_child(ProfileUi.position_chip(position))
-	var logo := ProfileUi.guild_logo(guild, 50)
+	var logo := ProfileUi.guild_logo(guild, 40 if ProfileUi.narrow else 50)
 	logo.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(logo)
 	var words := AppTheme.vbox(0)
@@ -144,9 +145,10 @@ func _guild_row(guild: Dictionary, position: int, note: String) -> PanelContaine
 	sub_label.clip_text = true
 	words.add_child(sub_label)
 	line.add_child(words)
-	for stat: Array in [[ProfileUi.grouped(guild.get("xp_total", 0)), "XP"], [ProfileUi.grouped(guild.get("wins_total", 0)), "Wins"]]:
+	var guild_stats := [[ProfileUi.grouped(guild.get("xp_total", 0)), "XP"], [ProfileUi.grouped(guild.get("wins_total", 0)), "Wins"]]
+	for stat: Array in guild_stats.slice(0, 1 if ProfileUi.narrow else 2):
 		var cell := AppTheme.vbox(0)
-		cell.custom_minimum_size.x = 64
+		cell.custom_minimum_size.x = 52 if ProfileUi.narrow else 64
 		var value := AppTheme.label(stat[0], "", 18)
 		value.add_theme_font_override("font", AppTheme.heading_font())
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -155,7 +157,8 @@ func _guild_row(guild: Dictionary, position: int, note: String) -> PanelContaine
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cell.add_child(caption)
 		line.add_child(cell)
-	var view := ProfileUi.small_button("View", "Secondary", func() -> void: ui.show_screen("guild", {"id": int(guild.get("id", 0))}), 40)
+	var view := ProfileUi.small_button(">" if ProfileUi.narrow else "View", "Secondary", func() -> void: ui.show_screen("guild", {"id": int(guild.get("id", 0))}), 40)
+	view.tooltip_text = "View guild"
 	view.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	line.add_child(view)
 	return row
@@ -184,6 +187,7 @@ func _open_create() -> void:
 			tag_field.caret_column = caret)
 	box.add_child(tag_field)
 	var price := AppTheme.label("Guild Charter: checking price...", "", 18)
+	price.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(price)
 	var error := AppTheme.label("", "", 16, AppTheme.RED)
 	error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -37,7 +37,7 @@ func _render() -> void:
 	var data := Profile.data
 
 	# Who you are.
-	var top := AppTheme.hbox(18)
+	var top := ProfileUi.flex(18)
 	var photo := AppTheme.vbox(8)
 	_avatar = AvatarView.new(128)
 	_avatar.set_user(data)

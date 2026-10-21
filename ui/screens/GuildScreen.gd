@@ -55,7 +55,7 @@ func _render() -> void:
 	var master: Dictionary = _guild.get("master", {}) if _guild.get("master") is Dictionary else {}
 	var is_master := is_member and (str(mine.get("role", "")) == "master" or int(master.get("id", -2)) == my_id)
 
-	var top := AppTheme.hbox(18)
+	var top := ProfileUi.flex(18)
 	var logo_column := AppTheme.vbox(8)
 	var logo := ProfileUi.guild_logo(_guild, 120)
 	logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

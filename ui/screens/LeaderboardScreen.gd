@@ -294,10 +294,11 @@ func _load_guilds(page: int, ticket: int) -> void:
 		title.clip_text = true
 		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(title)
-		for stat: Array in [[ProfileUi.grouped(entry.get("xp_total", 0)), "XP"], [ProfileUi.grouped(entry.get("wins_total", 0)), "Wins"],
-				[AppTheme.num(entry.get("members_count", 0)), "Members"]]:
+		var guild_stats := [[ProfileUi.grouped(entry.get("xp_total", 0)), "XP"], [ProfileUi.grouped(entry.get("wins_total", 0)), "Wins"],
+				[AppTheme.num(entry.get("members_count", 0)), "Members"]]
+		for stat: Array in guild_stats.slice(0, 1 if ProfileUi.narrow else 3):
 			var cell := AppTheme.vbox(0)
-			cell.custom_minimum_size.x = 62
+			cell.custom_minimum_size.x = 56 if ProfileUi.narrow else 62
 			var value := AppTheme.label(stat[0], "", 18)
 			value.add_theme_font_override("font", AppTheme.heading_font())
 			value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -307,7 +308,8 @@ func _load_guilds(page: int, ticket: int) -> void:
 			cell.add_child(caption)
 			line.add_child(cell)
 		var id := int(entry.get("id", 0))
-		var view := ProfileUi.small_button("View", "Secondary", func() -> void: ui.show_screen("guild", {"id": id}), 38)
+		var view := ProfileUi.small_button(">" if ProfileUi.narrow else "View", "Secondary", func() -> void: ui.show_screen("guild", {"id": id}), 38)
+		view.tooltip_text = "View guild"
 		view.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(view)
 		_content.add_child(row)
@@ -344,12 +346,12 @@ func _columns(stats: Array) -> HBoxContainer:
 	var line := AppTheme.hbox(10)
 	var lead := AppTheme.label("Player", "MutedLabel", 15)
 	lead.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lead.custom_minimum_size.x = 50 + 44 + 10
+	lead.custom_minimum_size.x = (40 + 36 if ProfileUi.narrow else 50 + 44) + 10
 	line.add_child(ProfileUi.gap(14))
 	line.add_child(lead)
-	for stat: Array in stats:
+	for stat: Array in stats.slice(0, ProfileUi.max_stats()):
 		var l := AppTheme.label(stat[0], "MutedLabel", 15)
-		l.custom_minimum_size.x = stat[1]
+		l.custom_minimum_size.x = stat[1] * (0.8 if ProfileUi.narrow else 1.0)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		line.add_child(l)
 	line.add_child(ProfileUi.gap(12))

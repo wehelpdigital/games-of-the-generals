@@ -130,6 +130,8 @@ func _show(ui: UIRoot, screen: String, args: Dictionary, file: String, wait: flo
 
 func _shot(file: String, wait := 0.6) -> void:
 	await get_tree().create_timer(wait).timeout
+	if "--audit" in OS.get_cmdline_user_args():
+		LayoutAudit.report(get_tree().root, file)
 	if DisplayServer.get_name() == "headless":
 		return  # No frames are drawn headless (frame_post_draw never fires).
 	await RenderingServer.frame_post_draw

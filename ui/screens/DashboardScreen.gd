@@ -272,6 +272,7 @@ func _fit_tiles() -> void:
 
 
 func _fill_play() -> void:
+	ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)  # Sets ProfileUi.narrow for flex().
 	ProfileUi.clear(_play_box)
 	var head := AppTheme.hbox(8)
 	head.add_child(ProfileUi.eyebrow("Play", Color(_theme["accent"]).darkened(0.15)))
@@ -282,7 +283,7 @@ func _fill_play() -> void:
 	if ui.has_screen("ranked"):
 		_play_box.add_child(ProfileUi.play_button("Ranked Match", "Your rank only - win +60 XP",
 			_theme["accent"], func() -> void: ui.show_screen("ranked"), 74, "swords"))
-	var row := AppTheme.hbox(10)
+	var row := ProfileUi.flex(10)  # Side by side, or stacked on phone-width screens.
 	var quick := ProfileUi.play_button("Quick Match", "Anyone online", _theme["accent2"],
 		func() -> void: ui.require_login("lobby"), 64, "globe")
 	quick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -343,7 +344,7 @@ func _build_layouts() -> void:
 	body.add_child(_right_col)
 
 	# Portrait: logo, header, then one scrolling column.
-	_tall = _margin(12)
+	_tall = _margin(8)
 	_frame.add_child(_tall)
 	_tall_top = AppTheme.vbox(10)
 	_tall.add_child(_tall_top)
@@ -402,11 +403,14 @@ func _arrange_header() -> void:
 	_put(_avatar_button, _row1)
 	_put(_names, _row1)
 	_names.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _portrait else Control.SIZE_FILL
+	_names.custom_minimum_size.x = 96.0 if _portrait else 190.0
+	_xp_bar.custom_minimum_size.x = 96.0 if _portrait else 190.0
 	if _portrait:
-		_put(_credits_button, _row1)
+		# Phones: name and log-out on the first row; XP, credits and guild tag on the second.
 		_put(_logout_button, _row1)
 		_xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_put(_xp_bar, _row2)
+		_put(_credits_button, _row2)
 		_put(_guild_button, _row2)
 		_row2.visible = true
 		_logo_holder.custom_minimum_size = Vector2(240, 150)
@@ -578,7 +582,7 @@ func _celebrate(tier: int) -> void:
 	var box := AppTheme.vbox(12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	card.add_child(box)
-	var title := AppTheme.label("PROMOTED!", "TitleLabel", 58)
+	var title := AppTheme.label("PROMOTED!", "TitleLabel", 42 if ProfileUi.narrow else 58)
 	title.add_theme_color_override("font_color", AppTheme.YELLOW)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
@@ -587,6 +591,7 @@ func _celebrate(tier: int) -> void:
 	box.add_child(insignia)
 	var line := AppTheme.label("You're now a %s!" % PlayerRanks.name_of(tier), "HeadingLabel", 30)
 	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(line)
 	box.add_child(ProfileUi.note("Brag about it - sharing also counts toward your next rank."))
 	var row := AppTheme.hbox(10)

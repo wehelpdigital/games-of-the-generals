@@ -1,7 +1,7 @@
 extends Screen
-## Global lobby: open matches from other players (join one), host your own, quick match, or
-## resume the match you're already in. Updates live from the public `lobby` channel, with a slow
-## poll as a fallback.
+## Global lobby: quick match, ranked, custom rooms, open matches from other players (join one),
+## host your own, or resume the match you're already in. Updates live from the public `lobby`
+## channel, with a slow poll as a fallback.
 
 const LOBBY_CHANNEL := "lobby"
 const POLL_SECONDS := 6.0
@@ -28,13 +28,18 @@ func _ready() -> void:
 	header.add_child(_live)
 	box.add_child(header)
 
-	var actions := AppTheme.hbox(10)
-	for spec: Array in [["Quick Match", "Primary", _quick_match], ["Create Match", "Secondary", _create_match]]:
-		var b := AppTheme.button(spec[0], spec[1], spec[2], 58)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_buttons.append(b)
-		actions.add_child(b)
-	box.add_child(actions)
+	var specs := [
+		[["Quick Match", "Primary", _quick_match], ["Ranked", "Accent", func() -> void: ui.show_screen("ranked", {"back": "lobby"})]],
+		[["Custom Rooms", "Secondary", func() -> void: ui.show_screen("rooms", {"back": "lobby"})], ["Host Match", "Ghost", _create_match]],
+	]
+	for row_specs: Array in specs:
+		var actions := AppTheme.hbox(10)
+		for spec: Array in row_specs:
+			var b := AppTheme.button(spec[0], spec[1], spec[2], 58)
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			_buttons.append(b)
+			actions.add_child(b)
+		box.add_child(actions)
 
 	_resume_box = AppTheme.vbox(8)
 	box.add_child(_resume_box)
@@ -55,7 +60,7 @@ func _ready() -> void:
 	_empty = AppTheme.label("No open matches right now.\nCreate one and get a friend to join!", "MutedLabel")
 	_empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.show_screen("title"), 48))
+	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48))
 	add_child(AppTheme.centered(_card, 640))
 
 	_poll = Timer.new()
@@ -117,14 +122,32 @@ func _match_row(entry: Dictionary) -> PanelContainer:
 	row.add_child(line)
 	var host: Dictionary = entry.get("host", {})
 	var username := str(host.get("username", "?"))
-	line.add_child(AppTheme.pill(username.left(1).to_upper(), _avatar_color(username), Color.WHITE, 22))
+	var avatar := AvatarView.new(44.0)
+	avatar.set_user(host)
+	line.add_child(avatar)
 	var info := AppTheme.vbox(0)
-	info.add_child(AppTheme.label(username, "", 22))
-	info.add_child(AppTheme.label("ELO %s  ·  %s" % [AppTheme.num(host.get("elo", "?")), _ago(str(entry.get("created_at", "")))], "MutedLabel", 16))
+	var is_room: bool = entry.get("is_room", false) or entry.get("name") != null or entry.get("room_name") != null
+	var title := str(entry.get("name", entry.get("room_name", ""))) if is_room else username
+	info.add_child(AppTheme.label(title if title != "" else username, "", 22))
+	var sub := "ELO %s" % AppTheme.num(host.get("elo", "?"))
+	if is_room:
+		sub = "by " + username
+	elif host.get("rank_tier") != null:
+		sub = PlayerRanks.name_of(host["rank_tier"])
+	info.add_child(AppTheme.label("%s  ·  %s" % [sub, _ago(str(entry.get("created_at", "")))], "MutedLabel", 16))
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(info)
+	if entry.get("has_password", false):
+		var lock := TextureRect.new()
+		lock.texture = EmojiPicker.icon("lock")
+		lock.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		lock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		lock.custom_minimum_size = Vector2(26, 26)
+		lock.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		line.add_child(lock)
 	var id := int(entry.get("id", 0))
-	var join := AppTheme.button("Join", "Success", func() -> void: _join(id), 46)
+	var join := AppTheme.button("Join", "Success", _join_entry.bind(entry) if is_room else _join.bind(id), 46)
 	_buttons.append(join)
 	line.add_child(join)
 	return row
@@ -161,6 +184,14 @@ func _join(id: int) -> void:
 	await _run(GameSession.join_match.bind(id))
 
 
+## Rooms join through the rooms screen, which asks for the password when there is one.
+func _join_entry(entry: Dictionary) -> void:
+	var room := entry.duplicate()
+	if not room.has("name"):
+		room["name"] = entry.get("room_name", "Room")
+	ui.screen("rooms").call("join_room", room)
+
+
 ## Runs a GameSession online request with the buttons locked. Success switches to the HUD by
 ## itself (GameSession emits match_loaded); failures explain themselves.
 func _run(request_fn: Callable) -> void:
@@ -194,11 +225,6 @@ func _on_subscribed(channel: String) -> void:
 func _on_realtime_event(channel: String, event: String, _data: Dictionary) -> void:
 	if channel == LOBBY_CHANNEL and event == "LobbyUpdated":
 		refresh()
-
-
-func _avatar_color(username: String) -> Color:
-	var palette := [AppTheme.PINK, AppTheme.BLUE, AppTheme.PURPLE, AppTheme.MINT, AppTheme.BRONZE]
-	return palette[absi(username.hash()) % palette.size()]
 
 
 func _ago(iso: String) -> String:

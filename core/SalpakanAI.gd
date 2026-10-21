@@ -167,8 +167,10 @@ func observe(result: Dictionary) -> void:
 	var mine_id := mover if mover_is_mine else defender
 	var enemy_id := defender if mover_is_mine else mover
 	var outcome: int = {"attacker": ATTACKER_WINS, "defender": DEFENDER_WINS}.get(clash.get("outcome"), BOTH_OUT)
-	if clash.has("rally"):
-		outcome = BOTH_OUT  # Equal ranks; the Rally Cry only changed who survived.
+	if clash.has("rally") or clash.has("morale"):
+		outcome = BOTH_OUT  # Equal ranks; the Rally Cry or Morale Boost only changed who survived.
+	elif clash.has("booby_trap"):
+		outcome = ATTACKER_WINS  # The attacker won; the Booby Trap took it down anyway.
 	var informative: bool = mover != "" and defender != "" and str(clash.get("outcome")) in ["attacker", "defender", "both"]
 	if informative and _my_ranks.has(mine_id) and _enemy_mask.has(enemy_id):
 		var mine: int = _my_ranks[mine_id]
@@ -214,6 +216,13 @@ func learn(enemy_id: String, facts: Dictionary) -> void:
 	_enemy_mask[enemy_id] = narrowed if narrowed != 0 else allowed
 
 
+## War Game: how a clash would end if our piece `mine_id` attacked `enemy_id` ("win", "lose" or
+## "tie"), which narrows the enemy's rank the way a real clash would.
+func learn_clash(mine_id: String, enemy_id: String, outcome: String) -> void:
+	var result: String = {"win": "attacker", "lose": "defender"}.get(outcome, "both")
+	observe({"piece_id": mine_id, "clash": {"defender_id": enemy_id, "outcome": result, "eliminated": []}})
+
+
 ## Flag Hunter: the enemy flag stands in `column`. `enemy_columns`: living enemy id -> x.
 func learn_flag_column(column: int, enemy_columns: Dictionary) -> void:
 	for id: String in enemy_columns:
@@ -232,16 +241,21 @@ func forget(enemy_ids: Array) -> void:
 			_enemy_attacked.erase(str(id))
 
 
-## Reinforcement: a fallen enemy Private is back as `new_id`.
-func enemy_reinforced(new_id: String) -> void:
-	var private := 1 << _rank_index("PVT")
-	_enemy_mask[new_id] = private
+## Reinforcement or Field Medic: a fallen enemy piece of that rank is back as `new_id`.
+func enemy_reinforced(new_id: String, rank := "PVT") -> void:
+	var bit := 1 << _rank_index(rank)
+	_enemy_mask[new_id] = bit
 	var best := -1
 	for i in _dead_masks.size():
-		if _dead_masks[i] & private and (best < 0 or _bit_count(_dead_masks[i]) < _bit_count(_dead_masks[best])):
+		if _dead_masks[i] & bit and (best < 0 or _bit_count(_dead_masks[i]) < _bit_count(_dead_masks[best])):
 			best = i
 	if best >= 0:
 		_dead_masks.remove_at(best)
+
+
+## Mutiny: one of our pieces went over to the enemy as `new_id`, and we know its rank.
+func enemy_joined(new_id: String, rank: String) -> void:
+	_enemy_mask[new_id] = 1 << _rank_index(rank)
 
 
 ## Re-reads our own ranks after a powerup changed them (Shuffle, Reinforcement).

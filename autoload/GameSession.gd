@@ -54,6 +54,7 @@ var _next_timeout_claim := 0.0
 var _arbiter: LocalArbiter  # Offline practice: full-information referee.
 var _ai: SalpakanAI         # Offline practice: the opponent.
 var _ai_arbiter: LocalArbiter  # The practice game whose AI turn is being played right now.
+var _ai_heard: Dictionary = {}  # Late reveals (Wiretap, Tripwire...) the AI already took in.
 ## The Boot Camp lesson being played (an offline practice game with a coach), or null.
 var tutorial: TutorialRun
 
@@ -187,6 +188,9 @@ func powerup_problem(id: String) -> String:
 	var p: Dictionary = match_view.get("powerups", {})
 	if p.get("blocked", false):
 		return "Sabotaged! No powerups this turn."
+	if PowerupLibrary.kind(id) == "intel" and effects().get("opponent", []).any(func(e: Variant) -> bool:
+			return e is Dictionary and e.get("type") == "radio_silence" and str(e.get("side")) == my_side()):
+		return "Radio silence! No intel powerups this turn."
 	if int(p.get("used_this_turn", 0)) >= int(p.get("per_turn", PowerupLibrary.MAX_PER_TURN)):
 		return "No more powerups this turn."
 	return ""
@@ -210,7 +214,7 @@ func my_mines() -> Array:
 
 ## What limits the player's steps right now (the server's MoveRules), for the board's move hints:
 ## {haste: a 2-square straight dash is allowed this turn, ceasefire: no attacks this turn,
-## blocked: Roadblock squares nobody may enter}.
+## blocked: squares nobody may enter (Roadblock, Barbed Wire, a flooded column, a piece in a Bunker)}.
 func step_rules() -> Dictionary:
 	var rules := {"haste": false, "ceasefire": false, "blocked": []}
 	var all := effects()
@@ -219,8 +223,15 @@ func step_rules() -> Dictionary:
 			if not e is Dictionary:
 				continue
 			match str(e.get("type")):
-				"roadblock":
+				"roadblock", "barbed_wire":
 					rules["blocked"].append(Vector2i(int(e.get("x", -1)), int(e.get("y", -1))))
+				"flood":
+					for y in Ranks.ROWS:
+						rules["blocked"].append(Vector2i(int(e.get("x", -1)), y))
+				"bunker":
+					for piece: Variant in match_view.get("pieces", []):
+						if piece is Dictionary and str(piece.get("id")) == str(e.get("piece_id")):
+							rules["blocked"].append(Vector2i(int(piece["x"]), int(piece["y"])))
 				"haste":
 					rules["haste"] = rules["haste"] or (str(e.get("side")) == my_side() and is_my_turn())
 				"ceasefire":
@@ -510,9 +521,12 @@ func _present_result(result: Dictionary) -> bool:
 	var outcome := str(clash.get("outcome", "")) if clash is Dictionary else ""
 	var resync: bool = result.get("fog_lifted", false)
 	if result.get("auto", false):
-		rule_event.emit({"kind": "auto", "side": side, "chaos": result.get("chaos", false), "timeout": result.get("timeout", false)})
+		rule_event.emit({"kind": "auto", "side": side, "chaos": result.get("chaos", false), "timeout": result.get("timeout", false),
+			"last_second": result.get("last_second", false)})
 		var whose := "you" if side == my_side() else "your opponent"
-		if result.get("chaos", false):
+		if result.get("last_second", false):
+			status_message.emit("Last Second! Time ran out for %s and the turn just passed." % whose)
+		elif result.get("chaos", false):
 			status_message.emit("Chaos Order! A random move was forced on %s." % whose)
 		else:
 			status_message.emit("Time's up! A random move was played for %s." % whose)
@@ -547,9 +561,19 @@ func _present_result(result: Dictionary) -> bool:
 		rule_event.emit({"kind": "rally", "side": str(clash["rally"]), "cell": result.get("to")})
 	if clash is Dictionary and clash.get("trench") != null:
 		rule_event.emit({"kind": "trench", "side": str(clash["trench"]), "cell": result.get("to")})
+	if clash is Dictionary and clash.get("morale") != null:
+		rule_event.emit({"kind": "morale", "side": str(clash["morale"]), "cell": result.get("to")})
+	if clash is Dictionary and clash.get("booby_trap") != null:
+		rule_event.emit({"kind": "booby_trap", "side": str(clash["booby_trap"]), "cell": result.get("to")})
 	if result.get("quicksand") is Dictionary:
 		rule_event.emit({"kind": "quicksand", "side": side, "cell": result["quicksand"]})
 		resync = true  # The stuck piece's frozen effect arrives with the view.
+	if result.get("tripwire") is Dictionary:
+		rule_event.emit({"kind": "tripwire", "side": side, "cell": result["tripwire"]})
+		resync = true  # The rank it caught arrives with the view.
+	if result.get("overwatch") is Dictionary:
+		rule_event.emit({"kind": "overwatch", "side": side, "cell": result["overwatch"] if result["overwatch"].has("x") else result.get("to")})
+		resync = true
 	_accept_result(shown)
 	return resync
 
@@ -801,6 +825,7 @@ func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM,
 	# a random look would compile new shaders with the game frozen as the match starts.
 	ai_loadout = Loadout.random_loadout() if Graphics.live_showcase() else {}
 	_ai = SalpakanAI.new(Ranks.BLACK, level)
+	_ai_heard = {}
 	_arbiter = LocalArbiter.new()
 	_arbiter.turn_seconds = maxi(PowerupLibrary.MIN_TURN_SECONDS, int(ServerConfig.get_value("turn_seconds", 45)))
 	_arbiter.powerup_mode = mode
@@ -894,6 +919,7 @@ func _practice_emit(full: Dictionary) -> void:
 		_ai.observe(LocalArbiter.redact(full, Ranks.BLACK))
 		if tutorial == null and _ai_won_clash(full) and randf() < 0.25 and not arbiter.jammed(Ranks.BLACK):
 			_ai_taunt(1.4)
+	_ai_catch_up(arbiter)
 	var resync := _present_result(LocalArbiter.redact(full, Ranks.WHITE))
 	if tutorial and arbiter == _arbiter:
 		tutorial.on_result(full)
@@ -974,8 +1000,29 @@ func _ai_take_turn(arbiter: LocalArbiter) -> void:
 func _ai_learn(arbiter: LocalArbiter, used: Dictionary) -> void:
 	var private: Dictionary = used["result"]["private"]
 	match str(used["result"]["id"]):
-		"spy_card", "intel_leak", "interrogation":
+		"spy_card", "intel_leak", "interrogation", "debrief":
 			_ai.learn(private["piece_id"], {"rank": private["rank"]})
+		"spy_catcher":
+			if private.get("found", false):
+				_ai.learn(private["piece_id"], {"rank": private["rank"]})
+		"coin_flip":
+			if private.get("heads", false):
+				_ai.learn(private["piece_id"], {"rank": private["rank"]})
+		"eagle_eye":
+			for entry: Dictionary in private["pieces"]:
+				_ai.learn(entry["piece_id"], {"rank": entry["rank"]})
+		"satellite_scan":
+			for entry: Dictionary in private["pieces"]:
+				_ai.learn(entry["piece_id"], {"group": entry["group"]})
+		"wargame":
+			_ai.learn_clash(private["mine_id"], private["piece_id"], private["outcome"])
+		"lie_detector":
+			if private.get("decoy", false):
+				_ai.forget([private["piece_id"]])
+		"wildcard":
+			_ai_learn(arbiter, {"result": {"id": private["played"], "private": private["result"]}})
+		"mutiny", "field_medic", "commission", "shell_game", "flank", "charge", "leapfrog", "formation":
+			_ai.sync_own(arbiter.observation(Ranks.BLACK))
 		"recon_drone":
 			_ai.learn(private["piece_id"], {"is_flag": private["is_flag"]})
 		"scout_report":
@@ -990,6 +1037,18 @@ func _ai_learn(arbiter: LocalArbiter, used: Dictionary) -> void:
 			_ai.sync_own(arbiter.observation(Ranks.BLACK))
 
 
+## Ranks black learns after the card that set them up was played (Wiretap, Tripwire), or from
+## white's own cards (a tails Coin Flip): fed to the AI once each.
+func _ai_catch_up(arbiter: LocalArbiter) -> void:
+	if _ai == null or arbiter == null:
+		return
+	for entry: Dictionary in arbiter.rules_view(Ranks.BLACK)["revealed"]:
+		var key := "%s:%s:%s" % [entry["piece_id"], entry.get("source", ""), entry.get("move_number", "")]
+		if entry.get("source") in ["wiretap", "tripwire", "coin_flip"] and not _ai_heard.has(key):
+			_ai_heard[key] = true
+			_ai.learn(entry["piece_id"], {"rank": entry["rank"]})
+
+
 func _practice_use_powerup(id: String, target: Dictionary) -> Dictionary:
 	if _ai_arbiter == _arbiter:
 		return {"ok": false, "error": "Powerups can only be used on your turn.", "result": {}}
@@ -997,11 +1056,22 @@ func _practice_use_powerup(id: String, target: Dictionary) -> Dictionary:
 	if not used["ok"]:
 		return {"ok": false, "error": used["error"], "result": {}}
 	# What black is told: the public part, and that its knowledge of shuffled pieces is gone.
-	match id:
-		"shuffle", "counter_intel", "promotion":
-			_ai.forget(used["forget"])
+	if not used["forget"].is_empty():
+		_ai.forget(used["forget"])
+	var told: Dictionary = used["event"]["public"]
+	var played := str(told.get("played", id))  # A Wildcard's card
+	match played:
 		"reinforcement":
-			_ai.enemy_reinforced(str(used["event"]["public"]["piece"]["id"]))
+			_ai.enemy_reinforced(str(told["piece"]["id"]))
+		"field_medic":
+			_ai.enemy_reinforced(str(told["piece"]["id"]), _arbiter.known_rank(Ranks.BLACK, str(told["piece"]["id"])))
+		"mutiny":
+			if told.get("defected", false):
+				_ai.sync_own(_arbiter.observation(Ranks.BLACK))
+				_ai.enemy_joined(str(told["piece"]["id"]), "PVT")
+		"tornado", "rewind":
+			_ai.sync_own(_arbiter.observation(Ranks.BLACK))
+	_ai_catch_up(_arbiter)
 	powerup_result.emit(used["result"])
 	var announced: Dictionary = used["event"].duplicate()
 	announced["version"] = version + 1

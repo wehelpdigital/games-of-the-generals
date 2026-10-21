@@ -1,6 +1,6 @@
 class_name PowerupLibrary
 extends RefCounted
-## Every powerup a player can bring into a match: 41 cards, all open to every player. Before each
+## Every powerup a player can bring into a match: 81 cards, all open to every player. Before each
 ## game the players choose powerups off, Select (their own 5 picks) or Random (5 dealt from the
 ## whole library); each is usable once per match, on their own turn.
 ## Mirrors config/powerups.php on the server, which referees online matches; LocalArbiter applies
@@ -18,6 +18,12 @@ const TARGET_OWN_PIECE_AND_HOME_CELL := "own_piece_and_home_cell"
 const TARGET_EMPTY_BACK_CELL := "empty_back_cell"
 const TARGET_EMPTY_CELL := "empty_cell"
 const TARGET_ANY_CELL := "any_cell"
+const TARGET_COLUMN := "column"
+const TARGET_OWN_PIECE_AND_DIAGONAL_CELL := "own_piece_and_diagonal_cell"
+const TARGET_OWN_PIECE_AND_LEAP_CELL := "own_piece_and_leap_cell"
+const TARGET_OWN_AND_ENEMY := "own_and_enemy_piece"
+const TARGET_TWO_ADJACENT_OWN := "two_adjacent_own_pieces"
+const TARGET_TWO_ADJACENT_ENEMY := "two_adjacent_enemy_pieces"
 
 const MAX_SLOTS := 5
 const MAX_PER_TURN := 2
@@ -49,11 +55,37 @@ const STEAL_SECONDS := 10
 const STEAL_TURNS := 2
 const RETREAT_SQUARES := 2
 const CEASEFIRE_TURNS := 1
+const OVERCLOCK_TURNS := 2
+const HURRY_UP_SECONDS := 15
+const TIME_BANK_SECONDS := 15
+const TIME_BANK_TURNS := 3
+const LAST_SECOND_TURNS := 3
+const EAGLE_EYE_PIECES := 2
+const WIRETAP_TURNS := 3
+const WIRETAP_PIECES := 2
+const CHARGE_SQUARES := 3
+const MORALE_BOOST_TURNS := 2
+const BOOBY_TRAP_TURNS := 6
+const OVERWATCH_TURNS := 6
+const OVERWATCH_STUCK_TURNS := 2
+const BARBED_WIRE_TURNS := 2
+const FLOOD_TURNS := 1
+const TRIPWIRE_TURNS := 10
+const MINE_CLUSTER_TURNS := 8
+const RADIO_SILENCE_TURNS := 3
+const CAMOUFLAGE_TURNS := 6
+const BUNKER_TURNS := 2
+## Commission: the rank one step up for each officer it can promote.
+const COMMISSION := {"SGT": "2LT", "2LT": "1LT", "1LT": "CPT", "CPT": "MAJ", "MAJ": "LTC", "LTC": "COL"}
+## What Wildcard never draws: itself and the cards that only reshuffle the hand.
+const WILDCARD_EXCLUDED := ["wildcard", "recall", "supply_drop"]
 
 ## `pick` is what the targeting UI asks for, in order: "own_piece", "enemy_piece", "home_cell"
 ## (empty, your 3 home rows), "half_cell" (empty, your half of the board), "back_cell" (empty,
-## your back row), "empty_cell" (any empty square), "any_cell" (any square). `kind` is the card
-## type: clock, intel, tactics, trap or support. `rarity`: common, rare, epic, legendary.
+## your back row), "empty_cell" (any empty square), "any_cell" (any square), "column" (any square
+## of a column), "diagonal_cell" (empty, diagonally next to the piece picked first), "leap_cell"
+## (empty, just beyond a piece next to the piece picked first). `kind` is the card type: clock,
+## intel, tactics, trap or support. `rarity`: common, rare, epic, legendary.
 const POWERUPS := {
 	# Clock
 	"time_extension": {"name": "Time Extension", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "common",
@@ -66,6 +98,16 @@ const POWERUPS := {
 		"desc": "Lightning round! Both players' next 2 turns get half the time."},
 	"time_steal": {"name": "Time Thief", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "epic",
 		"desc": "Steal 10 seconds from each of your opponent's next 2 turns and add them to yours."},
+	"overclock": {"name": "Overclock", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "rare",
+		"desc": "Overclock the clock: your next 2 turns run on double time."},
+	"fresh_clock": {"name": "Fresh Clock", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "common",
+		"desc": "Restart this turn's clock from the top and wipe your timeout strikes."},
+	"hurry_up": {"name": "Hurry Up", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "rare",
+		"desc": "Hurry up! Your opponent's next turn lasts 15 seconds at most."},
+	"time_bank": {"name": "Time Bank", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "common",
+		"desc": "Bank it: your next turn is 15 s shorter, then the 3 turns after it get +15 s each."},
+	"last_second": {"name": "Last Second", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "clock", "rarity": "epic",
+		"desc": "This turn and your next 2: if your clock runs out, the turn just passes. No random move, no strike."},
 	# Intel
 	"spy_card": {"name": "Spy Card", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "common",
 		"desc": "Reveals the rank of one random enemy piece you haven't identified. Only you see it."},
@@ -89,6 +131,26 @@ const POWERUPS := {
 		"desc": "Reveals the rank of an enemy piece standing next to one of yours. Only you see it."},
 	"flag_hunter": {"name": "Flag Hunter", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "legendary",
 		"desc": "Learn which column the enemy Flag stands in."},
+	"eagle_eye": {"name": "Eagle Eye", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "epic",
+		"desc": "Reveals the ranks of 2 random enemy pieces you haven't identified. Only you see them."},
+	"wiretap": {"name": "Wiretap", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "rare",
+		"desc": "Tap their radio: during their next 3 turns, the first 2 enemy pieces to move reveal their ranks to you."},
+	"heat_map": {"name": "Heat Map", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "common",
+		"desc": "Learn how many enemy officers stand in the left, middle and right thirds of the board."},
+	"wargame": {"name": "War Game", "target": TARGET_OWN_AND_ENEMY, "consumes_turn": false, "pick": ["own_piece", "enemy_piece"], "kind": "intel", "rarity": "rare",
+		"desc": "Simulate a clash: pick one of your pieces and an enemy piece and learn who would win if yours attacked."},
+	"flag_sense": {"name": "Flag Sense", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "rare",
+		"desc": "Learn how many steps the enemy Flag is from your closest piece."},
+	"census": {"name": "Census", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "common",
+		"desc": "Count the enemy Privates still on the board."},
+	"satellite_scan": {"name": "Satellite Scan", "target": TARGET_ANY_CELL, "consumes_turn": false, "pick": ["any_cell"], "kind": "intel", "rarity": "legendary",
+		"desc": "Scan the 3x3 area around any square: learn the rank group of every enemy piece in it."},
+	"lie_detector": {"name": "Lie Detector", "target": TARGET_ENEMY_PIECE, "consumes_turn": false, "pick": ["enemy_piece"], "kind": "intel", "rarity": "common",
+		"desc": "Test one enemy piece: is a Decoy feeding you false intel about it? A Decoy found is destroyed."},
+	"spy_catcher": {"name": "Spy Catcher", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "epic",
+		"desc": "Unmask a hidden enemy Spy: its rank is revealed to you, if one is left."},
+	"debrief": {"name": "Debrief", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel", "rarity": "rare",
+		"desc": "Reveals the rank of the last enemy piece to beat one of yours that is still on the board."},
 	# Tactics
 	"retreat": {"name": "Tactical Retreat", "target": TARGET_OWN_PIECE, "consumes_turn": true, "pick": ["own_piece"], "kind": "tactics", "rarity": "common",
 		"desc": "One of your pieces falls back up to 2 squares toward your back row. Uses your turn."},
@@ -104,6 +166,26 @@ const POWERUPS := {
 		"desc": "Move two different pieces this turn. The second move can't be an attack."},
 	"teleport": {"name": "Teleport", "target": TARGET_OWN_PIECE_AND_HOME_CELL, "consumes_turn": true, "pick": ["own_piece", "home_cell"], "kind": "tactics", "rarity": "epic",
 		"desc": "Beam one of your pieces to any empty square in your 3 home rows. Uses your turn."},
+	"flank": {"name": "Flank", "target": TARGET_OWN_PIECE_AND_DIAGONAL_CELL, "consumes_turn": true, "pick": ["own_piece", "diagonal_cell"], "kind": "tactics", "rarity": "common",
+		"desc": "Slip one of your pieces one square diagonally onto an empty square. Uses your turn."},
+	"charge": {"name": "Charge", "target": TARGET_OWN_PIECE, "consumes_turn": true, "pick": ["own_piece"], "kind": "tactics", "rarity": "rare",
+		"desc": "Charge! One of your pieces runs up to 3 empty squares straight at the enemy. Uses your turn."},
+	"leapfrog": {"name": "Leapfrog", "target": TARGET_OWN_PIECE_AND_LEAP_CELL, "consumes_turn": true, "pick": ["own_piece", "leap_cell"], "kind": "tactics", "rarity": "rare",
+		"desc": "One of your pieces jumps over a piece next to it (yours or theirs) onto the empty square beyond. Uses your turn."},
+	"formation": {"name": "Formation", "target": TARGET_OWN_PIECE, "consumes_turn": true, "pick": ["own_piece"], "kind": "tactics", "rarity": "epic",
+		"desc": "Forward march! Every piece in the row you pick steps one square toward the enemy where it can. The Flag holds. Uses your turn."},
+	"tornado": {"name": "Tornado", "target": TARGET_TWO_ADJACENT_ENEMY, "consumes_turn": false, "pick": ["enemy_piece", "enemy_piece"], "kind": "tactics", "rarity": "epic",
+		"desc": "A twister swaps two enemy pieces standing side by side (off the back rows)."},
+	"wildcard": {"name": "Wildcard", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "tactics", "rarity": "rare",
+		"desc": "Plays a random powerup from the whole library that needs no target and doesn't use your turn."},
+	"coin_flip": {"name": "Coin Flip", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "tactics", "rarity": "common",
+		"desc": "Heads: learn the rank of a random enemy piece. Tails: your opponent learns one of yours."},
+	"morale_boost": {"name": "Morale Boost", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "tactics", "rarity": "rare",
+		"desc": "This turn and your next, any clash you start that would be a tie is a win for you."},
+	"earthquake": {"name": "Earthquake", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "tactics", "rarity": "epic",
+		"desc": "Shake the battlefield: roadblocks, wire, floods and bunkers fall, every hidden trap breaks and ice thaws."},
+	"rewind": {"name": "Rewind", "target": TARGET_NONE, "consumes_turn": true, "pick": [], "kind": "tactics", "rarity": "epic",
+		"desc": "The enemy piece that just moved goes back where it came from. Uses your turn."},
 	# Traps
 	"jammer": {"name": "Jammer", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "trap", "rarity": "common",
 		"desc": "Your opponent can't chat or taunt for 2 minutes."},
@@ -121,6 +203,22 @@ const POWERUPS := {
 		"desc": "Bury a hidden mine on an empty square of your half. The first enemy piece to step on it is out. Lasts 10 of your turns."},
 	"counterspell": {"name": "Counterspell", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "trap", "rarity": "legendary",
 		"desc": "Set a secret counter: the next powerup your opponent plays fizzles and is lost."},
+	"booby_trap": {"name": "Booby Trap", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "trap", "rarity": "rare",
+		"desc": "Secretly rig one of your pieces: if an enemy beats it in an attack, the attacker blows up too. Lasts 6 of your turns."},
+	"overwatch": {"name": "Overwatch", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "trap", "rarity": "epic",
+		"desc": "A hidden lookout on one of your pieces: the first enemy piece to end a move next to it is stuck for 2 turns."},
+	"barbed_wire": {"name": "Barbed Wire", "target": TARGET_EMPTY_CELL, "consumes_turn": false, "pick": ["empty_cell"], "kind": "trap", "rarity": "common",
+		"desc": "Wire off an empty square and its empty neighbours left and right until your opponent's next 2 turns have passed."},
+	"flood": {"name": "Flood", "target": TARGET_COLUMN, "consumes_turn": false, "pick": ["column"], "kind": "trap", "rarity": "epic",
+		"desc": "Flood a whole column: no piece can enter any of its squares until your opponent's next turn is over."},
+	"tripwire": {"name": "Tripwire", "target": TARGET_EMPTY_OWN_CELL, "consumes_turn": false, "pick": ["half_cell"], "kind": "trap", "rarity": "common",
+		"desc": "Hide a tripwire on an empty square of your half. The first enemy piece to step on it reveals its rank to you."},
+	"mine_cluster": {"name": "Mine Cluster", "target": TARGET_EMPTY_OWN_CELL, "consumes_turn": false, "pick": ["half_cell"], "kind": "trap", "rarity": "legendary",
+		"desc": "Bury a hidden mine on an empty square of your half, plus a second one on a random square next to it. Lasts 8 turns."},
+	"mutiny": {"name": "Mutiny", "target": TARGET_ENEMY_PIECE, "consumes_turn": false, "pick": ["enemy_piece"], "kind": "trap", "rarity": "legendary",
+		"desc": "Stir up one enemy piece: if it's a Private, it switches to your side on the spot. If not, nothing happens."},
+	"radio_silence": {"name": "Radio Silence", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "trap", "rarity": "rare",
+		"desc": "Your opponent can't play intel powerups during their next 3 turns."},
 	# Support
 	"fortify": {"name": "Fortify", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "support", "rarity": "rare",
 		"desc": "A hidden shield on one of your pieces. The next attack on it bounces off. Lasts 6 of your turns."},
@@ -142,6 +240,20 @@ const POWERUPS := {
 		"desc": "Secretly promote one of your Privates to Sergeant. The enemy forgets anything they knew about it."},
 	"recall": {"name": "Recall", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "support", "rarity": "legendary",
 		"desc": "Take back the last powerup you played: it returns to your hand, ready to use again."},
+	"decoy_flag": {"name": "Decoy Flag", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "support", "rarity": "rare",
+		"desc": "Dress one of your pieces up as the Flag: enemy spies, drones and scouts say it IS the Flag."},
+	"shell_game": {"name": "Shell Game", "target": TARGET_TWO_ADJACENT_OWN, "consumes_turn": false, "pick": ["own_piece", "own_piece"], "kind": "support", "rarity": "epic",
+		"desc": "Two of your pieces standing side by side secretly trade ranks. The enemy forgets what it knew about both."},
+	"camouflage": {"name": "Camouflage", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "support", "rarity": "common",
+		"desc": "Hide one of your pieces from enemy powerups: for 6 of your turns they can't target it."},
+	"bunker": {"name": "Bunker", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "support", "rarity": "rare",
+		"desc": "Put one of your pieces in a bunker: no attacks on it until your opponent's next 2 turns have passed."},
+	"field_medic": {"name": "Field Medic", "target": TARGET_EMPTY_BACK_CELL, "consumes_turn": true, "pick": ["back_cell"], "kind": "support", "rarity": "legendary",
+		"desc": "Medic! Your most recently fallen piece returns on an empty square of your back row. The enemy learns its rank. Uses your turn."},
+	"commission": {"name": "Commission", "target": TARGET_OWN_PIECE, "consumes_turn": false, "pick": ["own_piece"], "kind": "support", "rarity": "epic",
+		"desc": "Secretly promote one of your officers (Sergeant to Lt. Colonel) by one rank. The enemy forgets what it knew about it."},
+	"supply_drop": {"name": "Supply Drop", "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "support", "rarity": "common",
+		"desc": "A random powerup you don't hold yet drops into your hand."},
 }
 
 ## Card types: [light, dark] frame colours, the label, and an emblem glyph for icons without their own.

@@ -740,6 +740,23 @@ func _refresh_markers() -> void:
 		_show_marker(_hover_cell, "hover")
 
 
+## Web warm-up (Game3D): shows one move marker of each kind and selects a piece for a frame, so
+## their shaders compile behind the loader instead of on the first move. Call with false after.
+func show_warmup_markers(on: bool) -> void:
+	var cells: Array = _markers.keys()
+	var i := 0
+	for kind: String in _marker_materials:
+		if i < cells.size():
+			if on:
+				_show_marker(cells[i], kind)
+			i += 1
+	var mine: Array = pieces.values().filter(func(p: Piece3D) -> bool: return p.side == my_side)
+	if not mine.is_empty():
+		(mine[0] as Piece3D).set_highlight(Piece3D.Highlight.SELECTED if on else Piece3D.Highlight.NONE)
+	if not on:
+		_refresh_markers()
+
+
 func _show_marker(cell: Vector2i, kind: String) -> void:
 	var marker: MeshInstance3D = _markers.get(cell)
 	if marker != null:

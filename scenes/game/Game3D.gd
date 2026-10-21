@@ -15,11 +15,11 @@ var _showcase: Dictionary = {}  # Guest title-screen showcase; replaces the play
 
 
 func _ready() -> void:
+	PerfProbe.mark("Game3D._ready")  # PERF-TEMP
 	_apply_render_quality()
-	# Device setting from the shop's Ambience tab (UIRoot keeps it in its settings file).
-	var settings := ConfigFile.new()
-	if settings.load("user://settings.cfg") == OK:
-		AmbienceFX.reduced = bool(settings.get_value("ui", "reduce_ambience", false))
+	Graphics.signals().changed.connect(_on_graphics_changed)
+	if Graphics.effective() != "high":
+		get_tree().node_added.connect(_on_node_added)
 	board.camera = rig.camera
 	board.move_requested.connect(GameSession.request_move)
 	board.clash_impact.connect(rig.shake)
@@ -32,6 +32,12 @@ func _ready() -> void:
 	GameSession.game_over.connect(_on_game_over)
 	Loadout.changed.connect(_on_loadout_changed)
 	show_attract()
+	PerfProbe.mark("choice=%s web=%s handheld=%s" % [Graphics.get_choice(), OS.has_feature("web"), Graphics.is_handheld()])  # PERF-TEMP
+	PerfProbe.mark("graphics=%s live=%s rival=%s mine=%s" % [Graphics.effective(), Graphics.live_showcase(), JSON.stringify(_opponent_loadout).left(80), JSON.stringify(Loadout.items).left(200)])  # PERF-TEMP
+	if OS.has_feature("web") or PerfProbe.flag("warmup"):
+		_warm_up()
+	else:
+		warmed = true
 
 
 ## Menu backdrop: both armies on display (enemy ranks hidden) and a slow orbiting camera.
@@ -40,7 +46,11 @@ func show_attract() -> void:
 	board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
 	rig.set_side(Ranks.WHITE)
 	rig.attract = true
-	_opponent_loadout = Loadout.random_loadout()  # A random "rival" so menus show combos.
+	# A random "rival" so menus show combos. Not in the browser: every new look compiles shaders
+	# with the page frozen (see Graphics), so there the rival wears the default look.
+	_opponent_loadout = Loadout.random_loadout() if Graphics.live_showcase() else {}
+	if PerfProbe.flag("plain"):  # PERF-TEMP
+		_opponent_loadout = {}
 	refresh_cosmetics()
 	_show_attract_board()
 
@@ -244,6 +254,185 @@ func _apply_render_quality() -> void:
 	env.ssr_enabled = false
 	if OS.has_feature("web") or OS.has_feature("mobile"):
 		key_light.directional_shadow_max_distance = 18.0
+	Graphics.apply(get_viewport(), key_light, env)
+	if PerfProbe.flag("noshadow"):  # PERF-TEMP
+		key_light.shadow_enabled = false
+	if PerfProbe.flag("noglow"):  # PERF-TEMP
+		env.glow_enabled = false
+	if PerfProbe.flag("nomsaa"):  # PERF-TEMP
+		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+
+
+## Below High graphics, glowing effects and particles don't cast shadows: each shadow caster needs
+## its own extra shader (more compiling in the browser) and their shadows were barely visible.
+func _on_node_added(node: Node) -> void:
+	if node is GeometryInstance3D and is_ancestor_of(node):
+		_trim_shadow.call_deferred(node)  # Materials are often set right after the node is added.
+
+
+func _trim_shadow(node: GeometryInstance3D) -> void:
+	if not is_instance_valid(node) or node.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+		return
+	if node is CPUParticles3D or node is GPUParticles3D or _all_unlit(node):
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+func _all_unlit(node: GeometryInstance3D) -> bool:
+	var mats: Array[Material] = []
+	if node.material_override:
+		mats.append(node.material_override)
+	elif node is MeshInstance3D and (node as MeshInstance3D).mesh:
+		for i in (node as MeshInstance3D).mesh.get_surface_count():
+			mats.append((node as MeshInstance3D).get_active_material(i))
+	if mats.is_empty():
+		return false
+	for m in mats:
+		if m is BaseMaterial3D:
+			var b := m as BaseMaterial3D
+			if b.shading_mode != BaseMaterial3D.SHADING_MODE_UNSHADED and b.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED:
+				return false
+		elif m is ShaderMaterial:
+			var shader := (m as ShaderMaterial).shader
+			if shader == null or not shader.code.contains("unshaded"):
+				return false
+		else:
+			return false
+	return true
+
+
+func _on_graphics_changed() -> void:
+	_apply_render_quality()
+	refresh_cosmetics()
+
+
+# --- Shader warm-up (web) ---------------------------------------------------------------------
+
+signal warmed_up
+
+var warmed := false  ## True once the first scene has been drawn (the web warm-up is over).
+
+
+## In the browser the first frame would compile every shader on screen at once: tens of seconds
+## on Windows (WebGL translates each one to Direct3D), with the page frozen and the loader stuck.
+## Instead the scene appears behind the HTML loader one new material per frame (everything whose
+## materials are already compiled appears at once), reporting progress to the loader, so the
+## compiling happens in small steps and the title is responsive the moment it shows.
+func _warm_up() -> void:
+	var pending: Array[GeometryInstance3D] = []
+	for node in _geometry_under(self):
+		if Graphics.effective() != "high":
+			_trim_shadow(node)
+		if node.visible:
+			node.visible = false
+			pending.append(node)
+	var keys_of := {}
+	var all_keys := {}
+	for node in pending:
+		keys_of[node] = _shader_keys(node)
+		for key: String in keys_of[node]:
+			all_keys[key] = true
+	var seen := {}
+	while not pending.is_empty():
+		var waiting: Array[GeometryInstance3D] = []
+		var revealed_new := false
+		for node in pending:
+			if not is_instance_valid(node):
+				continue
+			var fresh: Array = (keys_of[node] as Array).filter(func(k: String) -> bool: return not seen.has(k))
+			if fresh.is_empty():
+				node.visible = true  # Nothing new to compile.
+			elif not revealed_new:
+				revealed_new = true
+				node.visible = true
+				for key: String in fresh:
+					seen[key] = true
+			else:
+				waiting.append(node)
+		pending = waiting
+		_report_warm_up(seen.size(), all_keys.size() + EFFECT_STEPS)
+		PerfProbe.mark("warm %d/%d pending=%d" % [seen.size(), all_keys.size(), pending.size()])  # PERF-TEMP
+		await RenderingServer.frame_post_draw
+	await _warm_up_effects(all_keys.size(), all_keys.size() + EFFECT_STEPS)
+	warmed = true
+	warmed_up.emit()
+
+
+const EFFECT_STEPS := 3  # Warm-up steps for the effects, on top of one per scene material.
+
+
+## The first move and the first clash of a match use materials the menu board never shows (move
+## markers, the selected piece, the clash and kill effects). Run them once behind the loader.
+func _warm_up_effects(done: int, total: int) -> void:
+	board.show_warmup_markers(true)
+	_report_warm_up(done + 1, total)
+	await RenderingServer.frame_post_draw
+	board.show_warmup_markers(false)
+	preview_effect("kill")  # A demo clash: move, elimination and both kill effects.
+	_report_warm_up(done + 2, total)
+	var until := Time.get_ticks_msec() + 2500
+	while board.is_animating() and Time.get_ticks_msec() < until:
+		await RenderingServer.frame_post_draw
+	for i in 4:  # Leftover particles of the kill effect.
+		await RenderingServer.frame_post_draw
+	_show_attract_board()
+	_report_warm_up(total, total)
+
+
+func _report_warm_up(done: int, total: int) -> void:
+	JavaScriptBridge.eval("window.salpakanWarmup && window.salpakanWarmup(%d, %d)" % [done, total], true)
+
+
+## What a mesh needs compiled: one key per material shader, per instancing and shadow use. Two
+## StandardMaterial3Ds with the same features share a shader, so their key is built from those.
+func _shader_keys(node: GeometryInstance3D) -> Array:
+	var mats: Array[Material] = []
+	if node.material_override:
+		mats.append(node.material_override)
+	if node.material_overlay:
+		mats.append(node.material_overlay)
+	if node.material_override == null:
+		if node is MeshInstance3D and (node as MeshInstance3D).mesh:
+			for i in (node as MeshInstance3D).mesh.get_surface_count():
+				var m: Material = (node as MeshInstance3D).get_active_material(i)
+				if m:
+					mats.append(m)
+		elif node is CPUParticles3D and (node as CPUParticles3D).mesh:
+			var pmesh := (node as CPUParticles3D).mesh
+			for i in pmesh.get_surface_count():
+				if pmesh.surface_get_material(i):
+					mats.append(pmesh.surface_get_material(i))
+	var suffix := ("|inst" if node is CPUParticles3D or node is MultiMeshInstance3D else "") 		+ ("|shadow" if node.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF else "")
+	var keys := []
+	for m in mats:
+		var chain: Material = m
+		while chain:
+			keys.append(_material_key(chain) + suffix)
+			chain = chain.next_pass
+	if keys.is_empty():
+		keys.append(node.get_class() + suffix)
+	return keys
+
+
+func _material_key(m: Material) -> String:
+	if m is ShaderMaterial:
+		var shader := (m as ShaderMaterial).shader
+		return "shader:%d" % (shader.get_instance_id() if shader else 0)
+	if m is BaseMaterial3D:
+		var b := m as BaseMaterial3D
+		return "base:%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d" % [b.transparency, b.shading_mode, b.diffuse_mode,
+			b.specular_mode, b.blend_mode, b.cull_mode, b.depth_draw_mode, b.billboard_mode,
+			int(b.vertex_color_use_as_albedo), int(b.albedo_texture != null), int(b.emission_enabled),
+			int(b.no_depth_test), int(b.rim_enabled)]
+	return m.get_class()
+
+
+func _geometry_under(node: Node) -> Array[GeometryInstance3D]:
+	var found: Array[GeometryInstance3D] = []
+	for child in node.get_children():
+		if child is GeometryInstance3D:
+			found.append(child)
+		found.append_array(_geometry_under(child))
+	return found
 
 
 # --- Rules visuals (turn timers, powerups) ---------------------------------------------------

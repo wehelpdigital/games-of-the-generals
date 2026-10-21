@@ -9,15 +9,15 @@ signal sign_up
 const SECONDS := 5.0
 const SLIDES := [
 	{"title": "Chip Shapes", "text": "Wish Orbs, dice, gems, poker chips and more: 15 shapes for your army.",
-		"dress": ["shape", "chip"]},
+		"dress": ["shape", "chip"], "pic": ["shape", "shape_wish_orb"]},
 	{"title": "Arenas", "text": "Battle in a lava pit, a neon city, a snowy summit and more.",
-		"dress": ["arena", "board"]},
+		"dress": ["arena", "board"], "pic": ["arena", "lava_pit"]},
 	{"title": "Table Toppers", "text": "Plant your own flag (even with your photo), or a cactus, a rubber duck, a robot...",
-		"dress": ["toppers"]},
+		"dress": ["toppers"], "pic": ["topper", "topper_flag_gold"]},
 	{"title": "Auras & Effects", "text": "Glows, move trails and knockout effects your rival can see.",
-		"dress": ["aura", "glow", "trail", "kill"]},
+		"dress": ["aura", "glow", "trail", "kill"], "pic": ["kill", "kill_kraken"]},
 	{"title": "Icon Packs", "text": "20 icon sets for your ranks: samurai, space, pirates and more.",
-		"dress": ["icons", "territory"]},
+		"dress": ["icons", "territory"], "pic": ["icons", "knights"]},
 	{"title": "Powerups", "text": "Spy Card, Smoke Screen, Freeze, Mine Field: 23 tricks to turn a battle.",
 		"dress": []},
 	{"title": "Ranks & Hometown Boards", "text": "Rise from Private to General of the Army and top your town's leaderboard.",
@@ -38,6 +38,7 @@ var _body: VBoxContainer
 var _title: Label
 var _text: Label
 var _dots: HBoxContainer
+var _pic_box: Control  # Holds the slide's shop picture (ShopThumbs) when it has one.
 
 
 func _ready() -> void:
@@ -48,6 +49,10 @@ func _ready() -> void:
 	var pill := AppTheme.pill("FREE WITH AN ACCOUNT", AppTheme.MINT, Color.WHITE, 15)
 	pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_body.add_child(pill)
+	_pic_box = Control.new()
+	_pic_box.custom_minimum_size = Vector2(0, 120)
+	_pic_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body.add_child(_pic_box)
 	_title = AppTheme.label("", "Heading", 26)
 	_body.add_child(_title)
 	_text = AppTheme.label("", "", 17, AppTheme.MUTED)
@@ -75,6 +80,8 @@ func _ready() -> void:
 
 
 func start() -> void:
+	if PerfProbe.flag("plain"):  # PERF-TEMP
+		return
 	_look = {}
 	show_slide(0 if _index < 0 else _index)
 	_timer.start()
@@ -85,10 +92,12 @@ func stop() -> void:
 
 
 func show_slide(index: int) -> void:
+	PerfProbe.mark("slide %d" % index)  # PERF-TEMP
 	_index = posmod(index, SLIDES.size())
 	var slide: Dictionary = SLIDES[_index]
 	_title.text = slide["title"]
 	_text.text = slide["text"]
+	_show_picture(slide.get("pic", []))
 	for i in _dots.get_child_count():
 		var style := StyleBoxFlat.new()
 		style.bg_color = AppTheme.PINK if i == _index else Color(AppTheme.INK, 0.2)
@@ -99,9 +108,20 @@ func show_slide(index: int) -> void:
 	_dress(slide)
 
 
+## The slide's item picture (a baked still or looping clip from the shop), if it has one.
+func _show_picture(pic: Array) -> void:
+	for child in _pic_box.get_children():
+		child.queue_free()
+	var view: ThumbView = ThumbView.new(pic[0], pic[1], 120.0) if pic.size() == 2 else null
+	_pic_box.visible = view != null and view.has_picture()
+	if _pic_box.visible:
+		view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_pic_box.add_child(view)
+
+
 func _dress(slide: Dictionary) -> void:
-	if not dress.is_valid():
-		return
+	if not dress.is_valid() or not Graphics.live_showcase():
+		return  # Browsers and phones: swapping looks compiles shaders with the page frozen.
 	var fresh := Loadout.random_loadout()
 	var rival := {}
 	if _look.is_empty():

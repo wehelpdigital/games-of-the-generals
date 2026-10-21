@@ -342,11 +342,10 @@ body {
 			</div>
 		</div>
 
-		<script src="$GODOT_URL"></script>
 		<script>
 const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
-const engine = new Engine(GODOT_CONFIG);
+let engine = null;
 
 (function () {
 	const statusOverlay = document.getElementById('status');
@@ -457,7 +456,8 @@ const engine = new Engine(GODOT_CONFIG);
 		}, 350);
 	}, 4500);
 
-	// Called by the game (TitleScreen.gd) once its first screen is up, or by a safety timeout.
+	// Called by the game (TitleScreen.gd) once its first screen is up and its shaders are compiled,
+	// or by the watchdog below.
 	function finish() {
 		if (finished || statusMode === 'notice') {
 			return;
@@ -468,8 +468,63 @@ const engine = new Engine(GODOT_CONFIG);
 		statusPercent.textContent = '100%';
 		statusOverlay.classList.add('done');
 		setTimeout(() => statusOverlay.remove(), 800);
+		const canvas = document.getElementById('canvas');
+		if (canvas) {
+			canvas.focus();  // Keyboard input (login fields) goes straight to the game.
+		}
 	}
 	window.salpakanBooted = finish;
+
+	// After the download the game compiles its shaders a few at a time (Game3D._warm_up) and
+	// reports here, so the bar keeps moving instead of freezing on "Deploying troops".
+	let lastSignal = 0;
+	window.salpakanWarmup = function (done, total) {
+		if (finished || total <= 0) {
+			return;
+		}
+		lastSignal = performance.now();
+		const fraction = Math.min(1, done / total);
+		target = fraction;
+		shown = fraction;
+		statusText.textContent = 'Painting the battlefield…';
+		statusProgress.style.width = `${fraction * 100}%`;
+		statusPercent.textContent = `${Math.floor(fraction * 100)}%`;
+	};
+
+	// Cache busting: the engine files keep their names across deploys, so they're fetched with
+	// the pack's ETag (or Last-Modified) as a version. A deploy changes it, and returning players
+	// still get the cached files until then.
+	function buildTag() {
+		return fetch(GODOT_CONFIG['mainPack'] || `${GODOT_CONFIG['executable']}.pck`, { method: 'HEAD', cache: 'no-store' })
+			.then((response) => response.headers.get('etag') || response.headers.get('last-modified') || '')
+			.catch(() => '')
+			.then((value) => value.replace(/[^A-Za-z0-9]/g, '').slice(-32));
+	}
+
+	function versionEngineFiles(tag) {
+		if (!tag) {
+			return;
+		}
+		const exe = GODOT_CONFIG['executable'];
+		const files = new Set([GODOT_CONFIG['mainPack'] || `${exe}.pck`, `${exe}.wasm`, `${exe}.side.wasm`]);
+		const originalFetch = window.fetch.bind(window);
+		window.fetch = function (input, init) {
+			if (typeof input === 'string' && files.has(input.split('?')[0].split('/').pop())) {
+				input += `${input.includes('?') ? '&' : '?'}v=${tag}`;
+			}
+			return originalFetch(input, init);
+		};
+	}
+
+	function loadEngineScript(tag) {
+		return new Promise((resolve, reject) => {
+			const script = document.createElement('script');
+			script.src = `$GODOT_URL${tag ? `?v=${tag}` : ''}`;
+			script.onload = resolve;
+			script.onerror = () => reject(new Error('The game engine did not download. Check your connection and try again.'));
+			document.head.appendChild(script);
+		});
+	}
 
 	// The engine's file loader rejects without failing startGame() (e.g. a 404 on index.wasm),
 	// which would leave the bar stuck; show the error card instead.
@@ -484,6 +539,8 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	});
 
+	function start() {
+	engine = new Engine(GODOT_CONFIG);
 	const missing = Engine.getMissingFeatures({
 		threads: GODOT_THREADS_ENABLED,
 	});
@@ -520,8 +577,6 @@ const engine = new Engine(GODOT_CONFIG);
 			displayFailureNotice(missingMsg + missing.join('\n'));
 		}
 	} else {
-		setStatusMode('progress');
-		requestAnimationFrame(tick);
 		engine.startGame({
 			'onProgress': function (current, total) {
 				if (current > 0 && total > 0) {
@@ -533,9 +588,25 @@ const engine = new Engine(GODOT_CONFIG);
 			target = 1;
 			statusText.textContent = 'Deploying troops…';
 			setStatusMode('hidden');
-			setTimeout(finish, 8000);
+			// Safety net: lift the loader if the game goes quiet (no warm-up progress, no "booted").
+			lastSignal = performance.now();
+			const watchdog = setInterval(() => {
+				if (finished) {
+					clearInterval(watchdog);
+				} else if (performance.now() - lastSignal > 20000) {
+					finish();
+				}
+			}, 1000);
 		}, displayFailureNotice);
 	}
+	}
+
+	setStatusMode('progress');
+	requestAnimationFrame(tick);
+	buildTag().then((tag) => {
+		versionEngineFiles(tag);
+		return loadEngineScript(tag);
+	}).then(start, displayFailureNotice);
 }());
 		</script>
 	</body>

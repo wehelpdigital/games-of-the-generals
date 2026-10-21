@@ -742,7 +742,9 @@ func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM,
 	kind = Kind.PRACTICE
 	practice_level = level
 	practice_mode = mode
-	ai_loadout = Loadout.random_loadout()
+	# Below High graphics (browsers, phones) the AI wears the default look the title already showed:
+	# a random look would compile new shaders with the game frozen as the match starts.
+	ai_loadout = Loadout.random_loadout() if Graphics.live_showcase() else {}
 	_ai = SalpakanAI.new(Ranks.BLACK, level)
 	_arbiter = LocalArbiter.new()
 	_arbiter.turn_seconds = maxi(PowerupLibrary.MIN_TURN_SECONDS, int(ServerConfig.get_value("turn_seconds", 45)))

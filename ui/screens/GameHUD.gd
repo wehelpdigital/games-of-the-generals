@@ -187,6 +187,9 @@ func _player_label(player: Variant, fallback: String) -> String:
 	if not player is Dictionary:
 		return fallback
 	var text := str(player.get("username", fallback))
+	var title := Economy.title_of(player)
+	if title != "":
+		text += "  \"%s\"" % title
 	if player.has("elo"):
 		text += "  %s" % AppTheme.num(player["elo"])
 	return text

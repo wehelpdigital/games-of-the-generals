@@ -15,7 +15,10 @@ config/description="Salpakan Tactics! A 3D Salpakan strategy game with a server-
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
-boot_splash/bg_color=Color(0.945, 0.839, 0.722, 1)
+boot_splash/bg_color=Color(0.113725, 0.0901961, 0.211765, 1)
+boot_splash/image="res://assets/brand/splash.png"
+boot_splash/stretch_mode=1
+boot_splash/use_filter=true
 
 [autoload]
 

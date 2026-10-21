@@ -2,8 +2,8 @@ extends Screen
 ## Title: logo, the four ways to play, and the account chip. The 3D board orbits behind it.
 
 var _account: HBoxContainer
-var _logo: Control
-var _wiggle_tween: Tween
+var _logo: GameLogo
+var _tags: HBoxContainer
 
 
 func _ready() -> void:
@@ -11,26 +11,16 @@ func _ready() -> void:
 	var column := AppTheme.vbox(14)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 
-	_logo = AppTheme.vbox(0)
-	var word := AppTheme.label("SALPAKAN", "TitleLabel", 84)
-	word.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	word.add_theme_color_override("font_color", AppTheme.YELLOW)
-	var tactics := AppTheme.label("TACTICS!", "TitleLabel", 60)
-	tactics.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tactics.add_theme_color_override("font_color", AppTheme.PINK)
-	tactics.add_theme_constant_override("outline_size", 14)
-	tactics.resized.connect(func() -> void: tactics.pivot_offset = tactics.size * 0.5)
-	tactics.rotation = deg_to_rad(-4.0)
-	_logo.add_child(word)
-	_logo.add_child(tactics)
-	var tag_row := AppTheme.hbox()
-	tag_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	tag_row.add_child(AppTheme.pill("3D STRATEGY", AppTheme.BLUE))
-	tag_row.add_child(AppTheme.pill("ONLINE + AI", AppTheme.PURPLE))
-	_logo.add_child(tag_row)
+	_logo = GameLogo.new(240.0)
+	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(_logo)
+	_tags = AppTheme.hbox()
+	_tags.alignment = BoxContainer.ALIGNMENT_CENTER
+	_tags.add_child(AppTheme.pill("3D STRATEGY", AppTheme.BLUE))
+	_tags.add_child(AppTheme.pill("ONLINE + AI", AppTheme.PURPLE))
+	column.add_child(_tags)
 
-	column.add_child(_gap(18))
+	column.add_child(_gap(10))
 	column.add_child(AppTheme.button("Play vs AI", "Primary", func() -> void: ui.show_screen("ai_setup"), 64))
 	column.add_child(AppTheme.button("Play Online", "Secondary", func() -> void: ui.require_login("lobby"), 64))
 	var row := AppTheme.hbox(12)
@@ -53,11 +43,32 @@ func _ready() -> void:
 	ApiManager.auth_changed.connect(func(_logged_in: bool) -> void: _refresh_account())
 	ApiManager.user_updated.connect(func(_user: Dictionary) -> void: _refresh_account())
 	_refresh_account()
+	get_viewport().size_changed.connect(_fit_logo)
+	_fit_logo()
+	_notify_web_loader()
 
 
 func open(_args: Dictionary) -> void:
-	AppTheme.pop_in(_logo)
-	_wiggle()
+	_logo.intro()
+	AppTheme.pop_in(_tags, 0.9)
+
+
+## The logo takes over a third of the screen height, and never more than the column width.
+func _fit_logo() -> void:
+	var view := get_viewport().get_visible_rect().size
+	var height := clampf(view.y * 0.38, 130.0, 300.0)
+	height = minf(height, minf(view.x - 32.0, 420.0) * GameLogo.VIEW.y / GameLogo.VIEW.x)
+	_logo.set_height(height)
+
+
+## Tells the web loader (web/shell.html) that the game is on screen, so it fades into the canvas.
+func _notify_web_loader() -> void:
+	if not OS.has_feature("web"):
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.15).timeout
+	JavaScriptBridge.eval("window.salpakanBooted && window.salpakanBooted()", true)
 
 
 func _refresh_account() -> void:
@@ -76,17 +87,6 @@ func _refresh_account() -> void:
 func _logout() -> void:
 	await ApiManager.logout()
 	ui.toast("Logged out. See you soon!")
-
-
-## The logo bobs gently while the title is on screen.
-func _wiggle() -> void:
-	if _wiggle_tween:
-		_wiggle_tween.kill()
-	_logo.pivot_offset = _logo.size * 0.5
-	var t := _logo.create_tween().set_loops()
-	_wiggle_tween = t
-	t.tween_property(_logo, "rotation", deg_to_rad(-1.5), 1.6).set_trans(Tween.TRANS_SINE)
-	t.tween_property(_logo, "rotation", deg_to_rad(1.5), 1.6).set_trans(Tween.TRANS_SINE)
 
 
 func _gap(height: float) -> Control:

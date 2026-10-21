@@ -20,6 +20,8 @@ const SCREENS := {
 
 const SETTINGS_FILE := "user://settings.cfg"
 
+static var current: UIRoot  ## The running UI root, for widgets built by static helpers.
+
 var game: Game3D
 var current_name := ""
 
@@ -32,6 +34,7 @@ var _settings := ConfigFile.new()
 
 
 func _ready() -> void:
+	current = self
 	UiScale.apply(get_tree())  # Before building screens, so they lay out at the final UI size.
 	get_tree().root.size_changed.connect(func() -> void: UiScale.apply(get_tree()))
 	_root = Control.new()

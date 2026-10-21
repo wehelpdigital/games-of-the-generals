@@ -36,6 +36,7 @@ var _guild_button: Button
 var _credits_button: Button
 var _reward_button: Button  # Daily login reward: a gift with a badge when today's is waiting.
 var _reward_badge: UnreadBadge
+var _friends_badge: UnreadBadge
 var _logout_button: Button
 var _settings_button: Button
 var _play_row: BoxContainer  # Quick Match + Rooms.
@@ -104,6 +105,7 @@ func _ready() -> void:
 			_apply_theme()
 			_season_card.refresh())
 	Economy.daily_changed.connect(_paint_reward)
+	Social.friends_changed.connect(_paint_friends)
 	ApiManager.auth_changed.connect(func(logged_in: bool) -> void:
 		if visible and not logged_in:
 			ui.home())
@@ -123,6 +125,8 @@ func open(_args: Dictionary) -> void:
 		AppTheme.pop_in(card, delay)
 		delay += 0.05
 	_refresh_daily()
+	if ui.has_screen("friends"):
+		Social.load_friends()
 	if _logo and _logo.has_method("intro"):
 		_logo.call("intro")
 	Profile.refresh(4.0)
@@ -284,18 +288,22 @@ func _fill_tiles() -> void:
 		["My Hand", "bolt", AppTheme.PURPLE, "powerups"],
 		["Next Rank", "ranks", AppTheme.BRONZE, "ranks"],
 		["Leaderboards", "trophy", AppTheme.BLUE, "leaderboard"],
+		["Friends", "users", AppTheme.PINK, "friends"],
 		["Guild", "shield", AppTheme.MINT, "guilds"],
-		["Profile", "person", AppTheme.PINK, "profile"],
 		["Awards", "crown", AppTheme.PURPLE, "achievements"],
-	]
+	]  # Your profile is the photo in the top bar.
 	for spec: Array in specs:
 		var target: String = spec[3]
 		if not ui.has_screen(target):
 			continue
-		var action := _open_guild if target == "guilds" else func() -> void: ui.show_screen(target)
+		var action := _open_guild if target == "guilds" else func() -> void: ui.show_screen(target, {"back": "dashboard"})
 		var t := ProfileUi.tile(spec[0], spec[1], spec[2], action)
 		t.custom_minimum_size.y = 80
 		_tile_grid.add_child(t)
+		if target == "friends":
+			_friends_badge = UnreadBadge.new()  # Friend requests waiting.
+			t.add_child(_friends_badge)
+			_paint_friends()
 	_fit_tiles()
 
 
@@ -613,6 +621,11 @@ func _paint_reward() -> void:
 	var left := EconomyUi.time_left(str(daily.get("next_reset_at", "")))
 	_reward_button.tooltip_text = "Daily reward - ready to claim!" if waiting else (
 		"Daily reward - next one in %s" % left if left != "" else "Daily reward")
+
+
+func _paint_friends() -> void:
+	if _friends_badge and is_instance_valid(_friends_badge):
+		_friends_badge.set_count((Social.friends.get("incoming", []) as Array).size())
 
 
 func _open_daily() -> void:

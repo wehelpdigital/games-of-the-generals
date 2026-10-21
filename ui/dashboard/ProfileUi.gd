@@ -196,6 +196,8 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 	var row := AppTheme.card("Row")
 	if me:
 		row.add_theme_stylebox_override("panel", highlight_style())
+	else:
+		opens_player_card(row, entry)
 	var line := AppTheme.hbox(7 if narrow else 10)
 	row.add_child(line)
 	if position >= 0:
@@ -373,6 +375,23 @@ static func _page_style() -> StyleBoxFlat:
 	s.shadow_offset = Vector2(0, 8)
 	s.shadow_size = 2
 	return s
+
+
+## Tapping `control` opens the player's card (profile, add friend, invite, block, report). Taps
+## only: a drag still scrolls the list the control sits in.
+static func opens_player_card(control: Control, user: Dictionary, from_match := 0) -> void:
+	if int(user.get("id", 0)) <= 0:
+		return
+	control.mouse_filter = Control.MOUSE_FILTER_PASS
+	control.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var pressed_at: Array = [Vector2.INF]
+	control.gui_input.connect(func(event: InputEvent) -> void:
+		if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
+			return
+		if event.pressed:
+			pressed_at[0] = event.position
+		elif event.position.distance_to(pressed_at[0]) < 12.0:
+			PlayerCardSheet.open(UIRoot.current, user, from_match))
 
 
 ## A labelled stat tile: big number over a caption.

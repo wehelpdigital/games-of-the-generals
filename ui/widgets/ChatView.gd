@@ -108,6 +108,9 @@ func _row(message: Dictionary) -> Control:
 	var avatar := AvatarView.new(28.0 if compact else 36.0)
 	avatar.set_user(user)
 	avatar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	if not mine:  # Tap someone's photo for their card (add friend, block, report...).
+		var in_match := GameSession.match_id() if GameSession.kind == GameSession.Kind.ONLINE else 0
+		ProfileUi.opens_player_card(avatar, user, in_match)
 
 	var column := AppTheme.vbox(2)
 	column.alignment = BoxContainer.ALIGNMENT_BEGIN

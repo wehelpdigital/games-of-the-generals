@@ -11,6 +11,7 @@ var _second: Button  # "Shop" for players, "Sign up free" for guests.
 var _showcase: FeatureShowcase
 var _frame: Control  # Everything but the backdrop; scaled up on phones (ProfileUi.fit).
 var _float_box: VBoxContainer  # Bottom-left home of the guest showcase on wide screens.
+var _top_gap: Control
 var _body: HBoxContainer  # [_brand, _column]; the brand column is only used on landscape phones.
 var _brand: VBoxContainer  # Landscape phones: logo and tags beside the buttons instead of above.
 
@@ -24,6 +25,8 @@ func _ready() -> void:
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	_column = column
 
+	_top_gap = _gap(0)  # Portrait phones: room for the account chip above the logo.
+	column.add_child(_top_gap)
 	_logo = GameLogo.new(240.0)
 	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(_logo)
@@ -114,9 +117,10 @@ func _layout() -> void:
 		_logo.reparent(brand_home, false)
 		_tags.reparent(brand_home, false)
 		if not short:
-			_column.move_child(_logo, 0)
-			_column.move_child(_tags, 1)
+			_column.move_child(_logo, 1)  # After the top gap.
+			_column.move_child(_tags, 2)
 	_brand.visible = short
+	_top_gap.custom_minimum_size.y = 56.0 if portrait else 0.0
 	# Landscape phones have no height for the showcase card (the 3D board still shows the looks),
 	# and the account chip moves under the logo so it can't sit on top of the buttons.
 	_showcase.visible = not ApiManager.is_logged_in() and not short

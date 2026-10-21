@@ -50,13 +50,11 @@ func _ready() -> void:
 	_reload()
 	await _shot("05_fog_mines_warning", 1.6)
 
-	# Portrait phone layout.
-	get_window().size = Vector2i(720, 1280)
-	await _shot("06_portrait", 1.2)
-	get_window().size = Vector2i(1280, 720)
-	await frames(5)
 	GameSession.powerup_used.emit({"side": B, "id": "chaos_order", "name": "Chaos Order", "public": {}, "mine": false})
-	await _shot("07_opponent_used", 0.8)
+	await _shot("06_opponent_used", 0.8)
+	# Portrait phone layout (last: resizing the window back can stall some drivers).
+	get_window().size = Vector2i(720, 1280)
+	await _shot("07_portrait", 1.2)
 	get_tree().quit()
 
 

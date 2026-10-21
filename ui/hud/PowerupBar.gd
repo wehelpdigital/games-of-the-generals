@@ -3,7 +3,8 @@ extends VBoxContainer
 ## banners for what you learned and what the opponent used, and chips for intel and active effects.
 ## On portrait screens the cards shrink to an icon row so the board stays clear.
 
-const RESULT_SECONDS := 6.0
+const RESULT_SECONDS := 5.0
+const MAX_BANNERS := 2
 const COLUMN_LETTERS := "ABCDEFGHI"
 
 var _hud: Screen
@@ -277,27 +278,30 @@ func _banner(id: String, heading: String, text: String, mine: bool) -> void:
 	card.add_child(row)
 	var icon := TextureRect.new()
 	icon.texture = PowerupLibrary.icon(id)
-	icon.custom_minimum_size = Vector2(40, 40)
+	icon.custom_minimum_size = Vector2(34, 34)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	row.add_child(icon)
 	var words := AppTheme.vbox(0)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var title := AppTheme.label(heading, "", 16, AppTheme.INK if mine else AppTheme.RED)
+	var title := AppTheme.label(heading, "", 15, AppTheme.INK if mine else AppTheme.RED)
 	title.add_theme_font_override("font", AppTheme.heading_font())
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size.x = 112
 	words.add_child(title)
 	if text != "":
-		var body := AppTheme.label(text, "", 14)
+		var body := AppTheme.label(text, "", 13)
 		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		body.custom_minimum_size.x = 120
+		body.custom_minimum_size.x = 112
 		words.add_child(body)
 	row.add_child(words)
-	card.custom_minimum_size.x = 176 if not _compact else 240
+	card.custom_minimum_size.x = 176 if not _compact else 220
 	_banners.add_child(card)
 	_banners.move_child(card, 0)
-	while _banners.get_child_count() > 3:
-		_banners.get_child(_banners.get_child_count() - 1).queue_free()
+	for old in _banners.get_children().slice(MAX_BANNERS):
+		_banners.remove_child(old)
+		old.queue_free()
 	AppTheme.pop_in(card)
 	var t := card.create_tween()
 	t.tween_interval(RESULT_SECONDS)

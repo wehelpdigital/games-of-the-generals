@@ -34,16 +34,16 @@ func _ready() -> void:
 	_puffs.preprocess = 4.0
 	_puffs.mesh = _puff_quad()
 	_puffs.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	_puffs.emission_box_extents = Vector3(Ranks.COLS * 0.5, 0.25, Ranks.ROWS * 0.25)
-	_puffs.direction = Vector3(1, 0.15, 0)
+	_puffs.emission_box_extents = Vector3(Ranks.COLS * 0.45, 0.15, Ranks.ROWS * 0.22)
+	_puffs.direction = Vector3(1, 0.05, 0)
 	_puffs.spread = 180.0
 	_puffs.gravity = Vector3.ZERO
 	_puffs.initial_velocity_min = 0.05
 	_puffs.initial_velocity_max = 0.25
 	_puffs.angular_velocity_min = -12.0
 	_puffs.angular_velocity_max = 12.0
-	_puffs.scale_amount_min = 1.1
-	_puffs.scale_amount_max = 2.1
+	_puffs.scale_amount_min = 0.9
+	_puffs.scale_amount_max = 1.6
 	var grow := Curve.new()
 	grow.add_point(Vector2(0.0, 0.4))
 	grow.add_point(Vector2(0.4, 1.0))
@@ -55,7 +55,7 @@ func _ready() -> void:
 	ramp.add_point(0.8, Color(TINT.darkened(0.08), 0.8))
 	ramp.set_color(ramp.get_point_count() - 1, Color(TINT, 0.0))
 	_puffs.color_ramp = ramp
-	_puffs.position.y = 0.75
+	_puffs.position.y = 0.6
 	add_child(_puffs)
 	visible = false
 

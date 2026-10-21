@@ -18,6 +18,8 @@ const PICK_PROMPTS := {
 	"back_cell": "Tap an empty square on your back row",
 }
 
+static var _rim: ImageTexture
+
 var board: Board3D
 
 var _fog: FogOverlay
@@ -35,8 +37,8 @@ func setup(game_board: Board3D) -> void:
 	board = game_board
 	_fog = FogOverlay.new()
 	add_child(_fog)
-	_target_material = _flat_material(Color(1.0, 0.82, 0.25, 0.75), "square")
-	_chosen_material = _flat_material(Color(0.35, 1.0, 0.7, 0.9), "square")
+	_target_material = _flat_material(Color(1.0, 0.8, 0.2, 0.9))
+	_chosen_material = _flat_material(Color(0.3, 1.0, 0.65, 1.0))
 	GameSession.rules_changed.connect(queue_refresh)
 	GameSession.match_loaded.connect(func(_view: Dictionary) -> void: queue_refresh())
 	GameSession.turn_changed.connect(_on_turn_changed)
@@ -50,7 +52,12 @@ func setup(game_board: Board3D) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	var pulse := 0.6 + 0.4 * sin(_time * 5.0)
-	_target_material.albedo_color.a = 0.45 + 0.35 * pulse
+	_target_material.albedo_color.a = 0.55 + 0.45 * pulse
+	for mark in _target_marks:
+		var halo := mark.get_node_or_null("Halo") as Sprite3D
+		if halo:
+			halo.position.y = 1.0 + 0.08 * sin(_time * 4.0)
+			halo.modulate.a = 0.6 + 0.4 * pulse
 	for mine: Node3D in _mines.values():
 		var light := mine.get_node_or_null("Light") as MeshInstance3D
 		if light:
@@ -178,7 +185,10 @@ func _show_step() -> void:
 	var kind: String = _targeting["picks"][_targeting["step"]]
 	_valid = _valid_cells(kind)
 	for cell in _valid:
-		_target_marks.append(_cell_mark(cell, _target_material))
+		var mark := _cell_mark(cell, _target_material)
+		if kind.ends_with("piece"):
+			mark.add_child(_halo())  # Pieces hide most of their square: float a ring above them too.
+		_target_marks.append(mark)
 	for chosen: Dictionary in _targeting["chosen"]:
 		_target_marks.append(_cell_mark(chosen["cell"], _chosen_material))
 	var prompt: String = PICK_PROMPTS.get(kind, "Pick a target")
@@ -445,13 +455,13 @@ func _shield() -> MeshInstance3D:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.albedo_color = Color(0.3, 0.8, 1.0, 0.28)
+	m.albedo_color = Color(0.35, 0.85, 1.0, 0.4)
 	m.rim_enabled = false
 	m.cull_mode = BaseMaterial3D.CULL_BACK
 	bubble.material_override = m
 	var t := bubble.create_tween().set_loops()
-	t.tween_property(m, "albedo_color:a", 0.42, 0.8).set_trans(Tween.TRANS_SINE)
-	t.tween_property(m, "albedo_color:a", 0.22, 0.8).set_trans(Tween.TRANS_SINE)
+	t.tween_property(m, "albedo_color:a", 0.6, 0.8).set_trans(Tween.TRANS_SINE)
+	t.tween_property(m, "albedo_color:a", 0.35, 0.8).set_trans(Tween.TRANS_SINE)
 	return bubble
 
 
@@ -504,8 +514,11 @@ func _mine_model() -> Node3D:
 	plane.size = Vector2(0.8, 0.8)
 	ring.mesh = plane
 	ring.position.y = 0.012
-	ring.material_override = FxTextures.decal_material("glow_ring", Color(1.0, 0.3, 0.3, 0.55))
+	ring.material_override = FxTextures.decal_material("glow_ring", Color(0.95, 0.15, 0.2, 0.85), false)
 	root.add_child(ring)
+	var tag := _label("MINE", AppTheme.RED, 26)
+	tag.position.y = 0.45
+	root.add_child(tag)
 	return root
 
 
@@ -521,10 +534,48 @@ func _cell_mark(cell: Vector2i, material: StandardMaterial3D) -> MeshInstance3D:
 	return mark
 
 
-func _flat_material(color: Color, shape: String) -> StandardMaterial3D:
-	var m := FxTextures.decal_material(shape, color, false)
+func _flat_material(color: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_texture = _rim_texture()
+	m.albedo_color = color
 	m.render_priority = 2
 	return m
+
+
+## Rounded-square highlight like the board's move markers: a bright rim around a light fill.
+static func _rim_texture() -> ImageTexture:
+	if _rim != null:
+		return _rim
+	const SIZE := 128
+	const RADIUS := 26.0
+	const RIM := 12.0
+	var image := Image.create_empty(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+	var half := SIZE * 0.5
+	var box := half - 3.0 - RADIUS
+	for y in SIZE:
+		for x in SIZE:
+			var q := Vector2(absf(x + 0.5 - half) - box, absf(y + 0.5 - half) - box)
+			var d := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length() + minf(maxf(q.x, q.y), 0.0) - RADIUS
+			var alpha := lerpf(0.25, 1.0, smoothstep(-RIM - 2.0, -RIM + 1.0, d)) * (1.0 - smoothstep(-1.5, 0.5, d))
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
+	image.generate_mipmaps()
+	_rim = ImageTexture.create_from_image(image)
+	return _rim
+
+
+func _halo() -> Sprite3D:
+	var halo := Sprite3D.new()
+	halo.name = "Halo"
+	halo.texture = FxTextures.texture("glow_ring")
+	halo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	halo.no_depth_test = true
+	halo.render_priority = 8
+	halo.pixel_size = 0.55 / FxTextures.SIZE
+	halo.modulate = Color(1.0, 0.85, 0.2)
+	halo.position.y = 1.0
+	return halo
 
 
 func _pop(at: Vector3, text: String, color: Color) -> void:

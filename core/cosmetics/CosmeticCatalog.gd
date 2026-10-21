@@ -89,6 +89,11 @@ static func season_of(category: String, slug: String) -> String:
 	return str(info(category, slug).get("season", ""))
 
 
+## The themed collection an item belongs to (Collections.LIST), or "" for none.
+static func collection_of(category: String, slug: String) -> String:
+	return str(info(category, slug).get("collection", ""))
+
+
 static func label(category: String) -> String:
 	for c: Dictionary in CATEGORIES:
 		if c["key"] == category:

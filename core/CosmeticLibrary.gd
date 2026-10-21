@@ -32,14 +32,14 @@ const BOARD_THEMES := {
 		"sky_top": Color("6aa8ff"), "sky_horizon": Color("e3f4ff"), "ambient": Color("d0d6f4"),
 	},
 	"board_military_steel": {
-		"name": "Tactical Military Steel", "rarity": "rare", "desc": "Field-green plating with hazard-yellow centre.",
+		"name": "Tactical Military Steel", "rarity": "rare", "collection": "giant_robots", "desc": "Field-green plating with hazard-yellow centre.",
 		"swatch": [Color("5f8a52"), Color("b9d38f"), Color("a3c27b"), Color("ffd23f")],
 		"frame": Color("5f8a52"), "bed": Color("2c3b27"), "tile_a": Color("b9d38f"), "tile_b": Color("a3c27b"),
 		"divider": Color("ffd23f"), "glow": 0.0, "tile_pattern": "panel",
 		"sky_top": Color("2f9bff"), "sky_horizon": Color("fff1c9"), "ambient": Color("d3d9e2"),
 	},
 	"board_cyber_neon": {
-		"name": "Cyberpunk Neon Grid", "rarity": "epic", "desc": "Midnight tiles with glowing cyan grid lines.",
+		"name": "Cyberpunk Neon Grid", "rarity": "epic", "collection": "cyber_neon", "desc": "Midnight tiles with glowing cyan grid lines.",
 		"swatch": [Color("3a2a86"), Color("221c55"), Color("22f2ff"), Color("ff3dd0")],
 		"frame": Color("3a2a86"), "bed": Color("22f2ff"), "tile_a": Color("221c55"), "tile_b": Color("2b2366"),
 		"divider": Color("ff3dd0"), "glow": 2.6,
@@ -64,19 +64,19 @@ const BOARD_THEMES := {
 		"divider": Color("ffffff"), "glow": 0.8, "tile_pattern": "veins",
 	},
 	"board_royal_gold": {
-		"name": "Royal Gold", "rarity": "epic", "desc": "Ivory and gold squares on a crimson velvet frame.",
+		"name": "Royal Gold", "rarity": "epic", "collection": "fantasy_kingdom", "desc": "Ivory and gold squares on a crimson velvet frame.",
 		"swatch": [Color("7a1f3d"), Color("fff1d0"), Color("f2d68f"), Color("e0a520")],
 		"frame": Color("8a2245"), "bed": Color("e0a520"), "tile_a": Color("fff1d0"), "tile_b": Color("f2d68f"),
 		"divider": Color("ffd23f"), "glow": 0.0, "tile_pattern": "dapple",
 	},
 	"board_wooden_dojo": {
-		"name": "Wooden Dojo", "rarity": "common", "desc": "Woven tatami mats framed in dark cedar.",
+		"name": "Wooden Dojo", "rarity": "common", "collection": "samurai_ronin", "desc": "Woven tatami mats framed in dark cedar.",
 		"swatch": [Color("6b3e22"), Color("e8d39a"), Color("d9c07e"), Color("c8342d")],
 		"frame": Color("6b3e22"), "bed": Color("3a2414"), "tile_a": Color("ecd8a0"), "tile_b": Color("dcc382"),
 		"divider": Color("d23a2f"), "glow": 0.0, "tile_pattern": "weave",
 	},
 	"board_scifi_panel": {
-		"name": "Starship Deck", "rarity": "rare", "desc": "Riveted hull panels with orange running lights.",
+		"name": "Starship Deck", "rarity": "rare", "collection": "space_opera", "desc": "Riveted hull panels with orange running lights.",
 		"swatch": [Color("4a5566"), Color("c7d0db"), Color("ff8a1f"), Color("2ef6ff")],
 		"frame": Color("4a5566"), "bed": Color("ff8a1f"), "tile_a": Color("c7d0db"), "tile_b": Color("b3bdc9"),
 		"divider": Color("2ef6ff"), "glow": 1.6, "tile_pattern": "panel",
@@ -162,6 +162,160 @@ const BOARD_THEMES := {
 		"divider": Color("27c98f"), "glow": 0.0, "tile_pattern": "weave",
 		"sky_top": Color("4fb8ff"), "sky_horizon": Color("fff2d8"), "ambient": Color("eedcec"),
 	},
+	"board_woodblock_sea": {
+		"name": "Woodblock Sea", "rarity": "epic", "collection": "great_wave", "desc": "Indigo and cream, printed with rolling waves and a red seal line.",
+		"swatch": [Color("2a4a8a"), Color("f4ead2"), Color("dfe6ea"), Color("e8341c")],
+		"frame": Color("2a4a8a"), "bed": Color("1d2f5a"), "tile_a": Color("f4ead2"), "tile_b": Color("dfe6ea"),
+		"divider": Color("e8341c"), "glow": 0.0, "tile_pattern": "seigaiha",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_treasure_map": {
+		"name": "Treasure Map", "rarity": "rare", "collection": "treasure_seas", "desc": "Old parchment with dotted routes. X marks the spot.",
+		"swatch": [Color("8a5a2a"), Color("f2dfb0"), Color("e6cc94"), Color("c8342d")],
+		"frame": Color("8a5a2a"), "bed": Color("4a2a14"), "tile_a": Color("f2dfb0"), "tile_b": Color("e6cc94"),
+		"divider": Color("c8342d"), "glow": 0.0, "tile_pattern": "map",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_tatami_dojo": {
+		"name": "Tatami Dojo", "rarity": "rare", "collection": "samurai_ronin", "desc": "Woven straw mats on a black lacquer frame.",
+		"swatch": [Color("2a1a14"), Color("dcd18c"), Color("cbc078"), Color("b8282e")],
+		"frame": Color("2a1a14"), "bed": Color("1a100c"), "tile_a": Color("dcd18c"), "tile_b": Color("cbc078"),
+		"divider": Color("b8282e"), "glow": 0.0, "tile_pattern": "weave",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_moonlit_roof": {
+		"name": "Moonlit Roof", "rarity": "rare", "collection": "ninja_clan", "desc": "Dark roof tiles under a violet moon.",
+		"swatch": [Color("2a2350"), Color("504a7a"), Color("423c6a"), Color("8b5cf6")],
+		"frame": Color("2a2350"), "bed": Color("120f24"), "tile_a": Color("504a7a"), "tile_b": Color("423c6a"),
+		"divider": Color("8b5cf6"), "glow": 0.8, "tile_pattern": "scales",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_circuit": {
+		"name": "Circuit Board", "rarity": "epic", "collection": "cyber_neon", "desc": "Glowing cyan traces on midnight panels.",
+		"swatch": [Color("141a33"), Color("1b2447"), Color("141c3a"), Color("ff2bd6")],
+		"frame": Color("141a33"), "bed": Color("0a0f22"), "tile_a": Color("1b2447"), "tile_b": Color("141c3a"),
+		"divider": Color("ff2bd6"), "glow": 1.8, "tile_pattern": "circuit", "pattern_glow": Color("2ef6ff"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_hazard_hangar": {
+		"name": "Hangar Plate", "rarity": "rare", "collection": "giant_robots", "desc": "Riveted steel plates with a hazard-stripe centre.",
+		"swatch": [Color("4f5a74"), Color("c7d0db"), Color("aeb8c6"), Color("ffb020")],
+		"frame": Color("4f5a74"), "bed": Color("2a2f40"), "tile_a": Color("c7d0db"), "tile_b": Color("aeb8c6"),
+		"divider": Color("ffb020"), "glow": 0.0, "tile_pattern": "panel",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_city_block": {
+		"name": "Smashed City", "rarity": "epic", "collection": "kaiju_attack", "desc": "Cracked asphalt with fire glowing through.",
+		"swatch": [Color("3a3f4a"), Color("6a707e"), Color("5a6070"), Color("ffd23f")],
+		"frame": Color("3a3f4a"), "bed": Color("1d2028"), "tile_a": Color("6a707e"), "tile_b": Color("5a6070"),
+		"divider": Color("ffd23f"), "glow": 1.2, "tile_pattern": "cracks", "pattern_glow": Color("ff6a1a"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_starship_bridge": {
+		"name": "Starship Bridge", "rarity": "epic", "collection": "space_opera", "desc": "Clean white deck panels lit in blue.",
+		"swatch": [Color("e8eef8"), Color("f4f7fc"), Color("dfe6f2"), Color("3ad6ff")],
+		"frame": Color("e8eef8"), "bed": Color("3a4a6a"), "tile_a": Color("f4f7fc"), "tile_b": Color("dfe6f2"),
+		"divider": Color("3ad6ff"), "glow": 1.6, "tile_pattern": "panel",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_chrome_sunset": {
+		"name": "Chrome Sunset", "rarity": "epic", "collection": "synthwave", "desc": "A violet grid glowing pink, with a sunset-orange line.",
+		"swatch": [Color("ff4fa8"), Color("3a1a5a"), Color("2a1048"), Color("ffb020")],
+		"frame": Color("ff4fa8"), "bed": Color("1a0b2e"), "tile_a": Color("3a1a5a"), "tile_b": Color("2a1048"),
+		"divider": Color("ffb020"), "glow": 1.8, "tile_pattern": "panel_glow", "pattern_glow": Color("ff4fa8"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_pixel_arcade": {
+		"name": "Pixel Field", "rarity": "rare", "collection": "arcade_8bit", "desc": "Chunky green pixels on an arcade-blue frame.",
+		"swatch": [Color("2f3fbf"), Color("7fe08a"), Color("62c86e"), Color("ffd23f")],
+		"frame": Color("2f3fbf"), "bed": Color("101a5a"), "tile_a": Color("7fe08a"), "tile_b": Color("62c86e"),
+		"divider": Color("ffd23f"), "glow": 0.0, "tile_pattern": "pixel",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_saloon_floor": {
+		"name": "Saloon Floor", "rarity": "rare", "collection": "wild_west", "desc": "Dusty plank floors from the frontier.",
+		"swatch": [Color("8a4a1e"), Color("d8a868"), Color("c8945a"), Color("ffcf3f")],
+		"frame": Color("8a4a1e"), "bed": Color("4a2410"), "tile_a": Color("d8a868"), "tile_b": Color("c8945a"),
+		"divider": Color("ffcf3f"), "glow": 0.0, "tile_pattern": "planks",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_brass_gears": {
+		"name": "Brass Workshop", "rarity": "epic", "collection": "steampunk", "desc": "Riveted brass plates with a verdigris line.",
+		"swatch": [Color("b8862e"), Color("e8c890"), Color("d8b070"), Color("3fbfa0")],
+		"frame": Color("b8862e"), "bed": Color("4a2a14"), "tile_a": Color("e8c890"), "tile_b": Color("d8b070"),
+		"divider": Color("3fbfa0"), "glow": 0.0, "tile_pattern": "panel",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_runestone": {
+		"name": "Runestone", "rarity": "rare", "collection": "norse_vikings", "desc": "Grey stone carved with runes that glow ice-blue.",
+		"swatch": [Color("5a6070"), Color("c9cfd6"), Color("b4bcc6"), Color("7fd6ff")],
+		"frame": Color("5a6070"), "bed": Color("2a2f3a"), "tile_a": Color("c9cfd6"), "tile_b": Color("b4bcc6"),
+		"divider": Color("7fd6ff"), "glow": 0.8, "tile_pattern": "glyphs",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_sandstone_glyphs": {
+		"name": "Temple Sandstone", "rarity": "epic", "collection": "ancient_egypt", "desc": "Carved sandstone on a lapis and gold frame.",
+		"swatch": [Color("d49a1a"), Color("f2d8a0"), Color("e6c484"), Color("1f6bd6")],
+		"frame": Color("d49a1a"), "bed": Color("1f3a8a"), "tile_a": Color("f2d8a0"), "tile_b": Color("e6c484"),
+		"divider": Color("1f6bd6"), "glow": 0.0, "tile_pattern": "glyphs",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_olympus_marble": {
+		"name": "Olympus Marble", "rarity": "epic", "collection": "greek_gods", "desc": "White marble trimmed with gold.",
+		"swatch": [Color("f4f5ff"), Color("ffffff"), Color("e8ecf5"), Color("ffcf3f")],
+		"frame": Color("f4f5ff"), "bed": Color("c9a24a"), "tile_a": Color("ffffff"), "tile_b": Color("e8ecf5"),
+		"divider": Color("ffcf3f"), "glow": 0.8, "tile_pattern": "veins",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_balete_wood": {
+		"name": "Enchanted Grove", "rarity": "rare", "collection": "philippine_myths", "desc": "Mossy wood and a line of firefly light.",
+		"swatch": [Color("5a3a24"), Color("7a9a4a"), Color("6a8a3e"), Color("c8ff6a")],
+		"frame": Color("5a3a24"), "bed": Color("2a1a10"), "tile_a": Color("7a9a4a"), "tile_b": Color("6a8a3e"),
+		"divider": Color("c8ff6a"), "glow": 1.2, "tile_pattern": "dapple",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_halftone_pop": {
+		"name": "Halftone Pop", "rarity": "rare", "collection": "comic_hero", "desc": "Bright comic-page yellow, dotted like a print.",
+		"swatch": [Color("e8341c"), Color("fff36b"), Color("ffe14d"), Color("3d8bff")],
+		"frame": Color("e8341c"), "bed": Color("1d1736"), "tile_a": Color("fff36b"), "tile_b": Color("ffe14d"),
+		"divider": Color("3d8bff"), "glow": 0.0, "tile_pattern": "halftone",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_quarantine": {
+		"name": "Quarantine Zone", "rarity": "rare", "collection": "zombie_outbreak", "desc": "Rusty plates, green cracks and hazard tape.",
+		"swatch": [Color("6a6f5a"), Color("9aa07a"), Color("8a906a"), Color("ffd23f")],
+		"frame": Color("6a6f5a"), "bed": Color("2a2d24"), "tile_a": Color("9aa07a"), "tile_b": Color("8a906a"),
+		"divider": Color("ffd23f"), "glow": 0.0, "tile_pattern": "cracks", "pattern_glow": Color("9be15d"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_pastel_ribbon": {
+		"name": "Pastel Sparkle", "rarity": "rare", "collection": "magical_sparkle", "desc": "Pink and cream with twinkling stars.",
+		"swatch": [Color("ff8ec0"), Color("fff0fa"), Color("ffe0f2"), Color("ffd23f")],
+		"frame": Color("ff8ec0"), "bed": Color("8a5cff"), "tile_a": Color("fff0fa"), "tile_b": Color("ffe0f2"),
+		"divider": Color("ffd23f"), "glow": 0.8, "tile_pattern": "specks", "pattern_glow": Color("ffffff"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_stage_lights": {
+		"name": "Stage Lights", "rarity": "epic", "collection": "concert_stage", "desc": "A glossy black stage with violet LED panels.",
+		"swatch": [Color("1d1736"), Color("2a2350"), Color("221c44"), Color("ff2bd6")],
+		"frame": Color("1d1736"), "bed": Color("0a0814"), "tile_a": Color("2a2350"), "tile_b": Color("221c44"),
+		"divider": Color("ff2bd6"), "glow": 2.0, "tile_pattern": "panel_glow", "pattern_glow": Color("b84dff"),
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_brick_wall": {
+		"name": "Brick Wall", "rarity": "rare", "collection": "street_graffiti", "desc": "City brickwork with a mint spray-paint line.",
+		"swatch": [Color("3a3f4a"), Color("c8644a"), Color("b8563e"), Color("4dffb0")],
+		"frame": Color("3a3f4a"), "bed": Color("2a2a2a"), "tile_a": Color("c8644a"), "tile_b": Color("b8563e"),
+		"divider": Color("4dffb0"), "glow": 0.0, "tile_pattern": "bricks",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
+	"board_castle_stone": {
+		"name": "Castle Stone", "rarity": "epic", "collection": "fantasy_kingdom", "desc": "Grey castle stone with a royal blue and gold frame.",
+		"swatch": [Color("2f4fae"), Color("d8dbe6"), Color("c4c9d6"), Color("ffcf3f")],
+		"frame": Color("2f4fae"), "bed": Color("1d2a6a"), "tile_a": Color("d8dbe6"), "tile_b": Color("c4c9d6"),
+		"divider": Color("ffcf3f"), "glow": 0.0, "tile_pattern": "bricks",
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("ffe1c4"), "ambient": Color("dccfee"),
+	},
 }
 
 ## How one player's half of the board looks (rows 0–3 for white, 4–7 for black). Both players see
@@ -187,12 +341,12 @@ const TERRITORIES := {
 		"tile_a": Color("a5e070"), "tile_b": Color("8ccd5c"), "pattern": "dapple",
 	},
 	"territory_royal_gold": {
-		"name": "Gilded Court", "rarity": "epic", "desc": "Polished gold squares fit for a five-star general.",
+		"name": "Gilded Court", "rarity": "epic", "collection": "fantasy_kingdom", "desc": "Polished gold squares fit for a five-star general.",
 		"swatch": [Color("ffe9a8"), Color("f2cf6a"), Color("d9a441")],
 		"tile_a": Color("ffe7a0"), "tile_b": Color("f0c95e"), "pattern": "dapple", "shine": 0.6,
 	},
 	"territory_neon_grid": {
-		"name": "Neon Grid", "rarity": "epic", "desc": "Dark panels with a glowing cyan circuit grid.",
+		"name": "Neon Grid", "rarity": "epic", "collection": "cyber_neon", "desc": "Dark panels with a glowing cyan circuit grid.",
 		"swatch": [Color("141a33"), Color("1b2244"), Color("2ef6ff")],
 		"tile_a": Color("19213d"), "tile_b": Color("141a33"), "pattern": "panel_glow", "pattern_glow": Color("2ef6ff"),
 	},
@@ -207,17 +361,17 @@ const TERRITORIES := {
 		"tile_a": Color("62c6e6"), "tile_b": Color("48add2"), "pattern": "waves",
 	},
 	"territory_starfield": {
-		"name": "Starfield", "rarity": "legendary", "desc": "Deep space with twinkling stars.",
+		"name": "Starfield", "rarity": "legendary", "collection": "space_opera", "desc": "Deep space with twinkling stars.",
 		"swatch": [Color("141433"), Color("1b1a40"), Color("ffffff")],
 		"tile_a": Color("1a1a40"), "tile_b": Color("131332"), "pattern": "specks", "pattern_glow": Color("ffffff"),
 	},
 	"territory_toxic": {
-		"name": "Toxic Spill", "rarity": "epic", "desc": "Bubbling green sludge with glowing seams.",
+		"name": "Toxic Spill", "rarity": "epic", "collection": "zombie_outbreak", "desc": "Bubbling green sludge with glowing seams.",
 		"swatch": [Color("7ddc3a"), Color("66c42e"), Color("d4ff3a")],
 		"tile_a": Color("5fa82b"), "tile_b": Color("4f9423"), "pattern": "cracks", "pattern_glow": Color("c8ff2e"),
 	},
 	"territory_desert": {
-		"name": "Desert Dunes", "rarity": "common", "desc": "Wind-rippled sand.",
+		"name": "Desert Dunes", "rarity": "common", "collection": "ancient_egypt", "desc": "Wind-rippled sand.",
 		"swatch": [Color("f3d79a"), Color("e8c785")],
 		"tile_a": Color("f5da9d"), "tile_b": Color("e6c27f"), "pattern": "waves",
 	},
@@ -271,6 +425,101 @@ const TERRITORIES := {
 		"swatch": [Color("f5d79e"), Color("e8b870"), Color("ff3d7f")],
 		"tile_a": Color("f5d79e"), "tile_b": Color("e8b870"), "pattern": "weave",
 	},
+	"territory_indigo_waves": {
+		"name": "Indigo Waves", "rarity": "rare", "collection": "great_wave", "desc": "Rolling woodblock waves in indigo.",
+		"swatch": [Color("5a7abe"), Color("4a6aae")],
+		"tile_a": Color("5a7abe"), "tile_b": Color("4a6aae"), "pattern": "seigaiha",
+	},
+	"territory_ship_planks": {
+		"name": "Ship Planks", "rarity": "common", "collection": "treasure_seas", "desc": "The deck of a sturdy ship.",
+		"swatch": [Color("b77a45"), Color("a86c3a")],
+		"tile_a": Color("b77a45"), "tile_b": Color("a86c3a"), "pattern": "planks",
+	},
+	"territory_raked_gravel": {
+		"name": "Raked Gravel", "rarity": "common", "collection": "samurai_ronin", "desc": "A calm zen garden, freshly raked.",
+		"swatch": [Color("e2e2da"), Color("d2d2c8")],
+		"tile_a": Color("e2e2da"), "tile_b": Color("d2d2c8"), "pattern": "waves",
+	},
+	"territory_night_tiles": {
+		"name": "Night Tiles", "rarity": "rare", "collection": "ninja_clan", "desc": "Rooftop tiles in the dead of night.",
+		"swatch": [Color("48437a"), Color("3e3a6c")],
+		"tile_a": Color("48437a"), "tile_b": Color("3e3a6c"), "pattern": "scales",
+	},
+	"territory_hangar_deck": {
+		"name": "Hangar Deck", "rarity": "common", "collection": "giant_robots", "desc": "Riveted deck plating.",
+		"swatch": [Color("8a94a6"), Color("7a8496")],
+		"tile_a": Color("8a94a6"), "tile_b": Color("7a8496"), "pattern": "panel",
+	},
+	"territory_scorched_city": {
+		"name": "Scorched Street", "rarity": "epic", "collection": "kaiju_attack", "desc": "Cracked asphalt with fire below.",
+		"swatch": [Color("4a4f5a"), Color("3f444e"), Color("ff6a1a")],
+		"tile_a": Color("4a4f5a"), "tile_b": Color("3f444e"), "pattern": "cracks", "pattern_glow": Color("ff6a1a"),
+	},
+	"territory_hull_plating": {
+		"name": "Hull Plating", "rarity": "rare", "collection": "space_opera", "desc": "White starship hull panels.",
+		"swatch": [Color("e2e8f4"), Color("d2dae8")],
+		"tile_a": Color("e2e8f4"), "tile_b": Color("d2dae8"), "pattern": "panel",
+	},
+	"territory_pink_grid": {
+		"name": "Sunset Grid", "rarity": "epic", "collection": "synthwave", "desc": "A pink neon grid on violet.",
+		"swatch": [Color("2a1048"), Color("22093c"), Color("ff4fa8")],
+		"tile_a": Color("2a1048"), "tile_b": Color("22093c"), "pattern": "panel_glow", "pattern_glow": Color("ff4fa8"),
+	},
+	"territory_pixel_grass": {
+		"name": "Pixel Grass", "rarity": "common", "collection": "arcade_8bit", "desc": "Blocky green grass.",
+		"swatch": [Color("6fd06a"), Color("5fc05a")],
+		"tile_a": Color("6fd06a"), "tile_b": Color("5fc05a"), "pattern": "pixel",
+	},
+	"territory_dusty_planks": {
+		"name": "Dusty Boardwalk", "rarity": "common", "collection": "wild_west", "desc": "A sun-bleached boardwalk.",
+		"swatch": [Color("d8b070"), Color("c8a060")],
+		"tile_a": Color("d8b070"), "tile_b": Color("c8a060"), "pattern": "planks",
+	},
+	"territory_copper_plates": {
+		"name": "Copper Plates", "rarity": "rare", "collection": "steampunk", "desc": "Riveted copper sheets.",
+		"swatch": [Color("c87a3a"), Color("b86c30")],
+		"tile_a": Color("c87a3a"), "tile_b": Color("b86c30"), "pattern": "panel",
+	},
+	"territory_frost_runes": {
+		"name": "Frost Runes", "rarity": "rare", "collection": "norse_vikings", "desc": "Frozen stone carved with runes.",
+		"swatch": [Color("dfe8f0"), Color("cfdce8")],
+		"tile_a": Color("dfe8f0"), "tile_b": Color("cfdce8"), "pattern": "glyphs",
+	},
+	"territory_lapis_gold": {
+		"name": "Lapis & Gold", "rarity": "epic", "collection": "ancient_egypt", "desc": "Deep blue lapis flecked with gold.",
+		"swatch": [Color("2f5fbf"), Color("2a54ab"), Color("f2c14e")],
+		"tile_a": Color("2f5fbf"), "tile_b": Color("2a54ab"), "pattern": "specks", "pattern_glow": Color("f2c14e"),
+	},
+	"territory_cloud_marble": {
+		"name": "Cloud Marble", "rarity": "rare", "collection": "greek_gods", "desc": "Soft white marble, light as a cloud.",
+		"swatch": [Color("f6f8ff"), Color("e6ecf8")],
+		"tile_a": Color("f6f8ff"), "tile_b": Color("e6ecf8"), "pattern": "veins",
+	},
+	"territory_moss_fireflies": {
+		"name": "Firefly Moss", "rarity": "epic", "collection": "philippine_myths", "desc": "Forest moss twinkling with fireflies.",
+		"swatch": [Color("5a8a3a"), Color("4f7f32"), Color("c8ff6a")],
+		"tile_a": Color("5a8a3a"), "tile_b": Color("4f7f32"), "pattern": "specks", "pattern_glow": Color("c8ff6a"),
+	},
+	"territory_comic_panels": {
+		"name": "Comic Panels", "rarity": "common", "collection": "comic_hero", "desc": "Clean comic-book dots.",
+		"swatch": [Color("ffffff"), Color("f0f0f0")],
+		"tile_a": Color("ffffff"), "tile_b": Color("f0f0f0"), "pattern": "halftone",
+	},
+	"territory_stardust_lilac": {
+		"name": "Stardust Lilac", "rarity": "rare", "collection": "magical_sparkle", "desc": "Lilac stone full of sparkles.",
+		"swatch": [Color("e6d4ff"), Color("dcc6ff"), Color("ffffff")],
+		"tile_a": Color("e6d4ff"), "tile_b": Color("dcc6ff"), "pattern": "specks", "pattern_glow": Color("ffffff"),
+	},
+	"territory_led_floor": {
+		"name": "LED Floor", "rarity": "epic", "collection": "concert_stage", "desc": "A stage floor of cyan LED squares.",
+		"swatch": [Color("221c44"), Color("1a1438"), Color("3ad6ff")],
+		"tile_a": Color("221c44"), "tile_b": Color("1a1438"), "pattern": "panel_glow", "pattern_glow": Color("3ad6ff"),
+	},
+	"territory_skate_concrete": {
+		"name": "Skate Concrete", "rarity": "common", "collection": "street_graffiti", "desc": "Smooth skate-park concrete.",
+		"swatch": [Color("c9ccd2"), Color("bcc0c8")],
+		"tile_a": Color("c9ccd2"), "tile_b": Color("bcc0c8"), "pattern": "dapple",
+	},
 }
 
 ## Each skin has a light team (white) and a dark team (black) so sides read at a glance.
@@ -291,7 +540,7 @@ const PIECE_SKINS := {
 		"black": {"body": Color("4f5a74"), "base": Color("8f6dff"), "ink": Color("ffd54a"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.8},
 	},
 	"pieces_holo_glass": {
-		"name": "Holographic Glass", "rarity": "epic", "desc": "Glowing cyan and magenta glass.",
+		"name": "Holographic Glass", "rarity": "epic", "collection": "cyber_neon", "desc": "Glowing cyan and magenta glass.",
 		"swatch": [Color("7ff4ff"), Color("1b9cff"), Color("ff8ae0"), Color("b84dff")],
 		"white": {"body": Color("7ff4ff"), "base": Color("1b9cff"), "ink": Color("1c47d6"), "label": Color("0b2f6b"), "label_outline": Color("e8fdff"), "shine": 0.6, "glow": Color("2ee6ff")},
 		"black": {"body": Color("ff8ae0"), "base": Color("b84dff"), "ink": Color("ffffff"), "label": Color("ffffff"), "label_outline": Color("4a0f4a"), "shine": 0.6, "glow": Color("ff3bd0")},
@@ -327,7 +576,7 @@ const PIECE_SKINS := {
 		"black": {"body": Color("2e2527"), "base": Color("ff3b1f"), "ink": Color("ffb020"), "label": Color("ffffff"), "label_outline": Color("1a1012"), "shine": 0.35, "pattern": "cracks", "pattern_glow": Color("ff4a14")},
 	},
 	"pieces_carbon_fiber": {
-		"name": "Carbon Fiber", "rarity": "rare", "desc": "Race-car weave: silver/red versus black/green.",
+		"name": "Carbon Fiber", "rarity": "rare", "collection": "giant_robots", "desc": "Race-car weave: silver/red versus black/green.",
 		"swatch": [Color("dde1e8"), Color("e8344e"), Color("2b2e33"), Color("3cff8f")],
 		"white": {"body": Color("dde1e8"), "base": Color("e8344e"), "ink": Color("e8344e"), "label": Color("2b2e33"), "label_outline": Color("ffffff"), "shine": 0.85, "pattern": "weave"},
 		"black": {"body": Color("34383e"), "base": Color("3cff8f"), "ink": Color("3cff8f"), "label": Color("ffffff"), "label_outline": Color("121417"), "shine": 0.85, "pattern": "weave"},
@@ -339,25 +588,25 @@ const PIECE_SKINS := {
 		"black": {"body": Color("363744"), "base": Color("4fd1c5"), "ink": Color("8ef0e6"), "label": Color("ffffff"), "label_outline": Color("17181f"), "shine": 1.0, "pattern": "dapple"},
 	},
 	"pieces_sakura": {
-		"name": "Sakura Blossom", "rarity": "rare", "desc": "Blossom pink and plum wood on leafy stands.",
+		"name": "Sakura Blossom", "rarity": "rare", "collection": "samurai_ronin", "desc": "Blossom pink and plum wood on leafy stands.",
 		"swatch": [Color("ffe3ee"), Color("78c46b"), Color("5a2742"), Color("ff8fb8")],
 		"white": {"body": Color("ffe3ee"), "base": Color("78c46b"), "ink": Color("ff6f9f"), "label": Color("6b2445"), "label_outline": Color("fff6fa"), "shine": 0.4, "pattern": "dapple"},
 		"black": {"body": Color("5a2742"), "base": Color("ff8fb8"), "ink": Color("ffc2d8"), "label": Color("ffffff"), "label_outline": Color("2a0f1f"), "shine": 0.4, "pattern": "dapple"},
 	},
 	"pieces_galaxy": {
-		"name": "Galaxy", "rarity": "legendary", "desc": "Lilac nebula versus deep space, full of stars.",
+		"name": "Galaxy", "rarity": "legendary", "collection": "space_opera", "desc": "Lilac nebula versus deep space, full of stars.",
 		"swatch": [Color("c8b8ff"), Color("5d7bff"), Color("1b1440"), Color("b05cff")],
 		"white": {"body": Color("c8b8ff"), "base": Color("5d7bff"), "ink": Color("5d3bd6"), "label": Color("241554"), "label_outline": Color("f4f0ff"), "shine": 0.6, "pattern": "specks", "pattern_glow": Color("ffffff")},
 		"black": {"body": Color("221a52"), "base": Color("b05cff"), "ink": Color("e0c6ff"), "label": Color("ffffff"), "label_outline": Color("0d0a24"), "shine": 0.6, "pattern": "specks", "pattern_glow": Color("ffffff"), "glow": Color("3b2a9e")},
 	},
 	"pieces_neon_wireframe": {
-		"name": "Neon Wireframe", "rarity": "legendary", "desc": "Dark chips outlined in glowing cyan or magenta neon.",
+		"name": "Neon Wireframe", "rarity": "legendary", "collection": "synthwave", "desc": "Dark chips outlined in glowing cyan or magenta neon.",
 		"swatch": [Color("1a2440"), Color("2ef6ff"), Color("2a1238"), Color("ff3bd6")],
 		"white": {"body": Color("1b2747"), "base": Color("123a52"), "ink": Color("2ef6ff"), "label": Color("2ef6ff"), "label_outline": Color("0a1226"), "shine": 0.5, "outline": Color("2ef6ff"), "outline_glow": 2.4, "pattern": "panel_glow", "pattern_glow": Color("2ef6ff")},
 		"black": {"body": Color("2c1239"), "base": Color("4a1250"), "ink": Color("ff3bd6"), "label": Color("ff7ae6"), "label_outline": Color("17061f"), "shine": 0.5, "outline": Color("ff3bd6"), "outline_glow": 2.4, "pattern": "panel_glow", "pattern_glow": Color("ff3bd6")},
 	},
 	"pieces_royal_gold": {
-		"name": "Royal Court", "rarity": "epic", "desc": "Ivory versus royal purple, both on gold.",
+		"name": "Royal Court", "rarity": "epic", "collection": "fantasy_kingdom", "desc": "Ivory versus royal purple, both on gold.",
 		"swatch": [Color("fff4dc"), Color("e0a520"), Color("4a1e6b"), Color("f0c03a")],
 		"white": {"body": Color("fff4dc"), "base": Color("e0a520"), "ink": Color("c98a12"), "label": Color("5a3a08"), "label_outline": Color("ffffff"), "shine": 0.7},
 		"black": {"body": Color("4f2073"), "base": Color("f0c03a"), "ink": Color("f0c03a"), "label": Color("ffe9a8"), "label_outline": Color("24093a"), "shine": 0.7},
@@ -415,6 +664,132 @@ const PIECE_SKINS := {
 		"swatch": [Color("fff1c9"), Color("ff3d7f"), Color("6a1f8a"), Color("27c98f")],
 		"white": {"body": Color("fff1c9"), "base": Color("ff3d7f"), "ink": Color("27c98f"), "label": Color("6a1f8a"), "label_outline": Color("ffffff"), "shine": 0.4},
 		"black": {"body": Color("6a1f8a"), "base": Color("ffcf3f"), "ink": Color("ff3d7f"), "label": Color("ffffff"), "label_outline": Color("2a0a3a"), "shine": 0.4},
+	},
+	"pieces_woodblock": {
+		"name": "Woodblock Print", "rarity": "rare", "collection": "great_wave", "desc": "Cream paper and indigo ink with a red seal.",
+		"swatch": [Color("f4ead2"), Color("2a4a8a"), Color("2a4a8a"), Color("f4ead2")],
+		"white": {"body": Color("f4ead2"), "base": Color("2a4a8a"), "ink": Color("e8341c"), "label": Color("1d2f5a"), "label_outline": Color("ffffff"), "shine": 0.3},
+		"black": {"body": Color("2a4a8a"), "base": Color("f4ead2"), "ink": Color("ffffff"), "label": Color("ffffff"), "label_outline": Color("1d2f5a"), "shine": 0.3},
+	},
+	"pieces_doubloon": {
+		"name": "Doubloons", "rarity": "epic", "collection": "treasure_seas", "desc": "Pirate gold against tar-black.",
+		"swatch": [Color("ffd54a"), Color("8a5a2a"), Color("2a2d40"), Color("ffcf3f")],
+		"white": {"body": Color("ffd54a"), "base": Color("8a5a2a"), "ink": Color("8a2a1a"), "label": Color("6b3600"), "label_outline": Color("ffe9a8"), "shine": 0.95},
+		"black": {"body": Color("2a2d40"), "base": Color("ffcf3f"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.6},
+	},
+	"pieces_lacquer": {
+		"name": "Red Lacquer", "rarity": "epic", "collection": "samurai_ronin", "desc": "Glossy vermilion and black lacquer with gold.",
+		"swatch": [Color("c8303a"), Color("1d1416"), Color("1d1416"), Color("c8303a")],
+		"white": {"body": Color("c8303a"), "base": Color("1d1416"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("5a0a0a"), "shine": 0.9},
+		"black": {"body": Color("1d1416"), "base": Color("c8303a"), "ink": Color("ffcf3f"), "label": Color("ffcf3f"), "label_outline": Color("000000"), "shine": 0.9},
+	},
+	"pieces_shadow_cloth": {
+		"name": "Shadow Cloth", "rarity": "rare", "collection": "ninja_clan", "desc": "Ash-grey and midnight cloth.",
+		"swatch": [Color("c9c2dd"), Color("4a4570"), Color("2a2350"), Color("8b5cf6")],
+		"white": {"body": Color("c9c2dd"), "base": Color("4a4570"), "ink": Color("2a2350"), "label": Color("2a2350"), "label_outline": Color("ffffff"), "shine": 0.2},
+		"black": {"body": Color("2a2350"), "base": Color("8b5cf6"), "ink": Color("c9b6ff"), "label": Color("ffffff"), "label_outline": Color("120f24"), "shine": 0.2},
+	},
+	"pieces_armor_plate": {
+		"name": "Armour Plating", "rarity": "rare", "collection": "giant_robots", "desc": "Hero white and gunmetal with warning orange.",
+		"swatch": [Color("e8eef8"), Color("2f6bd8"), Color("4f5a74"), Color("ffb020")],
+		"white": {"body": Color("e8eef8"), "base": Color("2f6bd8"), "ink": Color("ff3d4a"), "label": Color("1d2a4a"), "label_outline": Color("ffffff"), "shine": 0.7, "pattern": "panel"},
+		"black": {"body": Color("4f5a74"), "base": Color("ffb020"), "ink": Color("ffb020"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.7, "pattern": "panel"},
+	},
+	"pieces_monster_scale": {
+		"name": "Monster Scales", "rarity": "rare", "collection": "kaiju_attack", "desc": "Scaly green hide versus volcanic black.",
+		"swatch": [Color("9be15d"), Color("3f8a2a"), Color("3f4a3a"), Color("ff6a1a")],
+		"white": {"body": Color("9be15d"), "base": Color("3f8a2a"), "ink": Color("1d4a1a"), "label": Color("1d4a1a"), "label_outline": Color("e8ffd8"), "shine": 0.4, "pattern": "scales"},
+		"black": {"body": Color("3f4a3a"), "base": Color("ff6a1a"), "ink": Color("ff6a1a"), "label": Color("ffffff"), "label_outline": Color("1a2014"), "shine": 0.4, "pattern": "scales"},
+	},
+	"pieces_star_captain": {
+		"name": "Star Captain", "rarity": "rare", "collection": "space_opera", "desc": "Crisp white uniforms versus crimson.",
+		"swatch": [Color("f4f7fc"), Color("3a6bd6"), Color("2a2d40"), Color("e8341c")],
+		"white": {"body": Color("f4f7fc"), "base": Color("3a6bd6"), "ink": Color("ffb020"), "label": Color("1d2a4a"), "label_outline": Color("ffffff"), "shine": 0.6},
+		"black": {"body": Color("2a2d40"), "base": Color("e8341c"), "ink": Color("e8341c"), "label": Color("ffffff"), "label_outline": Color("120f24"), "shine": 0.6},
+	},
+	"pieces_chrome": {
+		"name": "Chrome '84", "rarity": "epic", "collection": "synthwave", "desc": "Mirror chrome with pink and cyan stands.",
+		"swatch": [Color("e8ecf5"), Color("ff4fa8"), Color("2a1048"), Color("3ad6ff")],
+		"white": {"body": Color("e8ecf5"), "base": Color("ff4fa8"), "ink": Color("3ad6ff"), "label": Color("2a1048"), "label_outline": Color("ffffff"), "shine": 1.0},
+		"black": {"body": Color("2a1048"), "base": Color("3ad6ff"), "ink": Color("ff4fa8"), "label": Color("ffffff"), "label_outline": Color("120624"), "shine": 0.9},
+	},
+	"pieces_arcade": {
+		"name": "Arcade Pixels", "rarity": "common", "collection": "arcade_8bit", "desc": "White and arcade blue, pixel-printed.",
+		"swatch": [Color("ffffff"), Color("2f3fbf"), Color("2f3fbf"), Color("ffd23f")],
+		"white": {"body": Color("ffffff"), "base": Color("2f3fbf"), "ink": Color("ff4d6d"), "label": Color("2f3fbf"), "label_outline": Color("ffffff"), "shine": 0.3, "pattern": "pixel"},
+		"black": {"body": Color("2f3fbf"), "base": Color("ffd23f"), "ink": Color("ffd23f"), "label": Color("ffffff"), "label_outline": Color("101a5a"), "shine": 0.3, "pattern": "pixel"},
+	},
+	"pieces_sheriff_tin": {
+		"name": "Sheriff Tin", "rarity": "rare", "collection": "wild_west", "desc": "Polished tin stars against saddle leather.",
+		"swatch": [Color("d8dee8"), Color("8a4a1e"), Color("5a3a24"), Color("d8a868")],
+		"white": {"body": Color("d8dee8"), "base": Color("8a4a1e"), "ink": Color("c8342d"), "label": Color("4a2410"), "label_outline": Color("ffffff"), "shine": 0.85},
+		"black": {"body": Color("5a3a24"), "base": Color("d8a868"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("2a1a10"), "shine": 0.4},
+	},
+	"pieces_brass_walnut": {
+		"name": "Brass & Walnut", "rarity": "epic", "collection": "steampunk", "desc": "Polished brass and dark walnut.",
+		"swatch": [Color("e8b850"), Color("5a3a24"), Color("4a2a1a"), Color("c87a3a")],
+		"white": {"body": Color("e8b850"), "base": Color("5a3a24"), "ink": Color("3fbfa0"), "label": Color("4a2a14"), "label_outline": Color("fff0c8"), "shine": 0.9},
+		"black": {"body": Color("4a2a1a"), "base": Color("c87a3a"), "ink": Color("e8b850"), "label": Color("ffffff"), "label_outline": Color("1d1008"), "shine": 0.6},
+	},
+	"pieces_iron_fur": {
+		"name": "Iron & Fur", "rarity": "rare", "collection": "norse_vikings", "desc": "Cold iron and warm fur.",
+		"swatch": [Color("d8dee8"), Color("8a6a4a"), Color("4a4f5e"), Color("c8a070")],
+		"white": {"body": Color("d8dee8"), "base": Color("8a6a4a"), "ink": Color("3f6a8a"), "label": Color("2a3a4a"), "label_outline": Color("ffffff"), "shine": 0.7},
+		"black": {"body": Color("4a4f5e"), "base": Color("c8a070"), "ink": Color("9fd8ff"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.6},
+	},
+	"pieces_pharaoh": {
+		"name": "Pharaoh Gold", "rarity": "epic", "collection": "ancient_egypt", "desc": "Gold and lapis fit for a pharaoh.",
+		"swatch": [Color("ffd54a"), Color("1f3a8a"), Color("1f3a8a"), Color("ffd54a")],
+		"white": {"body": Color("ffd54a"), "base": Color("1f3a8a"), "ink": Color("1f6bd6"), "label": Color("1f3a8a"), "label_outline": Color("fff3c4"), "shine": 0.9},
+		"black": {"body": Color("1f3a8a"), "base": Color("ffd54a"), "ink": Color("ffd54a"), "label": Color("ffffff"), "label_outline": Color("0a1a4a"), "shine": 0.8},
+	},
+	"pieces_marble_laurel": {
+		"name": "Marble & Laurel", "rarity": "rare", "collection": "greek_gods", "desc": "White marble and night marble with gold laurels.",
+		"swatch": [Color("ffffff"), Color("4a8ad6"), Color("3a3f5a"), Color("ffcf3f")],
+		"white": {"body": Color("ffffff"), "base": Color("4a8ad6"), "ink": Color("6aa84a"), "label": Color("2a3a5a"), "label_outline": Color("ffffff"), "shine": 0.7, "pattern": "veins"},
+		"black": {"body": Color("3a3f5a"), "base": Color("ffcf3f"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("1d1f2e"), "shine": 0.7, "pattern": "veins"},
+	},
+	"pieces_capiz": {
+		"name": "Capiz Shell", "rarity": "epic", "collection": "philippine_myths", "desc": "Glowing capiz shell and deep forest green.",
+		"swatch": [Color("fff6ea"), Color("2a8a5a"), Color("2a5a4a"), Color("ffd27a")],
+		"white": {"body": Color("fff6ea"), "base": Color("2a8a5a"), "ink": Color("ff9ec7"), "label": Color("2a5a4a"), "label_outline": Color("ffffff"), "shine": 0.9, "pattern": "veins"},
+		"black": {"body": Color("2a5a4a"), "base": Color("ffd27a"), "ink": Color("ffd27a"), "label": Color("ffffff"), "label_outline": Color("0f2a20"), "shine": 0.7, "pattern": "veins"},
+	},
+	"pieces_hero_primary": {
+		"name": "Hero Primaries", "rarity": "common", "collection": "comic_hero", "desc": "Bold red, blue and yellow, straight off the page.",
+		"swatch": [Color("ffffff"), Color("e8341c"), Color("3d8bff"), Color("ffd23f")],
+		"white": {"body": Color("ffffff"), "base": Color("e8341c"), "ink": Color("3d8bff"), "label": Color("1d1736"), "label_outline": Color("ffffff"), "shine": 0.5},
+		"black": {"body": Color("3d8bff"), "base": Color("ffd23f"), "ink": Color("ffd23f"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.5},
+	},
+	"pieces_undead": {
+		"name": "Undead", "rarity": "rare", "collection": "zombie_outbreak", "desc": "Sickly green and rotten brown.",
+		"swatch": [Color("b8d48a"), Color("6a4a3a"), Color("3f4a2a"), Color("9be15d")],
+		"white": {"body": Color("b8d48a"), "base": Color("6a4a3a"), "ink": Color("5a1f1f"), "label": Color("3a2a1a"), "label_outline": Color("f0ffd8"), "shine": 0.2},
+		"black": {"body": Color("3f4a2a"), "base": Color("9be15d"), "ink": Color("9be15d"), "label": Color("ffffff"), "label_outline": Color("1a2010"), "shine": 0.2},
+	},
+	"pieces_pastel_gem": {
+		"name": "Pastel Charms", "rarity": "rare", "collection": "magical_sparkle", "desc": "Candy pink and lilac charms.",
+		"swatch": [Color("fff0fa"), Color("ff8ec0"), Color("8a5cff"), Color("ffd1ea")],
+		"white": {"body": Color("fff0fa"), "base": Color("ff8ec0"), "ink": Color("b84dff"), "label": Color("8a3a6a"), "label_outline": Color("ffffff"), "shine": 0.8},
+		"black": {"body": Color("8a5cff"), "base": Color("ffd1ea"), "ink": Color("ffffff"), "label": Color("ffffff"), "label_outline": Color("3a1a6a"), "shine": 0.8},
+	},
+	"pieces_idol": {
+		"name": "Idol Spotlight", "rarity": "epic", "collection": "concert_stage", "desc": "Stage white and night violet in the spotlight.",
+		"swatch": [Color("ffffff"), Color("b84dff"), Color("2a1a4a"), Color("3ad6ff")],
+		"white": {"body": Color("ffffff"), "base": Color("b84dff"), "ink": Color("ff2bd6"), "label": Color("4a1a6a"), "label_outline": Color("ffffff"), "shine": 0.9},
+		"black": {"body": Color("2a1a4a"), "base": Color("3ad6ff"), "ink": Color("3ad6ff"), "label": Color("ffffff"), "label_outline": Color("120624"), "shine": 0.8},
+	},
+	"pieces_street_art": {
+		"name": "Street Art", "rarity": "rare", "collection": "street_graffiti", "desc": "Concrete grey and asphalt, tagged in neon.",
+		"swatch": [Color("f4f4f4"), Color("ff6a1a"), Color("2a2a2a"), Color("4dffb0")],
+		"white": {"body": Color("f4f4f4"), "base": Color("ff6a1a"), "ink": Color("3ad6ff"), "label": Color("2a2a2a"), "label_outline": Color("ffffff"), "shine": 0.3},
+		"black": {"body": Color("2a2a2a"), "base": Color("4dffb0"), "ink": Color("ff3bd6"), "label": Color("ffffff"), "label_outline": Color("000000"), "shine": 0.3},
+	},
+	"pieces_knights_steel": {
+		"name": "Knight's Steel", "rarity": "rare", "collection": "fantasy_kingdom", "desc": "Polished plate armour with royal colours.",
+		"swatch": [Color("dfe4ee"), Color("2f4fae"), Color("4a4f5e"), Color("8a1f2a")],
+		"white": {"body": Color("dfe4ee"), "base": Color("2f4fae"), "ink": Color("ffcf3f"), "label": Color("1d2a6a"), "label_outline": Color("ffffff"), "shine": 0.85},
+		"black": {"body": Color("4a4f5e"), "base": Color("8a1f2a"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.8},
 	},
 }
 
@@ -618,7 +993,7 @@ static func polka_floor_material(color: Color) -> StandardMaterial3D:
 static func _apply_pattern(m: StandardMaterial3D, pattern: String, glow: Variant, world: bool, scale: float) -> void:
 	if pattern == "":
 		return
-	var emissive := pattern in ["cracks", "specks", "panel_glow"]
+	var emissive := pattern in ["cracks", "specks", "panel_glow", "circuit"]
 	var tex := pattern_texture(pattern)
 	if emissive:
 		m.emission_enabled = true
@@ -628,6 +1003,8 @@ static func _apply_pattern(m: StandardMaterial3D, pattern: String, glow: Variant
 		m.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY  # The pattern masks the glow colour.
 		if pattern == "panel_glow":
 			m.albedo_texture = pattern_texture("panel")
+		elif pattern == "circuit":
+			m.albedo_texture = pattern_texture("circuit_board")
 	else:
 		m.albedo_texture = tex
 	m.uv1_triplanar = true
@@ -704,6 +1081,85 @@ static func _pattern_value(pattern: String, u: float, v: float, x: int, y: int, 
 			var sv := fposmod(v * 6.0, 1.0)
 			var d := Vector2(su - 0.5, sv).length()
 			return 0.74 if absf(d - 0.5) < 0.06 else (0.9 if d < 0.5 else 1.0)
+		"seigaiha":
+			# Woodblock waves: rows of fan-shaped shells, each row tucked in front of the one above.
+			var su := u * 4.0
+			var sv := v * 4.0
+			var top := floori(sv * 2.0) + 1
+			for j in range(top, top - 3, -1):  # Front rows first: the first shell that holds the point shows.
+				var dx := fposmod(su - (0.5 if posmod(j, 2) == 1 else 0.0), 1.0) - 0.5
+				var dy := sv - j * 0.5
+				var d := Vector2(dx, dy).length()
+				if dy <= 0.0 and d < 0.5:
+					return 0.72 if fposmod(d * 6.0, 1.0) < 0.4 else 1.0
+			return 1.0
+		"planks":
+			# Floor planks: rows with dark seams, staggered butt joints and a little grain.
+			var row := floori(v * 5.0)
+			var pv := fposmod(v * 5.0, 1.0)
+			var pu := fposmod(u * 2.0 + _hash(row, 3) * 0.7, 1.0)
+			if pv < 0.06 or pu < 0.015:
+				return 0.62
+			return 0.9 + 0.1 * sin(TAU * (u * 9.0 + pv * 0.6 + _hash(row, 9) * 3.0))
+		"map":
+			# Parchment with a faint grid and a dashed route curving across.
+			var grid := minf(fposmod(u * 4.0, 1.0), fposmod(v * 4.0, 1.0))
+			var route := absf(v - 0.5 - 0.22 * sin(TAU * u))
+			var dash := fposmod(u * 16.0, 1.0) < 0.55
+			if route < 0.018 and dash:
+				return 0.55
+			return 0.86 if grid < 0.012 else 0.95 + 0.05 * sin(TAU * (u * 3.0 + v * 5.0))
+		"circuit":
+			# Glow mask: traces along hashed cell edges, with pads at the joints.
+			var cx := floori(u * 4.0)
+			var cy := floori(v * 4.0)
+			var fu := fposmod(u * 4.0, 1.0)
+			var fv := fposmod(v * 4.0, 1.0)
+			var lit := 0.0
+			if _hash(cx, cy) > 0.45 and absf(fv - 0.5) < 0.04:
+				lit = 1.0
+			if _hash(cy + 31, cx + 7) > 0.5 and absf(fu - 0.5) < 0.04:
+				lit = 1.0
+			if Vector2(fu - 0.5, fv - 0.5).length() < 0.1 and _hash(cx + 13, cy + 5) > 0.3:
+				lit = 1.0
+			return lit
+		"circuit_board":
+			return 1.0 - 0.08 * float((floori(u * 8.0) + floori(v * 8.0)) % 2)
+		"pixel":
+			# Chunky pixels: an 8×8 grid of slightly different shades.
+			var px := floori(u * 8.0)
+			var py := floori(v * 8.0)
+			var h := _hash(px + 101, py + 57)
+			return 0.8 if h < 0.15 else (0.9 if h < 0.5 else 1.0)
+		"bricks":
+			var row := floori(v * 6.0)
+			var bu := fposmod(u * 3.0 + (0.5 if row % 2 == 1 else 0.0), 1.0)
+			var bv := fposmod(v * 6.0, 1.0)
+			if bv < 0.1 or bu < 0.035:
+				return 0.62
+			return 0.88 + 0.12 * _hash(floori(u * 3.0 + (0.5 if row % 2 == 1 else 0.0)), row)
+		"halftone":
+			# Comic-print dots that grow toward one corner of each tile.
+			var cell := Vector2(fposmod(u * 10.0, 1.0), fposmod(v * 10.0, 1.0)) - Vector2(0.5, 0.5)
+			var radius := 0.12 + 0.26 * (0.5 + 0.5 * sin(TAU * (u + v)))
+			return 0.72 if cell.length() < radius else 1.0
+		"glyphs":
+			# Carved marks: one short stroke, ring or bar per cell (hashed, so it tiles).
+			var cx := floori(u * 6.0)
+			var cy := floori(v * 6.0)
+			var q := Vector2(fposmod(u * 6.0, 1.0), fposmod(v * 6.0, 1.0)) - Vector2(0.5, 0.5)
+			var kind := int(_hash(cx + 3, cy + 17) * 4.0)
+			var mark := false
+			match kind:
+				0:
+					mark = absf(q.x) < 0.06 and absf(q.y) < 0.3
+				1:
+					mark = absf(q.length() - 0.2) < 0.05
+				2:
+					mark = absf(q.y) < 0.06 and absf(q.x) < 0.28
+				_:
+					mark = absf(q.x - q.y) < 0.07 and absf(q.x) < 0.25
+			return 0.68 if mark else 1.0
 		"specks":
 			# One possible star per 8×8-pixel cell, hashed so it tiles seamlessly.
 			var cx := x / 8

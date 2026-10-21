@@ -81,7 +81,7 @@ const ARENAS := {
 		"particles": "fireflies",
 	},
 	"neon_city": {
-		"name": "Neon City", "rarity": "epic", "desc": "A night-time city of glowing grids and neon towers.",
+		"name": "Neon City", "rarity": "epic", "collection": "cyber_neon", "desc": "A night-time city of glowing grids and neon towers.",
 		"swatch": [Color("141225"), Color("19f0ff"), Color("ff3dd0")],
 		"sky": [Color("0a0620"), Color("3d1460"), Color("120b2a")], "ambient": Color("b0a6ff"), "ambient_energy": 0.56,
 		"light": Color("d9d6ff"), "light_energy": 0.2,
@@ -108,7 +108,7 @@ const ARENAS := {
 		"particles": "embers",
 	},
 	"deep_space": {
-		"name": "Deep Space", "rarity": "legendary", "desc": "A floating asteroid among planets, nebulae and stars.",
+		"name": "Deep Space", "rarity": "legendary", "collection": "space_opera", "desc": "A floating asteroid among planets, nebulae and stars.",
 		"swatch": [Color("0b0b24"), Color("8f6bff"), Color("ffb36b")],
 		"sky": "space", "ambient": Color("c3cbff"), "ambient_energy": 0.62,
 		"light": Color("f2f4ff"), "light_energy": 0.24,

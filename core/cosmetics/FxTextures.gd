@@ -7,7 +7,7 @@ extends RefCounted
 const SIZE := 64
 const SHAPES := ["dot", "ring", "sparkle", "flame", "heart", "petal", "shard", "snowflake", "bolt", "ghost",
 	"bubble", "square", "star", "glow_ring", "puff", "note", "streak", "leaf", "crack", "beam",
-	"pumpkin", "bat", "candy_cane", "coin", "sun", "egg", "flower", "gift"]
+	"pumpkin", "bat", "candy_cane", "coin", "sun", "egg", "flower", "gift", "koi", "gear", "rune"]
 ## Sprites that read wrong when spun (flames lean sideways, hearts and notes tip over).
 const UPRIGHT := ["flame", "heart", "ghost", "note", "pumpkin", "bat", "candy_cane", "egg", "gift"]
 
@@ -271,6 +271,26 @@ static func _shade(shape: String, p: Vector2) -> Color:
 			var bow := Vector2((absf(p.x) - 0.24) / 0.24, (p.y - 0.58) / 0.16).length() < 1.0
 			a = 1.0 if box or bow else 0.0
 			v = 0.6 if absf(p.x) < 0.12 or absf(p.y + 0.18) < 0.1 or bow else 1.0
+		"koi":
+			# A little fish swimming right: an oval body, a forked tail and two dark patches.
+			var body := Vector2((p.x - 0.12) / 0.6, p.y / 0.3).length() < 1.0
+			var tail := p.x < -0.4 and p.x > -0.95 and absf(p.y) < (-0.4 - p.x) * 0.9 and absf(p.y) > (-0.4 - p.x) * 0.25 - 0.06
+			var fin := absf(p.x - 0.05) < 0.12 and p.y > 0.2 and p.y < 0.42 - absf(p.x - 0.05)
+			a = 1.0 if body or tail or fin else 0.0
+			var patch := Vector2(p.x - 0.28, p.y - 0.06).length() < 0.15 or Vector2(p.x + 0.12, p.y + 0.05).length() < 0.12
+			v = 0.55 if patch else 1.0
+			if Vector2(p.x - 0.52, p.y - 0.06).length() < 0.05:
+				v = 0.15
+		"gear":
+			var ang := atan2(p.y, p.x)
+			var teeth := 0.66 + (0.18 if cos(ang * 8.0) > 0.0 else 0.0)
+			a = 1.0 if r < teeth and r > 0.24 else 0.0
+			v = 0.8 if r < 0.42 else 1.0
+		"rune":
+			# An angular rune-like glyph (an original mark, not a real letter).
+			var d := minf(_segment_dist(p, Vector2(-0.1, -0.85), Vector2(-0.1, 0.85)),
+				minf(_segment_dist(p, Vector2(-0.1, 0.55), Vector2(0.45, 0.15)), _segment_dist(p, Vector2(-0.1, 0.05), Vector2(0.45, -0.35))))
+			a = 1.0 - smoothstep(0.1, 0.16, d)
 		"note":
 			var head := (Vector2((p.x + 0.28) / 1.2, p.y + 0.45)).length() < 0.24
 			var stem := absf(p.x - 0.0) < 0.07 and p.y > -0.45 and p.y < 0.75

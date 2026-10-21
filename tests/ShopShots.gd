@@ -84,7 +84,8 @@ func _ready() -> void:
 const FEATURED_KEY := "featured"
 
 
-## docs/cosmetics_catalog.json for the server: {category: {label, items: {slug: {name, rarity, desc}}}}.
+## docs/cosmetics_catalog.json for the server: {category: {label, items: {slug: {name, rarity, desc,
+## season?, collection?}}}}.
 func _export_catalog() -> void:
 	var out: Dictionary = {}
 	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
@@ -95,6 +96,8 @@ func _export_catalog() -> void:
 			items[slug] = {"name": str(all[slug].get("name", slug)), "rarity": str(all[slug].get("rarity", "common")), "desc": str(all[slug].get("desc", ""))}
 			if str(all[slug].get("season", "")) != "":
 				items[slug]["season"] = str(all[slug]["season"])  # The server sells it during that occasion.
+			if str(all[slug].get("collection", "")) != "":
+				items[slug]["collection"] = str(all[slug]["collection"])  # Groups it on the Collections shelf.
 		out[key] = {"label": entry["label"], "items": items}
 	var file := FileAccess.open(_catalog, FileAccess.WRITE)
 	file.store_string(JSON.stringify(out, "  ", true) + "\n")

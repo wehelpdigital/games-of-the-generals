@@ -38,7 +38,7 @@ const STYLES := {
 		"swatch": [Color("7dff5a"), Color("3fbf2a"), Color("d8ffc8")]},
 	"rubber_chicken": {"name": "Rubber Chicken", "rarity": "rare", "desc": "SQUAWK! Feathers everywhere.",
 		"swatch": [Color("ffd23f"), Color("ff3b3b"), Color("ff9f1c")]},
-	"paint_bomb": {"name": "Paint Bomb", "rarity": "rare", "desc": "KA-SPLASH! Three colours of paint.",
+	"paint_bomb": {"name": "Paint Bomb", "rarity": "rare", "collection": "street_graffiti", "desc": "KA-SPLASH! Three colours of paint.",
 		"swatch": [Color("ff4f8b"), Color("3d8bff"), Color("ffd23f"), Color("2d2a44")]},
 	"stink_cloud": {"name": "Stink Cloud", "rarity": "rare", "desc": "A lingering green PEE-YEW.",
 		"swatch": [Color("9be15d"), Color("cfff9a"), Color("5a8a2a")]},

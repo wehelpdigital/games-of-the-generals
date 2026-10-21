@@ -1,8 +1,8 @@
 class_name PowerupBrain
 extends RefCounted
-## How the practice AI (Officer and General) plays its 3 powerups: a few rules of thumb, at most
-## one per turn, decided before it moves. It only looks at what its side may know (observation,
-## its own rules view and its rank beliefs). Rookie brings none.
+## How the practice AI plays its 5 powerups: a few rules of thumb, at most one per turn, decided
+## before it moves. It only looks at what its side may know (observation, its own rules view and
+## its rank beliefs). Rookie keeps it simple: intel only, and only now and then.
 
 ## Powerups the AI can make use of. Clock ones are pointless for a bot that answers in a second,
 ## and the multi-step board tricks (swap, teleport, double march) are left to humans.
@@ -11,9 +11,14 @@ const POOL := ["spy_card", "intel_leak", "recon_drone", "fortify", "scout_report
 	"reinforcement", "shuffle", "time_squeeze"]
 
 const HIGH_RANKS := ["G5", "G4", "G3", "G2", "G1", "COL", "SPY"]
+const ROOKIE_CHANCE := 0.2  ## Rookie only reaches for a powerup on about one turn in five.
 
 
-static func pick_loadout() -> Array[String]:
+## The practice AI's hand of 5: Rookie is dealt from the rank-0 basics like a new player, the
+## Officer and General from the pool above.
+static func pick_loadout(rookie := false) -> Array[String]:
+	if rookie:
+		return PowerupLibrary.deal(0)
 	var pool := POOL.duplicate()
 	pool.shuffle()
 	var picked: Array[String] = []
@@ -26,6 +31,8 @@ static func pick_loadout() -> Array[String]:
 static func choose(arbiter: LocalArbiter, side: String, ai: SalpakanAI) -> Dictionary:
 	var available: Array = arbiter.loadouts[side].filter(func(id: String) -> bool: return arbiter.can_use_powerup(side, id))
 	if available.is_empty():
+		return {}
+	if ai != null and ai.difficulty == SalpakanAI.Difficulty.EASY and randf() > ROOKIE_CHANCE:
 		return {}
 	available.shuffle()
 	var seen := arbiter.observation(side)

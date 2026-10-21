@@ -45,6 +45,15 @@ func is_unlocked(id: String) -> bool:
 	return PowerupLibrary.unlock_tier(id) <= tier()
 
 
+## Every powerup this player may bring (the server's unlocks once known, else by rank).
+func unlocked_ids() -> Array[String]:
+	var list: Array[String] = []
+	for id in PowerupLibrary.ids():
+		if is_unlocked(id):
+			list.append(id)
+	return list
+
+
 ## What a match brings: the chosen slots that are unlocked, topped up from the defaults.
 func active_slots() -> Array[String]:
 	var list: Array[String] = []

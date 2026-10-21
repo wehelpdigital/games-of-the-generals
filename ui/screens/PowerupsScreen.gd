@@ -1,13 +1,14 @@
 extends Screen
 ## The powerup library: all 24 powerups with what they do and the rank that unlocks them. The
-## player picks exactly 3 to bring into every match (online and against the AI). Logged out, only
-## the rank-0 powerups unlock.
+## player picks exactly 5: their hand in "Select" games (online and against the AI; "Random"
+## games deal 5 instead, and some games have powerups off). Logged out, only the rank-0 powerups
+## unlock.
 
 const CREDIT := "Powerup glyphs by Lorc, Delapouite and DarkZaitzev, game-icons.net (CC BY 3.0)."
 
 var _page: Dictionary
 var _body: VBoxContainer
-var _slots_row: HBoxContainer
+var _slots_row: GridContainer
 var _status: Label
 var _grid: GridContainer
 var _selected: Array[String] = []
@@ -42,11 +43,13 @@ func _layout() -> void:
 	_portrait = ProfileUi.fit_page(_page, get_viewport().get_visible_rect().size)
 	if _grid:
 		_grid.columns = 2 if _portrait else 3
+	if _slots_row:
+		_slots_row.columns = 2 if _portrait else PowerupLibrary.MAX_SLOTS
 
 
 func _render() -> void:
 	ProfileUi.clear(_body)
-	var intro := "Bring 3 powerups into every match. Each works once per match, on your turn (two per turn, tops)."
+	var intro := "Pick your 5 for Select games (Random games deal you 5, and some games are played with powerups off). Each works once per match, on your turn (two per turn, tops)."
 	if not ApiManager.is_logged_in():
 		intro += " Log in and rank up to unlock more."
 	_body.add_child(ProfileUi.wrap(intro, 16, AppTheme.MUTED))
@@ -60,7 +63,10 @@ func _render() -> void:
 	_status = AppTheme.label("", "MutedLabel", 15)
 	head.add_child(_status)
 	box.add_child(head)
-	_slots_row = AppTheme.hbox(10)
+	_slots_row = GridContainer.new()
+	_slots_row.columns = 2 if _portrait else PowerupLibrary.MAX_SLOTS
+	_slots_row.add_theme_constant_override("h_separation", 8)
+	_slots_row.add_theme_constant_override("v_separation", 8)
 	box.add_child(_slots_row)
 	var actions := AppTheme.hbox(8)
 	actions.add_child(AppTheme.spacer())
@@ -90,8 +96,8 @@ func _fill_slots() -> void:
 		slot.add_child(row)
 		if i < _selected.size():
 			var id := _selected[i]
-			row.add_child(_icon(id, 44))
-			var name := AppTheme.label(PowerupLibrary.display_name(id), "", 16)
+			row.add_child(_icon(id, 40))
+			var name := AppTheme.label(PowerupLibrary.display_name(id), "", 15)
 			name.add_theme_font_override("font", AppTheme.heading_font())
 			name.clip_text = true
 			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -172,7 +178,7 @@ func _toggle(id: String) -> void:
 		ui.toast("%s unlocks at %s." % [PowerupLibrary.display_name(id), PlayerRanks.name_of(tier)], AppTheme.BLUE)
 		return
 	elif _selected.size() >= PowerupLibrary.MAX_SLOTS:
-		ui.toast("You can bring 3. Tap one in your loadout to drop it first.", AppTheme.BLUE)
+		ui.toast("You can bring %d. Tap a picked one to drop it first." % PowerupLibrary.MAX_SLOTS, AppTheme.BLUE)
 		return
 	else:
 		_selected.append(id)

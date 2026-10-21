@@ -25,6 +25,7 @@ func _ready() -> void:
 	_test_limits()
 	_test_secrecy()
 	_test_brain_and_ai()
+	_test_modes()
 	print("\n%s (%d failure%s)" % ["PASS" if failures == 0 else "FAIL", failures, "" if failures == 1 else "s"])
 	get_tree().quit(0 if failures == 0 else 1)
 
@@ -63,6 +64,41 @@ func move(a: LocalArbiter, from: Vector2i, to: Vector2i) -> Dictionary:
 		push_error("illegal test move %s -> %s: %s" % [from, to, problem])
 		return {}
 	return a.apply(id, to)
+
+
+func _test_modes() -> void:
+	print("Powerup modes")
+	check(PowerupLibrary.unlocked_at(0).size() == 6, "a Private can choose from 6 powerups")
+	check(PowerupLibrary.DEFAULT_LOADOUT.size() == PowerupLibrary.MAX_SLOTS and PowerupLibrary.MAX_SLOTS == 5, "the starter hand holds 5")
+	var hand := PowerupLibrary.deal(0)
+	var distinct := {}
+	for id in hand:
+		distinct[id] = true
+	check(hand.size() == 5 and distinct.size() == 5 and hand.all(func(id: String) -> bool: return PowerupLibrary.unlock_tier(id) == 0),
+		"a random hand is 5 distinct unlocked powerups")
+	check(PowerupLibrary.deal(12).size() == 5, "high ranks are dealt 5 too")
+
+	var off := standard()
+	off.powerup_mode = PowerupLibrary.MODE_OFF
+	off.set_loadout(W, [])
+	var tried := off.use_powerup(W, "spy_card")
+	check(not tried["ok"] and str(tried["error"]) == "Powerups are off in this match.", "powerups off refuses any use")
+	check(off.rules_view(W)["powerups"]["mine"].is_empty() and off.rules_view(W)["powerup_mode"] == "off", "powerups off: no slots in the view")
+
+	# GameSession deals practice hands by mode.
+	GameSession.start_practice(SalpakanAI.Difficulty.MEDIUM, PowerupLibrary.MODE_OFF)
+	check(GameSession.powerup_mode() == "off" and GameSession._arbiter.loadouts[W].is_empty() and GameSession._arbiter.loadouts[B].is_empty(),
+		"practice with powerups off: nobody brings any")
+	GameSession.start_practice(SalpakanAI.Difficulty.EASY, PowerupLibrary.MODE_RANDOM)
+	var mine: Array = GameSession._arbiter.loadouts[W]
+	check(mine.size() == 5 and mine.all(func(id: String) -> bool: return GameSession.powerups.is_unlocked(id)), "practice Random: you get 5 unlocked")
+	check(GameSession._arbiter.loadouts[B].size() == 5, "practice Random: the AI gets 5")
+	GameSession.start_practice(SalpakanAI.Difficulty.HARD, PowerupLibrary.MODE_SELECT)
+	check(GameSession._arbiter.loadouts[W] == GameSession.powerups.active_slots() and GameSession._arbiter.loadouts[W].size() == 5,
+		"practice Select: you bring your 5 picks")
+	GameSession.start_practice(SalpakanAI.Difficulty.HARD)
+	check(GameSession.powerup_mode() == "select", "Play again keeps the last mode")
+	GameSession.leave()
 
 
 ## The standard little armies used by most tests.
@@ -397,7 +433,9 @@ func _test_secrecy() -> void:
 func _test_brain_and_ai() -> void:
 	print("AI with powerups")
 	var loadout := PowerupBrain.pick_loadout()
-	check(loadout.size() == 3 and loadout.all(func(id: String) -> bool: return PowerupBrain.POOL.has(id)), "the AI brings 3 powerups from its pool")
+	check(loadout.size() == 5 and loadout.all(func(id: String) -> bool: return PowerupBrain.POOL.has(id)), "the AI brings 5 powerups from its pool")
+	var rookie := PowerupBrain.pick_loadout(true)
+	check(rookie.size() == 5 and rookie.all(func(id: String) -> bool: return PowerupLibrary.unlock_tier(id) == 0), "Rookie is dealt 5 rank-0 basics")
 	var ai := SalpakanAI.new(B, SalpakanAI.Difficulty.MEDIUM)
 	var a := standard()
 	ai.begin(a.observation(B))

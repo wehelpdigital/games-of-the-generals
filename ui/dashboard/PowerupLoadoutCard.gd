@@ -1,6 +1,6 @@
 extends PanelContainer
-## Dashboard card (DashboardRegistry "main"): the 3 powerups the player brings into matches, with
-## a button to the powerup library.
+## Dashboard card (DashboardRegistry "main"): the player's 5 picks for Select games (Random
+## games deal 5 instead), with a button to the powerup library.
 
 var _ui: UIRoot
 var _box: VBoxContainer
@@ -21,7 +21,7 @@ func setup(dashboard: Screen) -> void:
 func refresh() -> void:
 	ProfileUi.clear(_box)
 	var head := AppTheme.hbox(8)
-	head.add_child(ProfileUi.eyebrow("Powerups", AppTheme.PURPLE))
+	head.add_child(ProfileUi.eyebrow("Your 5 powerups", AppTheme.PURPLE))
 	head.add_child(AppTheme.spacer())
 	head.add_child(ProfileUi.small_button("Change", "Ghost", _open_library, 36))
 	_box.add_child(head)
@@ -32,13 +32,13 @@ func refresh() -> void:
 		slot.alignment = BoxContainer.ALIGNMENT_CENTER
 		var icon := TextureRect.new()
 		icon.texture = PowerupLibrary.icon(id)
-		icon.custom_minimum_size = Vector2(56, 56)
+		icon.custom_minimum_size = Vector2(48, 48)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		icon.tooltip_text = str(PowerupLibrary.info(id).get("desc", ""))
 		slot.add_child(icon)
-		var name := AppTheme.label(PowerupLibrary.display_name(id), "", 14)
+		var name := AppTheme.label(PowerupLibrary.display_name(id), "", 13)
 		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		slot.add_child(name)

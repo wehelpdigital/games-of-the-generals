@@ -1,5 +1,5 @@
 extends VBoxContainer
-## In-match powerups (HUD "left" slot): your 3 cards, the board-picking prompt for targeted ones,
+## In-match powerups (HUD "left" slot): your 5 cards (hidden when the game has powerups off), the board-picking prompt for targeted ones,
 ## banners for what you learned and what the opponent used, and chips for intel and active effects.
 ## On portrait screens the cards shrink to an icon row so the board stays clear.
 
@@ -79,7 +79,7 @@ func _attach_fx() -> void:
 func _layout() -> void:
 	var screen := get_viewport().get_visible_rect().size
 	_compact = screen.x < screen.y
-	_cards.columns = 3 if _compact else 1
+	_cards.columns = PowerupLibrary.MAX_SLOTS if _compact else 1
 	custom_minimum_size.x = 0.0 if _compact else 176.0
 	_title.visible = not _compact
 	_refresh()
@@ -111,16 +111,16 @@ func _refresh() -> void:
 		b.modulate = Color(1, 1, 1, 0.45) if used else Color.WHITE
 		b.tooltip_text = "%s\n%s%s" % [PowerupLibrary.display_name(id), PowerupLibrary.info(id).get("desc", ""),
 			("\n\n" + problem) if problem != "" and not used else ""]
-		b.custom_minimum_size = Vector2(60, 60) if _compact else Vector2(176, 58)
+		b.custom_minimum_size = Vector2(56, 56) if _compact else Vector2(176, 50)
 	_refresh_chips()
 
 
 func _card(id: String) -> Button:
-	var b := AppTheme.button(PowerupLibrary.display_name(id), "Ghost", _activate.bind(id), 58)
+	var b := AppTheme.button(PowerupLibrary.display_name(id), "Ghost", _activate.bind(id), 50)
 	b.icon = PowerupLibrary.icon(id)
 	b.expand_icon = true
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_constant_override("icon_max_width", 42)
+	b.add_theme_constant_override("icon_max_width", 38)
 	b.add_theme_constant_override("h_separation", 8)
 	b.add_theme_font_size_override("font_size", 16)
 	b.add_theme_stylebox_override("normal", _card_style(PowerupLibrary.color(id), false))

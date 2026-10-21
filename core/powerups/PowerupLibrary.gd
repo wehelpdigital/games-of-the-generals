@@ -1,7 +1,9 @@
 class_name PowerupLibrary
 extends RefCounted
-## Every powerup a player can bring into a match. A player picks up to 3 from the ones their
-## account rank (PlayerRanks tier) has unlocked; each is usable once per match, on their own turn.
+## Every powerup a player can bring into a match. Before each game the players choose powerups
+## off, Select (their own 5 picks from what their account rank, the PlayerRanks tier, has
+## unlocked) or Random (5 dealt from what they have unlocked); each is usable once per match, on
+## their own turn.
 ## Mirrors config/powerups.php on the server, which referees online matches; LocalArbiter applies
 ## the same rules offline. Icons are composed at runtime around game-icons.net glyphs (CC BY 3.0,
 ## see core/powerups/CREDITS.md).
@@ -15,9 +17,15 @@ const TARGET_EMPTY_OWN_CELL := "empty_own_cell"
 const TARGET_OWN_PIECE_AND_HOME_CELL := "own_piece_and_home_cell"
 const TARGET_EMPTY_BACK_CELL := "empty_back_cell"
 
-const MAX_SLOTS := 3
+const MAX_SLOTS := 5
 const MAX_PER_TURN := 2
-const DEFAULT_LOADOUT: Array[String] = ["time_extension", "spy_card", "insight"]
+const DEFAULT_LOADOUT: Array[String] = ["time_extension", "spy_card", "insight", "intel_leak", "quick_step"]
+
+## Powerup modes, chosen before every game (MatchView `powerup_mode`).
+const MODE_OFF := "off"
+const MODE_SELECT := "select"
+const MODE_RANDOM := "random"
+const MODES := [MODE_OFF, MODE_SELECT, MODE_RANDOM]
 
 ## Tunables shared with LocalArbiter (config/powerups.php `tuning` on the server).
 const TIME_BONUS := 20          ## time_extension: seconds added to each of your next 3 turns.
@@ -43,9 +51,9 @@ const POWERUPS := {
 		"desc": "Tells you how many enemy officers (Sergeant up to 5-star General) are still alive."},
 	"quick_step": {"name": "Quick Step", "tier": 0, "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "time",
 		"desc": "No clock on your next turn. Take all the time you need."},
-	"time_squeeze": {"name": "Time Squeeze", "tier": 1, "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "time",
+	"time_squeeze": {"name": "Time Squeeze", "tier": 0, "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "time",
 		"desc": "Your opponent's next 3 turns are 15 seconds shorter (never under 10 s)."},
-	"intel_leak": {"name": "Intel Leak", "tier": 1, "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel",
+	"intel_leak": {"name": "Intel Leak", "tier": 0, "target": TARGET_NONE, "consumes_turn": false, "pick": [], "kind": "intel",
 		"desc": "Reveals the rank of the enemy piece that moved last."},
 	"recon_drone": {"name": "Recon Drone", "tier": 2, "target": TARGET_ENEMY_PIECE, "consumes_turn": false, "pick": ["enemy_piece"], "kind": "intel",
 		"desc": "Fly over one enemy piece: is it their Flag?"},
@@ -156,6 +164,23 @@ static func unlocked_at(tier: int) -> Array[String]:
 	return list
 
 
+## A hand of MAX_SLOTS distinct powerups dealt at random from those unlocked at `tier`
+## (Random mode; the server deals online hands the same way).
+static func deal(tier: int, rng: RandomNumberGenerator = null) -> Array[String]:
+	var pool := unlocked_at(tier)
+	var hand: Array[String] = []
+	while not pool.is_empty() and hand.size() < MAX_SLOTS:
+		var i := rng.randi_range(0, pool.size() - 1) if rng else randi_range(0, pool.size() - 1)
+		hand.append(pool[i])
+		pool.remove_at(i)
+	return hand
+
+
+## "Off" / "Select" / "Random" for a mode id.
+static func mode_name(mode: String) -> String:
+	return {"off": "Powerups off", "select": "Select", "random": "Random"}.get(mode, "Select")
+
+
 static func group_of(rank: String) -> String:
 	for group: String in GROUPS:
 		if rank in GROUPS[group]:
@@ -163,7 +188,7 @@ static func group_of(rank: String) -> String:
 	return ""
 
 
-## Keeps up to 3 distinct known ids, in order.
+## Keeps up to MAX_SLOTS distinct known ids, in order.
 static func sanitize(slots: Array) -> Array[String]:
 	var clean: Array[String] = []
 	for id: Variant in slots:

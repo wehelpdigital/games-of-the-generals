@@ -33,10 +33,11 @@ const TIMEOUT_GRACE := 2.0  ## The server settles a turn only this long after it
 
 var kind := Kind.NONE
 var practice_level := SalpakanAI.Difficulty.MEDIUM  ## Last AI difficulty, for "Play again".
+var practice_mode := PowerupLibrary.MODE_SELECT     ## Last practice powerup mode, for "Play again".
 var ai_loadout: Dictionary = {}  ## The practice AI's random cosmetics, so you see what opponents see.
 var match_view: Dictionary = {}
 var version := 0
-var powerups: PowerupLoadout  ## The 3 powerups the player brings, and what their rank unlocked.
+var powerups: PowerupLoadout  ## The player's 5 picks for Select games, and what their rank unlocked.
 var deadline := 0.0  ## Local unix time the running turn's clock runs out; 0 = no clock.
 
 var _last_taunt_ms := -100000
@@ -238,14 +239,22 @@ static func parse_time(value: Variant) -> float:
 
 # --- Commands ---------------------------------------------------------------------------------
 
-## Quick match: resume your open match, join the oldest waiting one, or host a new one.
-func find_match() -> Dictionary:
-	return await _online_request(ApiManager.find_match)
+## Quick match: resume your open match, join the oldest waiting one with the same powerup mode
+## (off, select, random), or host a new one.
+func find_match(mode := PowerupLibrary.MODE_SELECT) -> Dictionary:
+	var request := func() -> Dictionary: return await ApiManager.request(HTTPClient.METHOD_POST, "/api/games", {"powerup_mode": mode})
+	return await _online_request(request)
 
 
 ## Host a match that shows up in the lobby. A 409 carries `match_id` of the match you're already in.
-func create_match() -> Dictionary:
-	return await _online_request(ApiManager.create_match)
+func create_match(mode := PowerupLibrary.MODE_SELECT) -> Dictionary:
+	var request := func() -> Dictionary: return await ApiManager.request(HTTPClient.METHOD_POST, "/api/games/create", {"powerup_mode": mode})
+	return await _online_request(request)
+
+
+## This match's powerup mode: "off", "select" or "random".
+func powerup_mode() -> String:
+	return str(match_view.get("powerup_mode", PowerupLibrary.MODE_SELECT))
 
 
 func join_match(id: int) -> Dictionary:
@@ -724,17 +733,39 @@ func _clean_target(target: Dictionary) -> Dictionary:
 
 ## The player is white and moves first; the AI plays black. Same clock and powerups as online:
 ## the player brings their 3 (rank-0 ones when logged out), Officer and General bring 3 random ones.
-func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM) -> void:
+## Offline game against the AI. `mode` is the powerup mode chosen before the game: "off" (none
+## for either side), "select" (your 5 picks) or "random" (5 dealt from what you've unlocked). With
+## powerups on, the AI always gets 5 random ones.
+func start_practice(level: SalpakanAI.Difficulty = SalpakanAI.Difficulty.MEDIUM, mode := "") -> void:
+	if mode == "":
+		mode = practice_mode
 	leave()
 	kind = Kind.PRACTICE
 	practice_level = level
+	practice_mode = mode
 	ai_loadout = Loadout.random_loadout()
 	_ai = SalpakanAI.new(Ranks.BLACK, level)
 	_arbiter = LocalArbiter.new()
 	_arbiter.turn_seconds = maxi(PowerupLibrary.MIN_TURN_SECONDS, int(ServerConfig.get_value("turn_seconds", 45)))
-	_arbiter.set_loadout(Ranks.WHITE, powerups.active_slots())
-	_arbiter.set_loadout(Ranks.BLACK, [] if level == SalpakanAI.Difficulty.EASY else PowerupBrain.pick_loadout())
+	_arbiter.powerup_mode = mode
+	match mode:
+		PowerupLibrary.MODE_OFF:
+			_arbiter.set_loadout(Ranks.WHITE, [])
+			_arbiter.set_loadout(Ranks.BLACK, [])
+		PowerupLibrary.MODE_RANDOM:
+			_arbiter.set_loadout(Ranks.WHITE, _deal_from(powerups.unlocked_ids()))
+			_arbiter.set_loadout(Ranks.BLACK, PowerupBrain.pick_loadout(level == SalpakanAI.Difficulty.EASY))
+		_:
+			_arbiter.set_loadout(Ranks.WHITE, powerups.active_slots())
+			_arbiter.set_loadout(Ranks.BLACK, PowerupBrain.pick_loadout(level == SalpakanAI.Difficulty.EASY))
 	_practice_load("setup", 1)
+
+
+## Random mode offline: 5 distinct ids from `pool`.
+func _deal_from(pool: Array[String]) -> Array[String]:
+	var left := pool.duplicate()
+	left.shuffle()
+	return left.slice(0, PowerupLibrary.MAX_SLOTS)
 
 
 func _practice_start(placements: Array) -> void:
@@ -750,6 +781,7 @@ func _practice_view(practice_status: String, new_version: int) -> Dictionary:
 		"id": 0, "status": practice_status, "your_side": Ranks.WHITE,
 		"turn": _arbiter.turn if practice_status == "active" else null,
 		"move_number": _arbiter.move_number, "version": new_version,
+		"powerup_mode": _arbiter.powerup_mode,
 		"players": {"white": {"username": "You"}, "black": {"username": "AI (%s)" % SalpakanAI.label(_ai.difficulty), "loadout": ai_loadout}},
 		"setup_ready": {"white": practice_status != "setup", "black": true},
 		"pieces": _arbiter.view_pieces(Ranks.WHITE),

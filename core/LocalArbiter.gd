@@ -31,7 +31,9 @@ var turn_allotment := 0           ## Seconds the running turn was given (after m
 var timeouts := {Ranks.WHITE: 0, Ranks.BLACK: 0}
 var clock := Callable(Time, "get_unix_time_from_system")
 
-## Powerups each side brought (ids) and which it has used.
+## Powerups each side brought (ids) and which it has used. `powerup_mode` (off, select, random)
+## only decides how the hands were dealt (GameSession.start_practice); "off" also refuses any use.
+var powerup_mode := PowerupLibrary.MODE_SELECT
 var loadouts := {Ranks.WHITE: [], Ranks.BLACK: []}
 var used := {Ranks.WHITE: [], Ranks.BLACK: []}
 
@@ -358,6 +360,8 @@ func use_powerup(side: String, id: String, target := {}) -> Dictionary:
 		return _fail("The match is not in progress.")
 	if turn != side:
 		return _fail("Powerups can only be used on your turn.")
+	if powerup_mode == PowerupLibrary.MODE_OFF:
+		return _fail("Powerups are off in this match.")
 	if not loadouts[side].has(id):
 		return _fail("You didn't bring that powerup to this match.")
 	if used[side].has(id):
@@ -443,6 +447,7 @@ func rules_view(viewer: String) -> Dictionary:
 		"base_turn_seconds": turn_seconds if turn_seconds > 0 else null,
 		"server_time": clock_view["server_time"],
 		"timer": clock_view,
+		"powerup_mode": powerup_mode,
 		"powerups": {"mine": slots, "opponent_used": used[enemy].duplicate(), "turn_number": _turns[viewer],
 			"used_this_turn": used_this_turn(viewer) if my_turn else 0, "per_turn": PowerupLibrary.MAX_PER_TURN,
 			"blocked": not _effect("sabotage", viewer, "", next_turn).is_empty(),

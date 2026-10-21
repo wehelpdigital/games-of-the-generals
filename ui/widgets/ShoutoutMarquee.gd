@@ -29,6 +29,25 @@ const THEMES := {
 		"outline": Color("1d1736"), "badge": Color("1d1736"), "fx": "rainbow"},
 	"lava": {"name": "Lava Burst", "top": Color("2a0500"), "bottom": Color("b52a00"), "text": Color("ffe066"),
 		"outline": Color("3a0a00"), "badge": Color("ff5a00"), "fx": "embers"},
+	# Seasonal themes (sold during their occasion; see the server's seasonal shoutout items).
+	"spooky": {"name": "Spooky Night", "top": Color("1f1326"), "bottom": Color("3a1a4a"), "text": Color("ff8a1f"),
+		"outline": Color("1a0a20"), "badge": Color("8b5cf6"), "fx": "embers"},
+	"jolly": {"name": "Jolly Pasko", "top": Color("1f6b3a"), "bottom": Color("b8242e"), "text": Color.WHITE,
+		"outline": Color("0d3a1e"), "badge": Color("ffcf3f"), "fx": "stars"},
+	"sweetheart": {"name": "Sweetheart", "top": Color("ffd6e4"), "bottom": Color("ff7aa0"), "text": Color.WHITE,
+		"outline": Color("a8244f"), "badge": Color("ff2f5f"), "fx": "petals"},
+	"lucky_red": {"name": "Lucky Red", "top": Color("7a0f0f"), "bottom": Color("d62828"), "text": Color("ffcf3f"),
+		"outline": Color("3a0505"), "badge": Color("ffcf3f"), "fx": "royal"},
+	"countdown": {"name": "Countdown", "top": Color("0d0a2a"), "bottom": Color("2a2060"), "text": Color("ffcf3f"),
+		"outline": Color("0d0a18"), "badge": Color("ffcf3f"), "fx": "fireworks"},
+	"harvest": {"name": "Harvest Gold", "top": Color("c8641e"), "bottom": Color("e8a33a"), "text": Color.WHITE,
+		"outline": Color("5a3218"), "badge": Color("8a4a1e"), "fx": "embers"},
+	"beach_day": {"name": "Beach Day", "top": Color("2fb8ff"), "bottom": Color("12b8c4"), "text": Color.WHITE,
+		"outline": Color("0a6a78"), "badge": Color("ff8a5a"), "fx": "stripes"},
+	"kalayaan": {"name": "Kalayaan", "top": Color("0038a8"), "bottom": Color("ce1126"), "text": Color("fcd116"),
+		"outline": Color("001a5a"), "badge": Color("fcd116"), "fx": "royal"},
+	"fiesta": {"name": "Fiesta", "top": Color("ff3d7f"), "bottom": Color("ff8a1f"), "text": Color.WHITE,
+		"outline": Color("6a1f8a"), "badge": Color("27c98f"), "fx": "stripes"},
 }
 
 var embedded := false

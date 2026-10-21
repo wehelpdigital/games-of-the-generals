@@ -101,6 +101,18 @@ func _title_card(board: Dictionary) -> PanelContainer:
 		if str(titles[i]) == current:
 			picker.select(i + 1)
 	picker.disabled = titles.is_empty()
+	picker.add_theme_font_override("font", AppTheme.heading_font())
+	picker.add_theme_font_size_override("font_size", 18)
+	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var bg := AppTheme.PURPLE.lightened(0.1 if state == "hover" else 0.0)
+		if state == "disabled":
+			bg = Color("c9c4d9")
+		var style := ProfileUi.candy(bg, state == "pressed", 14)
+		style.content_margin_top = 6
+		style.content_margin_bottom = 8
+		picker.add_theme_stylebox_override(state, style)
+	for color_name: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+		picker.add_theme_color_override(color_name, Color.WHITE)
 	picker.item_selected.connect(func(index: int) -> void: _wear("" if index == 0 else picker.get_item_text(index)))
 	picker.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(picker)
@@ -110,6 +122,7 @@ func _title_card(board: Dictionary) -> PanelContainer:
 func _badge(item: Dictionary) -> PanelContainer:
 	var unlocked: bool = item.get("unlocked", false)
 	var card := AppTheme.card("Row")
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if unlocked:
 		var style := ProfileUi.box(Color("fff4d6"), 18, 3)
 		style.set_content_margin_all(12)
@@ -155,14 +168,16 @@ func _medal(code: String, unlocked: bool) -> Control:
 	disc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	disc.add_theme_stylebox_override("panel", ProfileUi.box(AppTheme.GOLD if unlocked else Color("d8d4e6"), 26, 3))
 	holder.add_child(disc)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(center)
 	var icon := EconomyUi.emoji(code, 32)
-	icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	icon.position = Vector2(10, 10)
 	if not unlocked:
 		icon.modulate = Color(0.35, 0.35, 0.45, 0.55)
-	holder.add_child(icon)
+	center.add_child(icon)
 	if not unlocked:
-		var lock := TileIcon.new("lock", Vector2(18, 18))
+		var lock := TileIcon.new("lock", Vector2(20, 20))
 		lock.position = Vector2(34, 34)
 		holder.add_child(lock)
 	return holder

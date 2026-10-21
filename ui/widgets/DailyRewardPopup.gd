@@ -23,10 +23,12 @@ static func open(ui: UIRoot) -> void:
 	var subtitle := "Log in every day to keep your streak going!"
 	if streak > 0:
 		subtitle = "%d-day streak! Don't break it." % streak
-	box.add_child(ProfileUi.wrap(subtitle, 17, AppTheme.MUTED))
+	var streak_label := ProfileUi.wrap(subtitle, 17, AppTheme.MUTED)
+	box.add_child(streak_label)
 
 	var portrait := ui.get_viewport().get_visible_rect().size.y > ui.get_viewport().get_visible_rect().size.x
 	var grid := GridContainer.new()
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.columns = 4 if portrait else 7
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
@@ -46,7 +48,7 @@ static func open(ui: UIRoot) -> void:
 	if daily.get("claimed_today", false):
 		claim.disabled = true
 		claim.text = "Come back tomorrow!"
-	claim.pressed.connect(func() -> void: _claim(ui, claim, result, today_card))
+	claim.pressed.connect(func() -> void: _claim(ui, claim, result, today_card, grid, streak_label))
 
 	ProfileUi.overlay(ui, card, 720 if not portrait else 520)
 	if today_card and not daily.get("claimed_today", false):
@@ -64,6 +66,7 @@ static func _day_card(day: Dictionary) -> PanelContainer:
 		style.border_width_bottom = 6
 	panel.add_theme_stylebox_override("panel", style)
 	panel.custom_minimum_size = Vector2(78, 112)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column := AppTheme.vbox(4)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(column)
@@ -97,7 +100,7 @@ static func _day_card(day: Dictionary) -> PanelContainer:
 	return panel
 
 
-static func _claim(ui: UIRoot, button: Button, result: VBoxContainer, today_card: Control) -> void:
+static func _claim(ui: UIRoot, button: Button, result: VBoxContainer, today_card: Control, grid: GridContainer, streak_label: Label) -> void:
 	button.disabled = true
 	button.text = "Claiming..."
 	var res: Dictionary = await Economy.claim_daily()
@@ -126,6 +129,14 @@ static func _claim(ui: UIRoot, button: Button, result: VBoxContainer, today_card
 	if today_card and is_instance_valid(today_card):
 		fly_coins(ui, today_card.get_global_rect().get_center(), 8)
 	Sfx.play(ui, "coins")
+	# Show today as collected.
+	if is_instance_valid(grid):
+		for child in grid.get_children():
+			child.queue_free()
+		for day: Dictionary in Economy.daily.get("calendar", []):
+			grid.add_child(_day_card(day))
+	if is_instance_valid(streak_label):
+		streak_label.text = "%d-day streak! See you tomorrow." % maxi(1, int(Economy.daily.get("streak", 1)))
 
 
 ## Coins burst from `from` (global position) and fly to the top-right corner (the credits counter).

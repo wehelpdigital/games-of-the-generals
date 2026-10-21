@@ -259,6 +259,16 @@ func _fill_tiles() -> void:
 		var t := ProfileUi.tile(spec[0], spec[1], spec[2], action)
 		t.custom_minimum_size.y = 80
 		_tile_grid.add_child(t)
+	_fit_tiles()
+
+
+## Seven or more tiles go four wide on wide screens so the column stays short.
+func _fit_tiles() -> void:
+	_tile_grid.columns = 4 if _tile_grid.get_child_count() > 6 and not _portrait else 3
+	for t: Control in _tile_grid.get_children():
+		t.custom_minimum_size.x = 84 if _tile_grid.columns == 4 else 96
+		for label: Node in t.find_children("*", "Label", true, false):
+			(label as Label).add_theme_font_size_override("font_size", 13 if _tile_grid.columns == 4 else 15)
 
 
 func _fill_play() -> void:
@@ -353,11 +363,12 @@ func _layout() -> void:
 	_portrait = ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)
 	_wide.visible = not _portrait
 	_tall.visible = _portrait
+	_fit_tiles()
 	_arrange_header()
 	if _portrait:
 		_put(_logo_holder, _tall_top, 0)
 		_put(_header, _tall_top, 1)
-		for part: Control in [_banners, _play_card, _tiles_card, _next_card, _main_box, _side_box]:
+		for part: Control in [_banners, _play_card, _tiles_card, _main_box, _next_card, _side_box]:
 			_put(part, _tall_list)
 		_side_box.custom_minimum_size.y = 460.0 if _has_side else 0.0
 	else:
@@ -368,8 +379,9 @@ func _layout() -> void:
 		_side_box.custom_minimum_size.y = 0.0
 		if _has_side:
 			# Cards sit low in the middle so the board shows above them; side panels get the right.
-			_put(_next_card, _center_list)
+			# Module cards (missions, powerups) first: the daily loop matters most.
 			_put(_main_box, _center_list)
+			_put(_next_card, _center_list)
 			_put(_side_box, _right_col)
 			_right_scroll.visible = false
 		else:

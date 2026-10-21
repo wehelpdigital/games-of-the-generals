@@ -22,9 +22,7 @@ func _init() -> void:
 	_reset_label = AppTheme.label("", "MutedLabel", 14)
 	head.add_child(_reset_label)
 	_box.add_child(head)
-	var tabs_row := AppTheme.hbox(6)
-	_box.add_child(tabs_row)
-	_tabs = ProfileUi.tabs(tabs_row, [["daily", "Daily"], ["weekly", "Weekly"]], _pick)
+	_tabs = ProfileUi.tabs(_box, [["daily", "Daily"], ["weekly", "Weekly"]], _pick)
 	_list = AppTheme.vbox(8)
 	_box.add_child(_list)
 	_timer = Timer.new()
@@ -95,6 +93,7 @@ func _row(mission: Dictionary, rerolls: int) -> PanelContainer:
 	text.add_child(title)
 	var desc := AppTheme.label(str(mission.get("desc", "")), "MutedLabel", 13)
 	desc.clip_text = true
+	row.tooltip_text = str(mission.get("desc", ""))
 	text.add_child(desc)
 	var target := maxi(1, int(mission.get("target", 1)))
 	var progress := mini(target, int(mission.get("progress", 0)))

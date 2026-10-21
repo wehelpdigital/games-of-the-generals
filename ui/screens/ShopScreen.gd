@@ -201,6 +201,7 @@ func _layout() -> void:
 	margin.add_theme_constant_override("margin_top", 12 if narrow else 18)
 	margin.add_theme_constant_override("margin_bottom", 8)
 	_title.add_theme_font_size_override("font_size", 28 if narrow else 34)
+	_header.add_theme_constant_override("separation", 6 if narrow else 10)  # Phones: the wallet's credits fit beside the title.
 	_board_wide.visible = not narrow
 	_board_icon.visible = narrow
 	_rail_scroll.visible = _wide

@@ -1,6 +1,6 @@
 class_name PowerupLoadout
 extends Node
-## The 3 powerups the player brings into matches and which ones their rank has unlocked. Synced
+## The player's 5 picks for Select-mode games and which powerups their rank has unlocked. Synced
 ## with GET /api/powerups and GET/PUT /api/powerups/loadout when logged in, and kept in
 ## user://powerups.cfg so offline practice works too. Logged out, only rank-0 powerups unlock
 ## (unless the server's "unlock all" setting is on: GET /api/powerups is public).

@@ -731,8 +731,7 @@ func _clean_target(target: Dictionary) -> Dictionary:
 
 # --- Offline practice against the AI (local arbiter, no server) -------------------------------
 
-## The player is white and moves first; the AI plays black. Same clock and powerups as online:
-## the player brings their 3 (rank-0 ones when logged out), Officer and General bring 3 random ones.
+## The player is white and moves first; the AI plays black. Same clock and powerups as online.
 ## Offline game against the AI. `mode` is the powerup mode chosen before the game: "off" (none
 ## for either side), "select" (your 5 picks) or "random" (5 dealt from what you've unlocked). With
 ## powerups on, the AI always gets 5 random ones.

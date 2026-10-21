@@ -108,6 +108,8 @@ func _export_catalog() -> void:
 		var all := CosmeticCatalog.items(key)
 		for slug: String in all:
 			items[slug] = {"name": str(all[slug].get("name", slug)), "rarity": str(all[slug].get("rarity", "common")), "desc": str(all[slug].get("desc", ""))}
+			if str(all[slug].get("season", "")) != "":
+				items[slug]["season"] = str(all[slug]["season"])  # The server sells it during that occasion.
 		out[key] = {"label": entry["label"], "items": items}
 	var file := FileAccess.open(_catalog, FileAccess.WRITE)
 	file.store_string(JSON.stringify(out, "  ", true) + "\n")

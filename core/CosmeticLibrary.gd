@@ -526,6 +526,22 @@ static func _pattern_value(pattern: String, u: float, v: float, x: int, y: int, 
 			var c := sin(TAU * (u * 2.0 + v * 3.0 + 0.3 * sin(TAU * u)))
 			var d := minf(minf(absf(a), absf(b)), absf(c) * 1.4)
 			return 1.0 - smoothstep(0.03, 0.12, d)
+		"hearts":
+			# Little hearts on a diagonal lattice, a shade darker than the tile.
+			var cell := Vector2(fposmod(u * 4.0 + (0.5 if fposmod(floor(v * 4.0), 2.0) > 0.5 else 0.0), 1.0), fposmod(v * 4.0, 1.0))
+			var q := (cell - Vector2(0.5, 0.45)) * Vector2(2.6, -2.6)
+			var f := pow(q.x * q.x + q.y * q.y - 1.0, 3.0) - q.x * q.x * q.y * q.y * q.y
+			return 0.8 if f < 0.0 else 1.0
+		"candy":
+			# Candy-cane diagonal stripes.
+			return 0.68 if fposmod((u + v) * 4.0, 1.0) < 0.5 else 1.0
+		"scales":
+			# Overlapping scales (dragon / koi): arcs on offset rows.
+			var row := floori(v * 6.0)
+			var su := fposmod(u * 6.0 + (0.5 if row % 2 == 1 else 0.0), 1.0)
+			var sv := fposmod(v * 6.0, 1.0)
+			var d := Vector2(su - 0.5, sv).length()
+			return 0.74 if absf(d - 0.5) < 0.06 else (0.9 if d < 0.5 else 1.0)
 		"specks":
 			# One possible star per 8×8-pixel cell, hashed so it tiles seamlessly.
 			var cx := x / 8

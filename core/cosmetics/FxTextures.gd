@@ -6,9 +6,10 @@ extends RefCounted
 
 const SIZE := 64
 const SHAPES := ["dot", "ring", "sparkle", "flame", "heart", "petal", "shard", "snowflake", "bolt", "ghost",
-	"bubble", "square", "star", "glow_ring", "puff", "note", "streak", "leaf", "crack", "beam"]
+	"bubble", "square", "star", "glow_ring", "puff", "note", "streak", "leaf", "crack", "beam",
+	"pumpkin", "bat", "candy_cane", "coin", "sun", "egg", "flower", "gift"]
 ## Sprites that read wrong when spun (flames lean sideways, hearts and notes tip over).
-const UPRIGHT := ["flame", "heart", "ghost", "note"]
+const UPRIGHT := ["flame", "heart", "ghost", "note", "pumpkin", "bat", "candy_cane", "egg", "gift"]
 
 static var _textures: Dictionary = {}
 static var _materials: Dictionary = {}
@@ -222,6 +223,54 @@ static func _shade(shape: String, p: Vector2) -> Color:
 		"beam":
 			# Bright vertical column with soft sides (lasers, tractor beams).
 			a = pow(clampf(1.0 - absf(p.x), 0.0, 1.0), 2.2) * (1.0 - smoothstep(0.85, 1.0, absf(p.y)) * 0.6)
+		"pumpkin":
+			# Ribbed pumpkin with a stubby stem; the grooves shade darker.
+			var body := Vector2(p.x / 0.92, (p.y + 0.08) / 0.72).length()
+			a = 1.0 - smoothstep(0.96, 1.02, body)
+			v = 0.72 + 0.28 * absf(cos(p.x * PI * 1.6))
+			if absf(p.x) < 0.09 and p.y > 0.5 and p.y < 0.9:
+				a = 1.0
+				v = 0.42
+		"bat":
+			var head := Vector2(p.x / 0.17, (p.y - 0.12) / 0.3).length() < 1.0
+			var ears := absf(p.x) > 0.04 and absf(p.x) < 0.14 and p.y > 0.3 and p.y < 0.5 - absf(absf(p.x) - 0.09) * 1.5
+			var ax := absf(p.x)
+			var top := 0.36 - 0.3 * ax
+			var bottom := -0.12 - 0.12 * ax + 0.16 * absf(sin(ax * PI * 2.4))
+			var wing := ax > 0.12 and ax < 0.98 and p.y < top and p.y > bottom
+			a = 1.0 if head or ears or wing else 0.0
+		"candy_cane":
+			var stick := absf(p.x - 0.22) < 0.13 and p.y > -0.92 and p.y < 0.38
+			var arc_r := Vector2(p.x + 0.12, p.y - 0.38).length()
+			var hook := p.y >= 0.38 and absf(arc_r - 0.34) < 0.13
+			var tip := absf(p.x + 0.46) < 0.13 and p.y > 0.2 and p.y < 0.4
+			a = 1.0 if stick or hook or tip else 0.0
+			v = 1.0 if fposmod((p.x + p.y) * 3.2, 1.0) < 0.5 else 0.55
+		"coin":
+			var hole := absf(p.x) < 0.2 and absf(p.y) < 0.2
+			a = (1.0 - smoothstep(0.86, 0.94, r)) * (0.0 if hole else 1.0)
+			v = 0.78 if r > 0.72 or (absf(p.x) < 0.3 and absf(p.y) < 0.3) else 1.0
+		"sun":
+			# Disc with eight rays.
+			var ang := fposmod(atan2(p.y, p.x), TAU / 8.0) - TAU / 16.0
+			var ray := absf(ang) < 0.2 * (1.0 - r) + 0.02 and r < 0.96
+			a = 1.0 if r < 0.4 or ray else 0.0
+			v = 1.0 if r < 0.4 else 0.85
+		"egg":
+			var q := Vector2(p.x / 0.64, (p.y + 0.08) / (0.86 - 0.12 * p.y))
+			a = 1.0 - smoothstep(0.95, 1.02, q.length())
+			var zig := absf(p.y - 0.06 * sin(p.x * 18.0)) < 0.09
+			v = 0.62 if zig else (0.85 if absf(p.y + 0.36) < 0.05 else 1.0)
+		"flower":
+			var ang := atan2(p.y, p.x)
+			var petal := r < 0.5 + 0.42 * absf(cos(ang * 2.5))
+			a = 1.0 if petal and r < 0.95 else 0.0
+			v = 0.62 if r < 0.24 else 1.0
+		"gift":
+			var box := absf(p.x) < 0.72 and p.y > -0.8 and p.y < 0.42
+			var bow := Vector2((absf(p.x) - 0.24) / 0.24, (p.y - 0.58) / 0.16).length() < 1.0
+			a = 1.0 if box or bow else 0.0
+			v = 0.6 if absf(p.x) < 0.12 or absf(p.y + 0.18) < 0.1 or bow else 1.0
 		"note":
 			var head := (Vector2((p.x + 0.28) / 1.2, p.y + 0.45)).length() < 0.24
 			var stem := absf(p.x - 0.0) < 0.07 and p.y > -0.45 and p.y < 0.75

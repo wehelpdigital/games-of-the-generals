@@ -72,6 +72,11 @@ static func info(category: String, slug: String) -> Dictionary:
 	return items(category).get(slug, {})
 
 
+## The occasion an item belongs to (Seasons.OCCASIONS), or "" for the all-year catalogue.
+static func season_of(category: String, slug: String) -> String:
+	return str(info(category, slug).get("season", ""))
+
+
 static func label(category: String) -> String:
 	for c: Dictionary in CATEGORIES:
 		if c["key"] == category:

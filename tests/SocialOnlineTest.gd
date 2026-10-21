@@ -19,12 +19,13 @@ func _ready() -> void:
 	check(token_b != "", "player B registered")
 
 	# Rooms.
-	var created: Dictionary = await Social.create_room("E2E Room " + stamp, "secret1")
+	var created: Dictionary = await Social.create_room("E2E Room " + stamp, "secret1", PowerupLibrary.MODE_RANDOM)
 	check(created.ok and GameSession.match_id() > 0, "A hosts a locked room")
 	var room_id := GameSession.match_id()
 	var mine: Dictionary = await Social.list_rooms()
 	var my_row := _find(mine.data.get("data", []), room_id)
 	check(my_row.get("is_yours", false) and my_row.get("has_password", false), "A sees the room as theirs, locked")
+	check(str(my_row.get("powerup_mode", "")) == "random" and GameSession.powerup_mode() == "random", "the room carries the host's powerup rules (Random)")
 	var listed := await _raw(HTTPClient.METHOD_GET, "/api/rooms", null, token_b)
 	var their_row := _find(listed.data.get("data", []), room_id)
 	check(their_row.get("name", "") == "E2E Room " + stamp and not their_row.get("is_yours", true), "B sees the room in the list")
@@ -54,7 +55,8 @@ func _ready() -> void:
 		{"type": "mute_state", "data": {"joined": true, "muted": false, "ack": false}})
 	check(signal_res.status == 202, "voice signal accepted")
 
-	# Global chat.
+	# Global chat (the one-message-per-second limit spans match and global chat).
+	await get_tree().create_timer(1.1).timeout
 	var global_res: Dictionary = await Social.send_global("Hello from the E2E test " + stamp)
 	check(global_res.ok and Social.global_messages.any(func(m: Dictionary) -> bool: return str(m.get("body")).ends_with(stamp)), "A posts to global chat")
 	var loaded: Dictionary = await Social.load_global()
@@ -72,10 +74,12 @@ func _ready() -> void:
 	# Ranked: finish the room match, then both queue at the same tier and get paired.
 	await GameSession.resign()
 	await wait_until(func() -> bool: return GameSession.status() in ["finished", "cancelled"], 8.0)
-	var queued: Dictionary = await Social.queue_ranked()
-	check(queued.ok and str(queued.data.get("status")) == "queued", "A joins the ranked queue")
-	var b_queue := await _raw(HTTPClient.METHOD_POST, "/api/ranked/queue", null, token_b)
-	check(str(b_queue.data.get("status")) == "matched", "B is paired with A")
+	var queued: Dictionary = await Social.queue_ranked(PowerupLibrary.MODE_OFF)
+	check(queued.ok and str(queued.data.get("status")) == "queued" and str(queued.data.get("powerup_mode")) == "off", "A joins the ranked queue with powerups off")
+	var b_other := await _raw(HTTPClient.METHOD_POST, "/api/ranked/queue", {"powerup_mode": "random"}, token_b)
+	check(str(b_other.data.get("status")) == "queued", "B asking for Random powerups isn't paired with A")
+	var b_queue := await _raw(HTTPClient.METHOD_POST, "/api/ranked/queue", {"powerup_mode": "off"}, token_b)
+	check(str(b_queue.data.get("status")) == "matched" and str(b_queue.data.get("match", {}).get("powerup_mode")) == "off", "B, now asking for Off, is paired with A")
 	var status: Dictionary = await Social.ranked_status()
 	check(str(status.data.get("status")) == "matched" and status.data.get("match") is Dictionary, "A's poll says matched")
 	var opened: Dictionary = await Social.adopt_match(status)

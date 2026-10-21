@@ -78,7 +78,7 @@ func _ready() -> void:
 	check(str(stored.get("shape", "")) == "shape_wish_orb" and stored.get("toppers") is Dictionary, "the server kept the shape and toppers")
 
 	# Powerups.
-	var picked := await GameSession.powerups.save(["time_extension", "spy_card", "insight"])
+	var picked := await GameSession.powerups.save(["time_extension", "spy_card", "insight", "intel_leak", "time_squeeze"])
 	check(picked == "", "powerup loadout saved")
 
 	await ApiManager.logout()

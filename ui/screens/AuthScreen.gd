@@ -40,7 +40,7 @@ func _ready() -> void:
 	box.add_child(_error)
 	_submit = AppTheme.button("Log in", "Primary", _submit_form, 60)
 	box.add_child(_submit)
-	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.show_screen("title"), 48))
+	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48))
 	add_child(AppTheme.centered(_card, 440))
 	_set_mode("login")
 

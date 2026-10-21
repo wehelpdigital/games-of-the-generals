@@ -45,7 +45,7 @@ func _ready() -> void:
 		option.add_child(blurb)
 		row.add_child(option)
 		box.add_child(row)
-	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.show_screen("title"), 48))
+	box.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48))
 	add_child(AppTheme.centered(_card, 500))
 
 

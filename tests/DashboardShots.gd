@@ -95,6 +95,14 @@ func _ready() -> void:
 	await _show(ui, "guilds", {}, "guilds_locked", 1.0)
 	await _show(ui, "guild", {"id": 3}, "guild_visitor", 1.0)
 	await _show(ui, "dashboard", {}, "dash_rookie", 1.0)
+	if _wanted("dash_hand"):
+		# The powerup hand, scrolled into view (below the fold on phones).
+		var hand: Control = ui.screen("dashboard").find_children("*", "PanelContainer", true, false).filter(
+			func(n: Node) -> bool: return n.get_script() == preload("res://ui/dashboard/PowerupLoadoutCard.gd")).front()
+		for scroll: ScrollContainer in ui.screen("dashboard").find_children("*", "ScrollContainer", true, false):
+			if scroll.is_ancestor_of(hand):
+				scroll.ensure_control_visible(hand)
+		await _shot("dash_hand", 0.6)
 	var major := _profile.duplicate(true)
 	major["guild"] = null
 	Profile._set_data(major, true)

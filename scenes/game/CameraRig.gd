@@ -56,6 +56,11 @@ var _flinging := false
 var touch_blocked := Callable()
 var _trauma := 0.0
 var _portrait := false
+var _shift := Vector2.ZERO
+
+## Moves the board's picture by a fraction of the screen (x right, y down), e.g. -0.15 to centre
+## it in the room left of a side panel. Eased like the rest of the camera.
+var screen_shift := Vector2.ZERO
 
 ## Menu backdrop: a slow cinematic orbit that ignores player input.
 var attract := false:
@@ -161,8 +166,15 @@ func _apply(delta: float) -> void:
 
 	_trauma = maxf(0.0, _trauma - delta * 1.6)
 	var amount := _trauma * _trauma
-	camera.h_offset = randf_range(-1.0, 1.0) * 0.18 * amount
-	camera.v_offset = randf_range(-1.0, 1.0) * 0.18 * amount
+	# The screen shift as a sideways and upward slide of the camera, sized to the view at the pivot.
+	_shift = _shift.lerp(screen_shift, w)
+	var view := get_viewport().get_visible_rect().size
+	var aspect := view.x / maxf(view.y, 1.0)
+	var half := _distance * tan(deg_to_rad(camera.fov) * 0.5)
+	var half_w := half * aspect if camera.keep_aspect == Camera3D.KEEP_HEIGHT else half
+	var half_h := half if camera.keep_aspect == Camera3D.KEEP_HEIGHT else half / aspect
+	camera.h_offset = -_shift.x * 2.0 * half_w + randf_range(-1.0, 1.0) * 0.18 * amount
+	camera.v_offset = _shift.y * 2.0 * half_h + randf_range(-1.0, 1.0) * 0.18 * amount
 
 
 ## Portrait screens (phones) fit the board's width instead of its height, from further back and

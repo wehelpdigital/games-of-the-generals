@@ -11,6 +11,7 @@ const SCREENS := {
 	"lobby": preload("res://ui/screens/LobbyScreen.gd"),
 	"leaderboard": preload("res://ui/screens/LeaderboardScreen.gd"),
 	"shop": preload("res://ui/screens/ShopScreen.gd"),
+	"my_board": preload("res://ui/screens/MyBoardScreen.gd"),
 	"settings": preload("res://ui/screens/SettingsScreen.gd"),
 	"hud": preload("res://ui/screens/GameHUD.gd"),
 }

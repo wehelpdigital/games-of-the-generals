@@ -4,7 +4,7 @@ extends Control
 ## White shapes with a plum outline, drawn in a unit box scaled to the control.
 ##
 ## Names: cart, bolt, trophy, shield, person, ranks, share, logout, swords, users, robot, globe,
-## pin, camera, lock, check, crown, star, gear.
+## pin, camera, lock, check, crown, star, gear, board.
 
 var icon := ""
 var fill := Color.WHITE
@@ -110,6 +110,14 @@ func _draw() -> void:
 				Vector2(0.84, 0.82), Vector2(0.16, 0.82)], origin, side, line, AppTheme.GOLD)
 		"star":
 			_shape(_star(Vector2(0.5, 0.54), 0.46, 0.2, 5), origin, side, line, AppTheme.GOLD)
+		"board":
+			_shape([Vector2(0.08, 0.12), Vector2(0.92, 0.12), Vector2(0.92, 0.88), Vector2(0.08, 0.88)], origin, side, line)
+			for x: float in [0.36, 0.64]:  # A 3x3 grid of squares.
+				_stroke([Vector2(x, 0.12), Vector2(x, 0.88)], origin, side, line * 0.7)
+			for y: float in [0.373, 0.627]:
+				_stroke([Vector2(0.08, y), Vector2(0.92, y)], origin, side, line * 0.7)
+			_dot(Vector2(0.22, 0.75), 0.1, origin, side, line, AppTheme.PINK)
+			_dot(Vector2(0.78, 0.25), 0.1, origin, side, line, AppTheme.BLUE)
 
 
 func _map(points: Array, origin: Vector2, side: float) -> PackedVector2Array:

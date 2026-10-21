@@ -199,6 +199,26 @@ func my_mines() -> Array:
 	return match_view.get("mines", []) if match_view.get("mines") is Array else []
 
 
+## What limits the player's steps right now (the server's MoveRules), for the board's move hints:
+## {haste: a 2-square straight dash is allowed this turn, ceasefire: no attacks this turn,
+## blocked: Roadblock squares nobody may enter}.
+func step_rules() -> Dictionary:
+	var rules := {"haste": false, "ceasefire": false, "blocked": []}
+	var all := effects()
+	for list_name: String in ["mine", "opponent"]:
+		for e: Variant in all.get(list_name, []):
+			if not e is Dictionary:
+				continue
+			match str(e.get("type")):
+				"roadblock":
+					rules["blocked"].append(Vector2i(int(e.get("x", -1)), int(e.get("y", -1))))
+				"haste":
+					rules["haste"] = rules["haste"] or (str(e.get("side")) == my_side() and is_my_turn())
+				"ceasefire":
+					rules["ceasefire"] = rules["ceasefire"] or (str(e.get("side")) == my_side() and is_my_turn())
+	return rules
+
+
 ## The opponent cast smoke: their army shows as it stood before the hidden move.
 func has_fog() -> bool:
 	return bool(match_view.get("fog", false)) and status() == "active"
@@ -503,6 +523,11 @@ func _present_result(result: Dictionary) -> bool:
 		resync = true
 	if clash is Dictionary and clash.get("rally") != null:
 		rule_event.emit({"kind": "rally", "side": str(clash["rally"]), "cell": result.get("to")})
+	if clash is Dictionary and clash.get("trench") != null:
+		rule_event.emit({"kind": "trench", "side": str(clash["trench"]), "cell": result.get("to")})
+	if result.get("quicksand") is Dictionary:
+		rule_event.emit({"kind": "quicksand", "side": side, "cell": result["quicksand"]})
+		resync = true  # The stuck piece's frozen effect arrives with the view.
 	_accept_result(shown)
 	return resync
 
@@ -898,10 +923,13 @@ func _ai_take_turn(arbiter: LocalArbiter) -> void:
 	if kind != Kind.PRACTICE or _ai != ai or arbiter != _arbiter or arbiter.is_over():
 		return  # The player resigned or left while the AI was thinking.
 	if choice.is_empty() or arbiter.validate(Ranks.BLACK, choice["id"], choice["from"], choice["to"]) != "":
-		push_warning("AI produced no legal move: %s" % choice)
-		arbiter.resign(Ranks.BLACK)
-		_practice_load("finished", version + 1)
-		return
+		# A rule the search doesn't model (a Roadblock, a Ceasefire...) ruled its pick out: any legal
+		# move will do.
+		var fallback := arbiter.random_move(Ranks.BLACK)
+		if fallback.is_empty():
+			_practice_emit(arbiter.pass_turn(Ranks.BLACK))
+			return
+		choice = fallback
 	_practice_emit(arbiter.apply(choice["id"], choice["to"]))
 
 
@@ -909,7 +937,7 @@ func _ai_take_turn(arbiter: LocalArbiter) -> void:
 func _ai_learn(arbiter: LocalArbiter, used: Dictionary) -> void:
 	var private: Dictionary = used["result"]["private"]
 	match str(used["result"]["id"]):
-		"spy_card", "intel_leak":
+		"spy_card", "intel_leak", "interrogation":
 			_ai.learn(private["piece_id"], {"rank": private["rank"]})
 		"recon_drone":
 			_ai.learn(private["piece_id"], {"is_flag": private["is_flag"]})
@@ -921,7 +949,7 @@ func _ai_learn(arbiter: LocalArbiter, used: Dictionary) -> void:
 			for e: Dictionary in arbiter.observation(Ranks.BLACK)["enemy"]:
 				columns[e["id"]] = e["x"]
 			_ai.learn_flag_column(int(private["x"]), columns)
-		"shuffle", "reinforcement", "swap", "teleport":
+		"shuffle", "reinforcement", "swap", "teleport", "retreat", "promotion":
 			_ai.sync_own(arbiter.observation(Ranks.BLACK))
 
 
@@ -933,7 +961,7 @@ func _practice_use_powerup(id: String, target: Dictionary) -> Dictionary:
 		return {"ok": false, "error": used["error"], "result": {}}
 	# What black is told: the public part, and that its knowledge of shuffled pieces is gone.
 	match id:
-		"shuffle":
+		"shuffle", "counter_intel", "promotion":
 			_ai.forget(used["forget"])
 		"reinforcement":
 			_ai.enemy_reinforced(str(used["event"]["public"]["piece"]["id"]))

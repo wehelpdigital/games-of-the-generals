@@ -150,12 +150,6 @@ func _card(id: String) -> Button:
 	var desc := AppTheme.label(str(info["desc"]), "", 14, AppTheme.INK if unlocked else AppTheme.MUTED)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(desc)
-	if not unlocked:
-		var lock := AppTheme.hbox(6)
-		lock.add_child(RankInsignia.new(int(info["tier"]), 26))
-		lock.add_child(AppTheme.label("Unlocks at %s" % PlayerRanks.name_of(int(info["tier"])), "", 14, AppTheme.MUTED))
-		box.add_child(lock)
-		b.modulate = Color(1, 1, 1, 0.85)
 	return b
 
 
@@ -173,10 +167,6 @@ func _icon(id: String, size: float) -> TextureRect:
 func _toggle(id: String) -> void:
 	if _selected.has(id):
 		_selected.erase(id)
-	elif not GameSession.powerups.is_unlocked(id):
-		var tier := PowerupLibrary.unlock_tier(id)
-		ui.toast("%s unlocks at %s." % [PowerupLibrary.display_name(id), PlayerRanks.name_of(tier)], AppTheme.BLUE)
-		return
 	elif _selected.size() >= PowerupLibrary.MAX_SLOTS:
 		ui.toast("You can bring %d. Tap a picked one to drop it first." % PowerupLibrary.MAX_SLOTS, AppTheme.BLUE)
 		return

@@ -13,7 +13,11 @@ extends RefCounted
 const TIMEOUT_FORFEIT := 3       ## Consecutive timeouts by one side that lose the match.
 const QUICK_STEP_MAX := 300.0    ## A Quick Step turn shows no clock but still ends after this.
 ## Effects the opponent can see; the rest stay secret until they trigger.
-const VISIBLE_EFFECTS := ["time_extension", "time_squeeze", "quick_step", "freeze", "sabotage"]
+const VISIBLE_EFFECTS := ["time_extension", "time_squeeze", "quick_step", "freeze", "sabotage",
+	"blitz", "time_steal", "roadblock", "haste", "ceasefire"]
+## Effects that change a turn's seconds by their `seconds` (Blitz halves it on top).
+const CLOCK_EFFECTS := ["time_extension", "time_squeeze", "time_steal"]
+const DIRECTIONS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 
 var pieces: Dictionary = {}  # id -> {id, side, rank, x, y}
 var turn := Ranks.WHITE
@@ -36,6 +40,7 @@ var clock := Callable(Time, "get_unix_time_from_system")
 var powerup_mode := PowerupLibrary.MODE_SELECT
 var loadouts := {Ranks.WHITE: [], Ranks.BLACK: []}
 var used := {Ranks.WHITE: [], Ranks.BLACK: []}
+var _used_log := {Ranks.WHITE: [], Ranks.BLACK: []}  # play order, for Recall
 
 var _pending_flag: Dictionary = {}  # {id, side} while a flag waits out the reply on the goal row
 var _next_id := 0
@@ -46,7 +51,7 @@ var _effects: Array = []  # {seq, type, side, by, from_turn?, to_turn?, piece_id
 var _seq := 0
 var _revealed := {Ranks.WHITE: [], Ranks.BLACK: []}  # viewer -> [{piece_id, rank|group|is_flag, source, move_number}]
 var _intel := {Ranks.WHITE: [], Ranks.BLACK: []}     # viewer -> [{type, officers|x, move_number}]
-var _mines := {Ranks.WHITE: [], Ranks.BLACK: []}     # owner -> [{x, y, until_turn}]
+var _mines := {Ranks.WHITE: [], Ranks.BLACK: []}     # owner -> [{x, y, until_turn, kind}] (mine | quicksand)
 var _fog: Dictionary = {}  # {side, pieces, eliminated, until_turn}: what the opponent sees of `side`
 var _smoke := ""           # side whose next move will be hidden
 var _chaos := ""           # side whose next move the referee picks at random
@@ -72,6 +77,7 @@ func start() -> void:
 func set_loadout(side: String, ids: Array) -> void:
 	loadouts[side] = PowerupLibrary.sanitize(ids)
 	used[side] = []
+	_used_log[side] = []
 
 
 func is_over() -> bool:
@@ -102,7 +108,8 @@ func observation(side: String) -> Dictionary:
 	var enemy: Array = []
 	for p: Dictionary in _enemies_seen_by(side):
 		enemy.append({"id": p["id"], "x": p["x"], "y": p["y"]})
-	return {"mine": mine, "enemy": enemy, "frozen": frozen}
+	return {"mine": mine, "enemy": enemy, "frozen": frozen, "blocked": blocked_cells(),
+		"no_attack": in_ceasefire(side)}
 
 
 ## [{id, from, to}] for every legal move of `side` (frozen pieces stay put; the second step of a
@@ -112,16 +119,45 @@ func legal_moves(side: String) -> Array[Dictionary]:
 	for p: Dictionary in pieces.values():
 		occupied[Vector2i(p["x"], p["y"])] = p["side"]
 	var first := _march_first(side)
+	var reach := [1, 2] if has_haste(side) else [1]
 	var moves: Array[Dictionary] = []
 	for p: Dictionary in pieces.values():
 		if p["side"] != side or p["id"] == first or is_frozen(side, p["id"]):
 			continue
 		var from := Vector2i(p["x"], p["y"])
-		for to in Ranks.neighbors(from):
-			var owner: String = occupied.get(to, "")
-			if owner != side and not (first != "" and owner != ""):
+		for dir in DIRECTIONS:
+			for steps: int in reach:
+				var to := from + dir * steps
+				if step_problem(side, from, to) != "":
+					continue
+				if first != "" and occupied.get(to, "") != "":
+					continue
 				moves.append({"id": p["id"], "from": from, "to": to})
 	return moves
+
+
+## "" when a piece of `side` may step from `from` to `to` right now (MoveRules on the server): one
+## square orthogonally, or a 2-square straight dash under Haste (never over a piece or a
+## Roadblock); never onto its own piece or a Roadblock, and no attacks during a Ceasefire.
+func step_problem(side: String, from: Vector2i, to: Vector2i) -> String:
+	if not Ranks.in_bounds(to):
+		return "That square is off the board."
+	var delta := to - from
+	var dash := (absi(delta.x) == 2 and delta.y == 0) or (absi(delta.y) == 2 and delta.x == 0)
+	if absi(delta.x) + absi(delta.y) != 1 and not (dash and has_haste(side)):
+		return "Pieces move one square forward, back or sideways."
+	if dash:
+		var middle := from + delta / 2
+		if not piece_at(middle).is_empty() or is_blocked(middle):
+			return "Haste can't jump over pieces or roadblocks."
+	var target := piece_at(to)
+	if not target.is_empty() and target["side"] == side:
+		return "You can't capture your own piece."
+	if is_blocked(to):
+		return "A roadblock stands on that square."
+	if not target.is_empty() and in_ceasefire(side):
+		return "Ceasefire: you can't attack this turn."
+	return ""
 
 
 ## "" when legal, otherwise the reason it isn't.
@@ -133,11 +169,10 @@ func validate(side: String, piece_id: String, from: Vector2i, to: Vector2i) -> S
 	var piece: Dictionary = pieces.get(piece_id, {})
 	if piece.is_empty() or piece["side"] != side or Vector2i(piece["x"], piece["y"]) != from:
 		return "That piece can't move."
-	if not Ranks.in_bounds(to) or absi(to.x - from.x) + absi(to.y - from.y) != 1:
-		return "Pieces move one square forward, back or sideways."
+	var problem := step_problem(side, from, to)
+	if problem != "":
+		return problem
 	var target := piece_at(to)
-	if not target.is_empty() and target["side"] == side:
-		return "You can't capture your own piece."
 	if is_frozen(side, piece_id):
 		return "That piece is frozen."
 	var first := _march_first(side)
@@ -159,6 +194,8 @@ func apply(piece_id: String, to: Vector2i, auto := "") -> Dictionary:
 	if auto == "":
 		timeouts[side] = 0
 	var hidden := hides_moves_of(side)
+	if absi(to.x - from.x) + absi(to.y - from.y) == 2:
+		_consume("haste", side)
 	if _smoke == side:
 		# The opponent keeps seeing this army as it stands now until their turn ends.
 		_smoke = ""
@@ -176,6 +213,7 @@ func apply(piece_id: String, to: Vector2i, auto := "") -> Dictionary:
 	var tripped := _trip_mine(side, piece_id, to, clash, removed)
 	clash = tripped[0]
 	removed = tripped[1]
+	var stuck: Variant = tripped[2]
 	_eliminated.append_array(removed)
 	_last_moved[side] = piece_id
 
@@ -197,6 +235,8 @@ func apply(piece_id: String, to: Vector2i, auto := "") -> Dictionary:
 	if auto != "":
 		result["auto"] = true
 		result[auto] = true
+	if stuck != null:
+		result["quicksand"] = stuck
 	if hidden:
 		result["hidden_from_opponent"] = true
 	if fog_lifted:
@@ -216,8 +256,10 @@ static func redact(result: Dictionary, viewer: String) -> Dictionary:
 		return result
 	var concealed := {}
 	for key: String in result:
-		if not key in ["piece_id", "from", "to", "clash", "hidden_from_opponent"]:
+		if not key in ["piece_id", "from", "to", "clash", "hidden_from_opponent", "quicksand"]:
 			concealed[key] = result[key]
+	if result.get("quicksand") is Dictionary:  # The trap's owner learns it caught something, not what.
+		concealed["quicksand"] = {"x": result["quicksand"]["x"], "y": result["quicksand"]["y"], "turns": result["quicksand"]["turns"]}
 	var clash: Variant = result.get("clash")
 	if clash is Dictionary:
 		var defender: Variant = clash.get("defender_id")
@@ -370,13 +412,16 @@ func use_powerup(side: String, id: String, target := {}) -> Dictionary:
 		return _fail("Sabotaged! You can't use powerups this turn.")
 	if used_this_turn(side) >= PowerupLibrary.MAX_PER_TURN:
 		return _fail("You can't use another powerup this turn.")
-	var outcome := _apply_powerup(id, side, target)
+	# An opponent's Counterspell eats the card: spent, no effect, the turn goes on.
+	var countered := _consume("counterspell", side)
+	var outcome := {"private": {"countered": true}, "public": {"countered": true}} if countered else _apply_powerup(id, side, target)
 	if outcome.has("error"):
 		return _fail(outcome["error"])
 
 	used[side].append(id)
+	_used_log[side].append(id)
 	_usage = {"side": side, "turn": _turns[side], "count": used_this_turn(side) + 1}
-	var ends_turn := PowerupLibrary.consumes_turn(id)
+	var ends_turn := PowerupLibrary.consumes_turn(id) and not countered
 	var lifted := false
 	if ends_turn:
 		move_number += 1
@@ -386,6 +431,8 @@ func use_powerup(side: String, id: String, target := {}) -> Dictionary:
 		"public": outcome.get("public", {}), "ends_turn": ends_turn, "turn": null if is_over() else turn, "timer": timer()}
 	if lifted:
 		event["fog_lifted"] = true
+	if countered:
+		event["countered"] = true
 	return {"ok": true, "error": "", "result": {"id": id, "private": outcome.get("private", {})}, "event": event,
 		"ends_turn": ends_turn, "forget": outcome.get("forget", [])}
 
@@ -405,6 +452,33 @@ func is_frozen(side: String, piece_id: String) -> bool:
 
 func is_sabotaged(side: String) -> bool:
 	return not _effect("sabotage", side, "", _turns[side]).is_empty()
+
+
+## Haste: this turn the side may dash one piece 2 squares in a straight line.
+func has_haste(side: String) -> bool:
+	return not _effect("haste", side, "", _turns[side]).is_empty()
+
+
+## Ceasefire: the side may not attack during its current turn.
+func in_ceasefire(side: String) -> bool:
+	return not _effect("ceasefire", side, "", _turns[side]).is_empty()
+
+
+## A Roadblock stands on the square: no piece may enter it.
+func is_blocked(cell: Vector2i) -> bool:
+	for e: Dictionary in _effects:
+		if e["type"] == "roadblock" and e["x"] == cell.x and e["y"] == cell.y:
+			return true
+	return false
+
+
+## Every square a Roadblock bars.
+func blocked_cells() -> Array:
+	var cells: Array = []
+	for e: Dictionary in _effects:
+		if e["type"] == "roadblock":
+			cells.append(Vector2i(e["x"], e["y"]))
+	return cells
 
 
 ## True while `side`'s moves are announced without positions (armed smoke or its fog).
@@ -428,7 +502,8 @@ func rules_view(viewer: String) -> Dictionary:
 	var shown_ids: Array = _enemies_seen_by(viewer).map(func(p: Dictionary) -> String: return p["id"])
 	var mines: Array = []
 	for m: Dictionary in _mines[viewer]:
-		mines.append({"x": m["x"], "y": m["y"], "turns_left": _turns_left({"side": viewer, "to_turn": m["until_turn"]})})
+		mines.append({"x": m["x"], "y": m["y"], "kind": m.get("kind", "mine"),
+			"turns_left": _turns_left({"side": viewer, "from_turn": m.get("from_turn", 0), "to_turn": m["until_turn"]})})
 	var slots: Array = []
 	for id: String in loadouts[viewer]:
 		slots.append({"id": id, "used": used[viewer].has(id)})
@@ -598,7 +673,7 @@ func _apply_powerup(id: String, side: String, target: Dictionary) -> Dictionary:
 			var cell := _cell(target)
 			if cell == Vector2i(-1, -1):
 				return {"error": "Pick a square on the board."}
-			if not Ranks.is_home_cell(side, cell) or not piece_at(cell).is_empty():
+			if not Ranks.is_home_cell(side, cell) or not piece_at(cell).is_empty() or is_blocked(cell):
 				return {"error": "Pick an empty square in your three home rows."}
 			var info := {"piece_id": jumper["id"], "from": {"x": jumper["x"], "y": jumper["y"]}, "to": {"x": cell.x, "y": cell.y}}
 			_place(jumper, cell)
@@ -608,15 +683,15 @@ func _apply_powerup(id: String, side: String, target: Dictionary) -> Dictionary:
 			var cell := _cell(target)
 			if cell == Vector2i(-1, -1):
 				return {"error": "Pick a square on the board."}
-			if not is_own_half(side, cell) or not piece_at(cell).is_empty() or _mine_index(side, cell) >= 0:
+			if not is_own_half(side, cell) or not piece_at(cell).is_empty() or _mine_index(side, cell) >= 0 or is_blocked(cell):
 				return {"error": "Pick an empty square on your half of the board."}
-			_mines[side].append({"x": cell.x, "y": cell.y, "until_turn": now_turn + PowerupLibrary.MINE_TURNS})
+			_mines[side].append({"x": cell.x, "y": cell.y, "from_turn": now_turn + 1, "until_turn": now_turn + PowerupLibrary.MINE_TURNS, "kind": "mine"})
 			return {"private": {"x": cell.x, "y": cell.y, "turns": PowerupLibrary.MINE_TURNS}}
 		"reinforcement":
 			var cell := _cell(target)
 			if cell == Vector2i(-1, -1):
 				return {"error": "Pick a square on the board."}
-			if cell.y != back_row(side) or not piece_at(cell).is_empty():
+			if cell.y != back_row(side) or not piece_at(cell).is_empty() or is_blocked(cell):
 				return {"error": "Pick an empty square on your back row."}
 			var index := -1
 			for i in _eliminated.size():
@@ -666,6 +741,140 @@ func _apply_powerup(id: String, side: String, target: Dictionary) -> Dictionary:
 			_jammed_until[enemy] = now() + PowerupLibrary.JAM_SECONDS
 			var info := {"side": enemy, "jammed_until": _iso(_jammed_until[enemy])}
 			return {"private": info, "public": info}
+		"blitz":
+			_add_effect("blitz", side, side, {"from_turn": now_turn + 1, "to_turn": now_turn + PowerupLibrary.BLITZ_TURNS})
+			_add_effect("blitz", enemy, side, {"from_turn": next, "to_turn": next + PowerupLibrary.BLITZ_TURNS - 1})
+			return {"private": {"turns": PowerupLibrary.BLITZ_TURNS}, "public": {"turns": PowerupLibrary.BLITZ_TURNS}}
+		"time_steal":
+			var turns := PowerupLibrary.STEAL_TURNS
+			_add_effect("time_steal", side, side, {"from_turn": now_turn + 1, "to_turn": now_turn + turns, "seconds": PowerupLibrary.STEAL_SECONDS})
+			_add_effect("time_steal", enemy, side, {"from_turn": next, "to_turn": next + turns - 1, "seconds": -PowerupLibrary.STEAL_SECONDS})
+			var stolen := {"turns": turns, "seconds": PowerupLibrary.STEAL_SECONDS}
+			return {"private": stolen, "public": stolen}
+		"sonar_ping":
+			var count := 0
+			for seen: Dictionary in _enemies_seen_by(side):
+				if is_own_half(side, Vector2i(seen["x"], seen["y"])):
+					count += 1
+			_intel[side].append({"type": "sonar_ping", "count": count, "move_number": move_number})
+			return {"private": {"count": count}}
+		"spy_alarm":
+			var alarm := false
+			for seen: Dictionary in _enemies_seen_by(side):
+				if not pieces.has(seen["id"]) or _apparent_rank(pieces[seen["id"]]) != "SPY":
+					continue
+				for p: Dictionary in _side_pieces(side):
+					if absi(p["x"] - seen["x"]) + absi(p["y"] - seen["y"]) == 1:
+						alarm = true
+			_intel[side].append({"type": "spy_alarm", "alarm": alarm, "move_number": move_number})
+			return {"private": {"alarm": alarm}}
+		"radar_sweep":
+			var center := _cell(target)
+			if center == Vector2i(-1, -1):
+				return {"error": "Pick a square on the board."}
+			var found := false
+			for seen: Dictionary in _enemies_seen_by(side):
+				if pieces.has(seen["id"]) and absi(seen["x"] - center.x) <= 1 and absi(seen["y"] - center.y) <= 1 \
+						and PowerupLibrary.group_of(_apparent_rank(pieces[seen["id"]])) == "general":
+					found = true
+			_intel[side].append({"type": "radar_sweep", "x": center.x, "y": center.y, "found": found, "move_number": move_number})
+			return {"private": {"x": center.x, "y": center.y, "found": found}}
+		"code_breaker":
+			var cards: Array = loadouts[enemy].filter(func(card: String) -> bool: return not used[enemy].has(card))
+			_intel[side].append({"type": "code_breaker", "cards": cards.duplicate(), "move_number": move_number})
+			return {"private": {"cards": cards}}
+		"interrogation":
+			var suspect := _enemy_piece(side, target)
+			if suspect.is_empty():
+				return {"error": "Pick one of the enemy's pieces."}
+			var seen_at := Vector2i(suspect["x"], suspect["y"])
+			for seen: Dictionary in _enemies_seen_by(side):
+				if seen["id"] == suspect["id"]:
+					seen_at = Vector2i(seen["x"], seen["y"])
+			var adjacent := false
+			for p: Dictionary in _side_pieces(side):
+				if absi(p["x"] - seen_at.x) + absi(p["y"] - seen_at.y) == 1:
+					adjacent = true
+			if not adjacent:
+				return {"error": "Pick an enemy piece standing next to one of yours."}
+			var told := _apparent_rank(suspect)
+			_reveal(side, {"piece_id": suspect["id"], "rank": told, "source": "interrogation"})
+			return {"private": {"piece_id": suspect["id"], "rank": told}}
+		"retreat":
+			var runner := _own_piece(side, target)
+			if runner.is_empty():
+				return {"error": "Pick one of your pieces."}
+			if is_frozen(side, runner["id"]):
+				return {"error": "That piece is frozen."}
+			var step := -1 if side == Ranks.WHITE else 1
+			var start := Vector2i(runner["x"], runner["y"])
+			var dest := start
+			for i in PowerupLibrary.RETREAT_SQUARES:
+				var further := dest + Vector2i(0, step)
+				if not Ranks.in_bounds(further) or not piece_at(further).is_empty() or is_blocked(further):
+					break
+				dest = further
+			if dest == start:
+				return {"error": "That piece has no room to fall back."}
+			_place(runner, dest)
+			_drop_pending_flag([runner["id"]])
+			var moved := {"piece_id": runner["id"], "from": {"x": start.x, "y": start.y}, "to": {"x": dest.x, "y": dest.y}}
+			return {"private": moved, "public": moved}
+		"haste":
+			return _window(id, side, side, now_turn, 1)
+		"roadblock":
+			var spot := _cell(target)
+			if spot == Vector2i(-1, -1):
+				return {"error": "Pick a square on the board."}
+			if not piece_at(spot).is_empty() or is_blocked(spot):
+				return {"error": "Pick an empty square."}
+			_add_effect("roadblock", enemy, side, {"x": spot.x, "y": spot.y, "from_turn": next, "to_turn": next + PowerupLibrary.ROADBLOCK_TURNS - 1})
+			var barred := {"x": spot.x, "y": spot.y, "turns": PowerupLibrary.ROADBLOCK_TURNS}
+			return {"private": barred, "public": barred}
+		"quicksand":
+			var pit := _cell(target)
+			if pit == Vector2i(-1, -1):
+				return {"error": "Pick a square on the board."}
+			if not is_own_half(side, pit) or not piece_at(pit).is_empty() or _mine_index(side, pit) >= 0 or is_blocked(pit):
+				return {"error": "Pick an empty square on your half of the board."}
+			_mines[side].append({"x": pit.x, "y": pit.y, "from_turn": now_turn + 1, "until_turn": now_turn + PowerupLibrary.QUICKSAND_TURNS, "kind": "quicksand"})
+			return {"private": {"x": pit.x, "y": pit.y, "turns": PowerupLibrary.QUICKSAND_TURNS}}
+		"counterspell":
+			_add_effect("counterspell", enemy, side, {})
+			return {}
+		"trench":
+			var dug := _own_piece(side, target)
+			if dug.is_empty():
+				return {"error": "Pick one of your pieces."}
+			_add_effect("trench", side, side, {"piece_id": dug["id"], "from_turn": now_turn + 1, "to_turn": now_turn + PowerupLibrary.TRENCH_TURNS})
+			return {"private": {"piece_id": dug["id"], "turns": PowerupLibrary.TRENCH_TURNS}}
+		"ceasefire":
+			return _window(id, enemy, side, next, PowerupLibrary.CEASEFIRE_TURNS)
+		"counter_intel":
+			var wiped: Array = []
+			for entry: Dictionary in _revealed[enemy]:
+				if not wiped.has(entry["piece_id"]):
+					wiped.append(entry["piece_id"])
+			_revealed[enemy] = []
+			return {"private": {"wiped": wiped.size()}, "public": {"wiped": wiped.size()}, "forget": wiped}
+		"promotion":
+			var recruit := _own_piece(side, target)
+			if recruit.is_empty() or recruit["rank"] != "PVT":
+				return {"error": "Pick one of your Privates."}
+			recruit["rank"] = "SGT"
+			_revealed[enemy] = _revealed[enemy].filter(func(e: Dictionary) -> bool: return e["piece_id"] != recruit["id"])
+			return {"private": {"piece_id": recruit["id"], "rank": "SGT"}, "forget": [recruit["id"]]}
+		"recall":
+			var back := ""
+			for i in range(_used_log[side].size() - 1, -1, -1):
+				var card: String = _used_log[side][i]
+				if card != "recall" and used[side].has(card):
+					back = card
+					break
+			if back == "":
+				return {"error": "You haven't played another powerup yet."}
+			used[side].erase(back)
+			return {"private": {"recalled": back}, "public": {"recalled": back}}
 	return {"error": "That powerup does not exist."}
 
 
@@ -727,7 +936,7 @@ func _effects_view(viewer: String) -> Dictionary:
 	var theirs: Array = []
 	for e: Dictionary in _effects:
 		var shown := {"type": e["type"], "side": e["side"]}
-		for key: String in ["piece_id", "seconds"]:
+		for key: String in ["piece_id", "seconds", "x", "y"]:
 			if e.has(key):
 				shown[key] = e[key]
 		if e.has("to_turn"):
@@ -836,6 +1045,10 @@ func _clash(attacker: Dictionary, defender: Dictionary, to: Vector2i) -> Array:
 		return [{"defender_id": defender["id"], "outcome": "bounce", "eliminated": []}, []]
 	var outcome := Ranks.resolve_clash(attacker["rank"], defender["rank"])
 	var rally := ""
+	var trench := false
+	if outcome == "both" and _consume("trench", defender_side, defender["id"]):
+		outcome = "defender"
+		trench = true
 	if outcome == "both":
 		var attacker_rally := _consume("rally_cry", attacker_side)
 		var defender_rally := _consume("rally_cry", defender_side)
@@ -863,17 +1076,25 @@ func _clash(attacker: Dictionary, defender: Dictionary, to: Vector2i) -> Array:
 		clash["saved"] = saved
 	if rally != "":
 		clash["rally"] = rally
+	if trench:
+		clash["trench"] = defender_side
 	return [clash, removed]
 
 
 ## A piece that ended its step on an enemy Mine Field square is eliminated (a clash with outcome
-## "mine"), unless Second Chance saves it.
+## "mine"), unless Second Chance saves it. Quicksand instead sticks it (frozen) for its owner's next
+## turns. Returns [clash, removed, quicksand {x, y, piece_id, turns} or null].
 func _trip_mine(side: String, piece_id: String, cell: Vector2i, clash: Variant, removed: Array) -> Array:
 	var piece: Dictionary = pieces.get(piece_id, {})
 	var enemy := Ranks.opponent(side)
 	if piece.is_empty() or Vector2i(piece["x"], piece["y"]) != cell or _mine_index(enemy, cell) < 0:
-		return [clash, removed]
+		return [clash, removed, null]
+	var trap: Dictionary = _mines[enemy][_mine_index(enemy, cell)]
 	_mines[enemy].remove_at(_mine_index(enemy, cell))
+	if trap.get("kind", "mine") == "quicksand":
+		var next: int = _turns[side] + 1
+		_add_effect("freeze", side, enemy, {"piece_id": piece_id, "from_turn": next, "to_turn": next + PowerupLibrary.QUICKSAND_STUCK_TURNS - 1})
+		return [clash, removed, {"x": cell.x, "y": cell.y, "piece_id": piece_id, "turns": PowerupLibrary.QUICKSAND_STUCK_TURNS}]
 	if clash == null:
 		clash = {"defender_id": null, "outcome": "mine", "eliminated": []}
 	clash["mine"] = {"x": cell.x, "y": cell.y}
@@ -883,7 +1104,7 @@ func _trip_mine(side: String, piece_id: String, cell: Vector2i, clash: Variant, 
 		pieces.erase(piece_id)
 		removed.append(piece.duplicate())
 		clash["eliminated"].append(piece_id)
-	return [clash, removed]
+	return [clash, removed, null]
 
 
 ## Whether the step that just happened ends the game at once. A Flag that reaches the back row next
@@ -950,8 +1171,10 @@ func _begin_turn(side: String) -> void:
 		turn_allotment = 0
 		return
 	var seconds := turn_seconds
-	for type: String in ["time_extension", "time_squeeze"]:
+	for type: String in CLOCK_EFFECTS:
 		seconds += int(_effect(type, side, "", t).get("seconds", 0))
+	if not _effect("blitz", side, "", t).is_empty():
+		seconds = ceili(seconds / 2.0)
 	if seconds < turn_seconds:
 		seconds = maxi(mini(turn_seconds, PowerupLibrary.MIN_TURN_SECONDS), seconds)
 	turn_paused = not _effect("quick_step", side, "", t).is_empty()

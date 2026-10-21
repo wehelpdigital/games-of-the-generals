@@ -300,11 +300,15 @@ func choose_move(observation: Dictionary) -> Dictionary:
 
 	var moves := _moves(sides, ME)
 	var frozen: Array = observation.get("frozen", [])
-	if not frozen.is_empty():
+	var blocked: Array = observation.get("blocked", [])
+	var no_attack := bool(observation.get("no_attack", false))
+	if not frozen.is_empty() or not blocked.is_empty() or no_attack:
+		# Frozen pieces stay put, nobody enters a Roadblock, and a Ceasefire forbids attacks.
 		var free: Array[Vector2i] = []
 		for move in moves:
-			if not frozen.has(my_ids[move.x]):
-				free.append(move)
+			if frozen.has(my_ids[move.x]) or blocked.has(_vec(move.y)) or (no_attack and sides[move.y] == THEM):
+				continue
+			free.append(move)
 		moves = free
 	if moves.is_empty():
 		return {}

@@ -15,7 +15,8 @@ const GROUP_COLORS := {"general": Color("ff5a5f"), "officer": Color("ffb703"), "
 const PICK_PROMPTS := {
 	"own_piece": "Tap one of your pieces", "enemy_piece": "Tap an enemy piece",
 	"home_cell": "Tap an empty square in your 3 home rows", "half_cell": "Tap an empty square on your half",
-	"back_cell": "Tap an empty square on your back row",
+	"back_cell": "Tap an empty square on your back row", "empty_cell": "Tap any empty square",
+	"any_cell": "Tap the centre of the area to sweep",
 }
 
 static var _rim: ImageTexture
@@ -23,7 +24,8 @@ static var _rim: ImageTexture
 var board: Board3D
 
 var _fog: FogOverlay
-var _mines: Dictionary = {}  # "x,y" -> Node3D
+var _mines: Dictionary = {}  # "x,y" -> Node3D (your Mine Fields and Quicksand)
+var _roadblocks: Dictionary = {}  # "x,y" -> Node3D (everyone's)
 var _targeting: Dictionary = {}  # {id, picks, step, chosen: [...]}
 var _valid: Array[Vector2i] = []
 var _target_marks: Array[MeshInstance3D] = []
@@ -87,11 +89,12 @@ func _refresh() -> void:
 		var fx := GameSession.effects()
 		for list_name: String in ["mine", "opponent"]:
 			for e: Variant in fx.get(list_name, []):
-				if e is Dictionary and e.get("piece_id") != null and e.get("type") in ["fortify", "decoy", "freeze"]:
+				if e is Dictionary and e.get("piece_id") != null and e.get("type") in ["fortify", "decoy", "freeze", "trench"]:
 					_add_mark(marks, str(e["piece_id"]), {"effect": e["type"], "turns_left": e.get("turns_left")})
 	for piece: Piece3D in board.pieces.values():
 		_apply_marks(piece, marks.get(piece.piece_id, []))
 	_refresh_mines(GameSession.my_mines() if live else [])
+	_refresh_roadblocks(GameSession.step_rules()["blocked"] if live else [])
 
 
 func _add_mark(marks: Dictionary, piece_id: String, mark: Dictionary) -> void:
@@ -131,6 +134,8 @@ func _apply_marks(piece: Piece3D, list: Array) -> void:
 				holder.add_child(_ice())
 			"decoy":
 				holder.add_child(_tag("DECOY", AppTheme.PURPLE, 0.62))
+			"trench":
+				holder.add_child(_sandbags())
 	if rank != "":
 		holder.add_child(_badge(rank))
 	elif group != "":
@@ -143,17 +148,33 @@ func _refresh_mines(list: Array) -> void:
 	var wanted := {}
 	for m: Variant in list:
 		if m is Dictionary:
-			wanted["%d,%d" % [int(m["x"]), int(m["y"])]] = Vector2i(int(m["x"]), int(m["y"]))
+			wanted["%d,%d,%s" % [int(m["x"]), int(m["y"]), str(m.get("kind", "mine"))]] = Vector2i(int(m["x"]), int(m["y"]))
 	for key: String in _mines.keys():
 		if not wanted.has(key):
 			_mines[key].queue_free()
 			_mines.erase(key)
 	for key: String in wanted:
 		if not _mines.has(key):
-			var mine := _mine_model()
-			mine.position = Board3D.cell_to_local(wanted[key]) + Vector3(0.0, 0.03, 0.0)
-			add_child(mine)
-			_mines[key] = mine
+			var trap := _quicksand_model() if key.ends_with("quicksand") else _mine_model()
+			trap.position = Board3D.cell_to_local(wanted[key]) + Vector3(0.0, 0.03, 0.0)
+			add_child(trap)
+			_mines[key] = trap
+
+
+func _refresh_roadblocks(cells: Array) -> void:
+	var wanted := {}
+	for cell: Vector2i in cells:
+		wanted["%d,%d" % [cell.x, cell.y]] = cell
+	for key: String in _roadblocks.keys():
+		if not wanted.has(key):
+			_roadblocks[key].queue_free()
+			_roadblocks.erase(key)
+	for key: String in wanted:
+		if not _roadblocks.has(key):
+			var barricade := _barricade_model()
+			barricade.position = Board3D.cell_to_local(wanted[key])
+			add_child(barricade)
+			_roadblocks[key] = barricade
 
 
 # --- Targeting --------------------------------------------------------------------------------
@@ -207,7 +228,9 @@ func _valid_cells(kind: String) -> Array[Vector2i]:
 	var taken := {}
 	for chosen: Dictionary in _targeting.get("chosen", []):
 		taken[chosen["cell"]] = true
-	var moves_pieces: bool = _targeting.get("id", "") in ["swap", "teleport"]
+	var id: String = _targeting.get("id", "")
+	var moves_pieces: bool = id in ["swap", "teleport", "retreat"]
+	var blocked: Array = GameSession.step_rules()["blocked"]
 	match kind:
 		"own_piece", "enemy_piece":
 			for piece: Piece3D in board.pieces.values():
@@ -216,7 +239,15 @@ func _valid_cells(kind: String) -> Array[Vector2i]:
 					continue
 				if moves_pieces and frozen.has(piece.piece_id):
 					continue
+				if id == "promotion" and piece.rank != "PVT":
+					continue  # Only Privates can be promoted.
+				if id == "interrogation" and not _touches_mine(piece.cell, side):
+					continue  # Only enemies standing next to one of yours.
 				cells.append(piece.cell)
+		"any_cell":
+			for y in Ranks.ROWS:
+				for x in Ranks.COLS:
+					cells.append(Vector2i(x, y))
 		_:
 			var mines := {}
 			for m: Variant in GameSession.my_mines():
@@ -225,10 +256,12 @@ func _valid_cells(kind: String) -> Array[Vector2i]:
 			for y in Ranks.ROWS:
 				for x in Ranks.COLS:
 					var cell := Vector2i(x, y)
-					if board.piece_at(cell) != null or taken.has(cell):
+					if board.piece_at(cell) != null or taken.has(cell) or blocked.has(cell):
 						continue
 					var ok := false
 					match kind:
+						"empty_cell":
+							ok = true
 						"home_cell":
 							ok = Ranks.is_home_cell(side, cell)
 						"half_cell":
@@ -238,6 +271,14 @@ func _valid_cells(kind: String) -> Array[Vector2i]:
 					if ok:
 						cells.append(cell)
 	return cells
+
+
+func _touches_mine(cell: Vector2i, side: String) -> bool:
+	for n in Ranks.neighbors(cell):
+		var piece := board.piece_at(n)
+		if piece != null and piece.side == side:
+			return true
+	return false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -272,7 +313,8 @@ func _pick(cell: Vector2i) -> void:
 			target = {"piece_id": chosen[0]["piece_id"], "x": chosen[1]["cell"].x, "y": chosen[1]["cell"].y}
 		_:
 			var last: Dictionary = chosen[0]
-			target = {"piece_id": last["piece_id"]} if last["piece_id"] != "" else {"x": last["cell"].x, "y": last["cell"].y}
+			var wants_cell: bool = _targeting["picks"][0].ends_with("cell")
+			target = {"x": last["cell"].x, "y": last["cell"].y} if wants_cell or last["piece_id"] == "" else {"piece_id": last["piece_id"]}
 	cancel_targeting()
 	target_picked.emit(target)
 
@@ -335,6 +377,12 @@ func _on_rule_event(event: Dictionary) -> void:
 					_pop(piece.position + Vector3(0, 1.2, 0), "SECOND CHANCE!", AppTheme.MINT)
 		"rally":
 			_pop(Board3D.cell_to_local(cell) + Vector3(0, 1.3, 0) if cell != Board3D.NO_CELL else Vector3(0, 1.4, 0), "RALLY CRY!", AppTheme.GOLD)
+		"trench":
+			_ring_burst(cell, Color("c9a26b"))
+			_pop(Board3D.cell_to_local(cell) + Vector3(0, 1.3, 0) if cell != Board3D.NO_CELL else Vector3(0, 1.4, 0), "DUG IN!", Color("e3c08a"))
+		"quicksand":
+			_ring_burst(cell, Color("d9b26a"))
+			_pop(Board3D.cell_to_local(cell) + Vector3(0, 1.2, 0), "STUCK!", Color("f0c674"))
 		"hidden":
 			_smoke_puff(Ranks.opponent(GameSession.my_side()) if str(event.get("side")) != GameSession.my_side() else GameSession.my_side())
 			_pop(Vector3(0, 1.4, 0), "HIDDEN MOVE", AppTheme.PURPLE)
@@ -349,6 +397,8 @@ func _on_powerup_used(event: Dictionary) -> void:
 		return
 	var side := str(event.get("side", ""))
 	var near := Board3D.cell_to_local(Vector2i(4, 1 if side == Ranks.WHITE else Ranks.ROWS - 2))
+	if event.get("countered", false):
+		_pop(near + Vector3(0, 1.5, 0), "COUNTERED!", AppTheme.PINK)
 	var icon := Sprite3D.new()
 	icon.texture = PowerupLibrary.icon(str(event.get("id", "")))
 	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -365,9 +415,9 @@ func _on_powerup_used(event: Dictionary) -> void:
 	t.tween_property(icon, "modulate:a", 0.0, 0.4)
 	t.tween_callback(icon.queue_free)
 	# Board-changing powerups land after the board catches up.
-	if str(event.get("id")) in ["freeze", "teleport", "swap", "reinforcement"]:
+	if str(event.get("id")) in ["freeze", "teleport", "swap", "reinforcement", "retreat", "roadblock"]:
 		var public: Dictionary = event.get("public", {}) if event.get("public") is Dictionary else {}
-		var spot := _cell_of(public.get("to", public.get("piece", {})))
+		var spot := _cell_of(public.get("to", public.get("piece", public)))
 		if spot != Board3D.NO_CELL:
 			await _after_board()
 			_ring_burst(spot, PowerupLibrary.color(str(event["id"])))
@@ -520,6 +570,86 @@ func _mine_model() -> Node3D:
 	tag.position.y = 0.45
 	root.add_child(tag)
 	return root
+
+
+## Quicksand: a swirl of golden sand only its owner sees.
+func _quicksand_model() -> Node3D:
+	var root := Node3D.new()
+	var pit := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(0.9, 0.9)
+	pit.mesh = plane
+	pit.position.y = 0.012
+	pit.material_override = FxTextures.decal_material("glow_ring", Color(0.95, 0.75, 0.35, 0.9), false)
+	root.add_child(pit)
+	var sand := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.34
+	disc.bottom_radius = 0.36
+	disc.height = 0.02
+	sand.mesh = disc
+	sand.position.y = 0.02
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("d9b26a")
+	m.roughness = 1.0
+	sand.material_override = m
+	root.add_child(sand)
+	var spin := sand.create_tween().set_loops()
+	spin.tween_property(sand, "rotation:y", TAU, 3.0).from(0.0)
+	var tag := _label("SAND", Color("f0c674"), 26)
+	tag.position.y = 0.45
+	root.add_child(tag)
+	return root
+
+
+## Roadblock: striped barrier planks on two posts; both players see it.
+func _barricade_model() -> Node3D:
+	var root := Node3D.new()
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color("8a5a35")
+	var stripe := StandardMaterial3D.new()
+	stripe.albedo_color = Color("ff5a5f")
+	for side_x: float in [-0.32, 0.32]:
+		var post := MeshInstance3D.new()
+		var post_mesh := BoxMesh.new()
+		post_mesh.size = Vector3(0.08, 0.5, 0.08)
+		post.mesh = post_mesh
+		post.material_override = wood
+		post.position = Vector3(side_x, 0.25, 0.0)
+		root.add_child(post)
+	for i in 2:
+		var plank := MeshInstance3D.new()
+		var plank_mesh := BoxMesh.new()
+		plank_mesh.size = Vector3(0.82, 0.1, 0.05)
+		plank.mesh = plank_mesh
+		plank.material_override = stripe if i == 0 else wood
+		plank.position = Vector3(0.0, 0.22 + i * 0.18, 0.0)
+		plank.rotation.z = 0.12 if i == 0 else -0.12
+		root.add_child(plank)
+	for child in root.get_children():
+		(child as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return root
+
+
+## Trench: a ring of sandbags around a dug-in piece.
+func _sandbags() -> Node3D:
+	var ring := Node3D.new()
+	var burlap := StandardMaterial3D.new()
+	burlap.albedo_color = Color("c9a26b")
+	burlap.roughness = 1.0
+	for i in 8:
+		var bag := MeshInstance3D.new()
+		var capsule := CapsuleMesh.new()
+		capsule.radius = 0.07
+		capsule.height = 0.26
+		bag.mesh = capsule
+		bag.material_override = burlap
+		var angle := TAU * i / 8.0
+		bag.position = Vector3(cos(angle) * 0.46, 0.06, sin(angle) * 0.46)
+		bag.rotation = Vector3(0.0, -angle, PI / 2.0)
+		bag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ring.add_child(bag)
+	return ring
 
 
 func _cell_mark(cell: Vector2i, material: StandardMaterial3D) -> MeshInstance3D:

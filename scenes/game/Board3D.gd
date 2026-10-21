@@ -638,9 +638,19 @@ func _targets_for(piece: Piece3D) -> Array[Vector2i]:
 				if cell != piece.cell and Ranks.is_home_cell(my_side, cell):
 					result.append(cell)
 	elif mode == Mode.PLAY:
-		for cell in Ranks.neighbors(piece.cell):
-			var occupant: Piece3D = _cells.get(cell)
-			if occupant == null or occupant.side != piece.side:
+		# GameSession.step_rules(): Haste dashes, Roadblock squares, Ceasefire (MoveRules on the server).
+		var rules := GameSession.step_rules()
+		var blocked: Array = rules["blocked"]
+		for dir: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			for steps in (2 if rules["haste"] else 1):
+				var cell := piece.cell + dir * (steps + 1)
+				if not Ranks.in_bounds(cell) or blocked.has(cell):
+					continue
+				if steps == 1 and (_cells.has(piece.cell + dir) or blocked.has(piece.cell + dir)):
+					continue  # A dash can't jump over a piece or a roadblock.
+				var occupant: Piece3D = _cells.get(cell)
+				if occupant != null and (occupant.side == piece.side or rules["ceasefire"]):
+					continue
 				result.append(cell)
 	return result
 

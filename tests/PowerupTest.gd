@@ -26,6 +26,7 @@ func _ready() -> void:
 	_test_secrecy()
 	_test_brain_and_ai()
 	_test_modes()
+	_test_new_cards()
 	print("\n%s (%d failure%s)" % ["PASS" if failures == 0 else "FAIL", failures, "" if failures == 1 else "s"])
 	get_tree().quit(0 if failures == 0 else 1)
 
@@ -68,15 +69,19 @@ func move(a: LocalArbiter, from: Vector2i, to: Vector2i) -> Dictionary:
 
 func _test_modes() -> void:
 	print("Powerup modes")
-	check(PowerupLibrary.unlocked_at(0).size() == 6, "a Private can choose from 6 powerups")
+	check(PowerupLibrary.ids().size() >= 40 and GameSession.powerups.unlocked_ids().size() == PowerupLibrary.ids().size(),
+		"every one of the 40+ powerups is open to every player")
+	for id in PowerupLibrary.ids():
+		var card := PowerupLibrary.info(id)
+		if not (str(card.get("kind")) in PowerupLibrary.KINDS and str(card.get("rarity")) in PowerupLibrary.RARITIES):
+			check(false, "%s has a card type and rarity" % id)
 	check(PowerupLibrary.DEFAULT_LOADOUT.size() == PowerupLibrary.MAX_SLOTS and PowerupLibrary.MAX_SLOTS == 5, "the starter hand holds 5")
-	var hand := PowerupLibrary.deal(0)
+	var hand := PowerupLibrary.deal()
 	var distinct := {}
 	for id in hand:
 		distinct[id] = true
-	check(hand.size() == 5 and distinct.size() == 5 and hand.all(func(id: String) -> bool: return PowerupLibrary.unlock_tier(id) == 0),
-		"a random hand is 5 distinct unlocked powerups")
-	check(PowerupLibrary.deal(12).size() == 5, "high ranks are dealt 5 too")
+	check(hand.size() == 5 and distinct.size() == 5 and hand.all(func(id: String) -> bool: return PowerupLibrary.has(id)),
+		"a random hand is 5 distinct powerups from the whole library")
 
 	var off := standard()
 	off.powerup_mode = PowerupLibrary.MODE_OFF
@@ -435,7 +440,7 @@ func _test_brain_and_ai() -> void:
 	var loadout := PowerupBrain.pick_loadout()
 	check(loadout.size() == 5 and loadout.all(func(id: String) -> bool: return PowerupBrain.POOL.has(id)), "the AI brings 5 powerups from its pool")
 	var rookie := PowerupBrain.pick_loadout(true)
-	check(rookie.size() == 5 and rookie.all(func(id: String) -> bool: return PowerupLibrary.unlock_tier(id) == 0), "Rookie is dealt 5 rank-0 basics")
+	check(rookie.size() == 5 and rookie.all(func(id: String) -> bool: return PowerupBrain.ROOKIE_POOL.has(id)), "Rookie is dealt 5 simple cards")
 	var ai := SalpakanAI.new(B, SalpakanAI.Difficulty.MEDIUM)
 	var a := standard()
 	ai.begin(a.observation(B))
@@ -450,3 +455,172 @@ func _test_brain_and_ai() -> void:
 	check(ai.possible_ranks(enemy_id).size() == 5, "a bounce teaches nothing about ranks")
 	ai.observe({"hidden": true, "clash": {"defender_id": id_at(a, Vector2i(3, 4)), "eliminated": []}})
 	check(true, "a hidden move is digested without a mover")
+
+
+# --- The second wave (mirrors the server's PowerupDeckTest) ---------------------------------------
+
+func _quiet(seconds := 0) -> LocalArbiter:
+	return board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["CPT", Vector2i(4, 6)]], seconds)
+
+
+## White and black shuffle their pieces back and forth; returns each new turn's allotment.
+func _rounds(a: LocalArbiter, count: int) -> Array:
+	var allotments: Array = []
+	for i in count:
+		var up := i % 2 == 0
+		if a.turn == W:
+			move(a, Vector2i(4, 2 if up else 3), Vector2i(4, 3 if up else 2))
+		else:
+			move(a, Vector2i(4, 6 if up else 5), Vector2i(4, 5 if up else 6))
+		allotments.append(a.turn_allotment)
+	return allotments
+
+
+func _test_new_cards() -> void:
+	print("Second-wave powerups")
+	var a := _quiet(45)
+	a.use_powerup(W, "blitz")
+	check(a.rules_view(B)["effects"]["opponent"].any(func(e: Dictionary) -> bool: return e["type"] == "blitz"), "Blitz is public")
+	var blitz := []
+	for i in 5:
+		var up := (i / 2) % 2 == 0
+		if a.turn == W:
+			move(a, Vector2i(4, 2 if up else 3), Vector2i(4, 3 if up else 2))
+		else:
+			move(a, Vector2i(4, 6 if up else 5), Vector2i(4, 5 if up else 6))
+		blitz.append(a.turn_allotment)
+	check(blitz == [23, 23, 23, 23, 45], "Blitz halves both players' next 2 turns (%s)" % [blitz])
+
+	a = _quiet(45)
+	a.use_powerup(W, "time_steal")
+	var steal := []
+	for i in 5:
+		var up := (i / 2) % 2 == 0
+		if a.turn == W:
+			move(a, Vector2i(4, 2 if up else 3), Vector2i(4, 3 if up else 2))
+		else:
+			move(a, Vector2i(4, 6 if up else 5), Vector2i(4, 5 if up else 6))
+		steal.append(a.turn_allotment)
+	check(steal == [35, 55, 35, 55, 45], "Time Thief moves 10 s a turn from black to white (%s)" % [steal])
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]],
+		[["FLG", Vector2i(8, 7)], ["CPT", Vector2i(3, 3)], ["PVT", Vector2i(6, 2)], ["SPY", Vector2i(6, 6)]])
+	var sonar := a.use_powerup(W, "sonar_ping")
+	check(sonar["result"]["private"] == {"count": 2} and sonar["event"]["public"].is_empty(), "Sonar Ping counts enemies on your half, secretly")
+	check(a.rules_view(B)["intel"].is_empty(), "black learns nothing from the ping")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["SPY", Vector2i(4, 3)]])
+	check(a.use_powerup(W, "spy_alarm")["result"]["private"] == {"alarm": true}, "Spy Alarm rings for an adjacent Spy")
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["SPY", Vector2i(4, 5)], ["PVT", Vector2i(4, 3)]])
+	check(a.use_powerup(W, "spy_alarm")["result"]["private"] == {"alarm": false}, "Spy Alarm stays quiet otherwise")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["G2", Vector2i(5, 6)]])
+	check(a.use_powerup(W, "radar_sweep", {"x": 4, "y": 5})["result"]["private"] == {"x": 4, "y": 5, "found": true}, "Radar Sweep finds a General in the 3x3 area")
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["G2", Vector2i(8, 4)]])
+	check(a.use_powerup(W, "radar_sweep", {"x": 4, "y": 5})["result"]["private"]["found"] == false, "Radar Sweep reports an empty area")
+	check(not a.use_powerup(W, "radar_sweep", {"x": 99, "y": 5})["ok"], "Radar Sweep needs a square on the board")
+
+	a = _quiet()
+	a.loadouts[B] = ["jammer", "freeze", "insight"]
+	a.used[B] = ["insight"]
+	check(a.use_powerup(W, "code_breaker")["result"]["private"] == {"cards": ["jammer", "freeze"]}, "Code Breaker reads the unplayed cards")
+	check(a.rules_view(B)["intel"].is_empty(), "the codes stay with white")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)]], [["FLG", Vector2i(8, 7)], ["COL", Vector2i(4, 3)], ["CPT", Vector2i(6, 6)]])
+	check(not a.use_powerup(W, "interrogation", {"piece_id": id_at(a, Vector2i(6, 6))})["ok"], "Interrogation needs an adjacent enemy")
+	var told := a.use_powerup(W, "interrogation", {"piece_id": id_at(a, Vector2i(4, 3))})
+	check(told["ok"] and told["result"]["private"]["rank"] == "COL", "Interrogation reveals the adjacent enemy's rank")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 3)]], [["FLG", Vector2i(8, 7)], ["CPT", Vector2i(4, 6)]])
+	var back := a.use_powerup(W, "retreat", {"piece_id": id_at(a, Vector2i(4, 3))})
+	check(back["ok"] and back["result"]["private"]["to"] == {"x": 4, "y": 1} and a.turn == B, "Tactical Retreat falls back 2 squares and ends the turn")
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 3)], ["PVT", Vector2i(4, 1)]], [["FLG", Vector2i(8, 7)]])
+	check(a.use_powerup(W, "retreat", {"piece_id": id_at(a, Vector2i(4, 3))})["result"]["private"]["to"] == {"x": 4, "y": 2}, "Retreat stops at a blocking piece")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)], ["PVT", Vector2i(4, 1)]], [["FLG", Vector2i(8, 7)], ["CPT", Vector2i(4, 6)]])
+	check(a.validate(W, id_at(a, Vector2i(4, 2)), Vector2i(4, 2), Vector2i(4, 4)) != "", "no dashes without Haste")
+	a.use_powerup(W, "haste")
+	check(a.validate(W, id_at(a, Vector2i(4, 1)), Vector2i(4, 1), Vector2i(4, 3)) == "Haste can't jump over pieces or roadblocks.", "Haste can't jump over pieces")
+	check(a.legal_moves(W).any(func(m: Dictionary) -> bool: return m["to"] == Vector2i(4, 4)), "Haste dashes show up as legal moves")
+	check(not move(a, Vector2i(4, 2), Vector2i(4, 4)).is_empty(), "Haste lets a piece dash 2 squares")
+	move(a, Vector2i(4, 6), Vector2i(4, 5))
+	check(a.validate(W, id_at(a, Vector2i(4, 1)), Vector2i(4, 1), Vector2i(4, 3)) != "", "Haste is spent after one dash")
+
+	a = _quiet()
+	check(not a.use_powerup(W, "roadblock", {"x": 4, "y": 6})["ok"], "a Roadblock needs an empty square")
+	check(a.use_powerup(W, "roadblock", {"x": 4, "y": 5})["result"]["private"] == {"x": 4, "y": 5, "turns": 3}, "Roadblock placed")
+	var seen: Array = a.rules_view(B)["effects"]["opponent"].filter(func(e: Dictionary) -> bool: return e["type"] == "roadblock")
+	check(seen.size() == 1 and seen[0]["x"] == 4 and seen[0]["y"] == 5, "black sees the roadblock and where")
+	check(a.observation(B)["blocked"] == [Vector2i(4, 5)], "the AI's observation lists the blocked square")
+	move(a, Vector2i(4, 2), Vector2i(4, 3))
+	check(a.validate(B, id_at(a, Vector2i(4, 6)), Vector2i(4, 6), Vector2i(4, 5)) == "A roadblock stands on that square.", "nobody enters a Roadblock")
+	move(a, Vector2i(4, 6), Vector2i(3, 6))
+	move(a, Vector2i(4, 3), Vector2i(4, 4))
+	move(a, Vector2i(3, 6), Vector2i(3, 5))
+	check(a.validate(W, id_at(a, Vector2i(4, 4)), Vector2i(4, 4), Vector2i(4, 5)) != "", "it bars white too")
+	move(a, Vector2i(4, 4), Vector2i(5, 4))
+	move(a, Vector2i(3, 5), Vector2i(3, 4))
+	move(a, Vector2i(5, 4), Vector2i(5, 5))
+	move(a, Vector2i(3, 4), Vector2i(4, 4))
+	check(a.validate(W, id_at(a, Vector2i(5, 5)), Vector2i(5, 5), Vector2i(4, 5)) == "", "it lifts after black's 3rd turn")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(6, 2)]], [["FLG", Vector2i(8, 7)], ["CPT", Vector2i(4, 4)]])
+	check(not a.use_powerup(W, "quicksand", {"x": 4, "y": 5})["ok"], "Quicksand goes on your own half")
+	a.use_powerup(W, "quicksand", {"x": 4, "y": 3})
+	check(a.rules_view(W)["mines"] == [{"x": 4, "y": 3, "kind": "quicksand", "turns_left": 10}] and a.rules_view(B)["mines"].is_empty(), "only white sees the quicksand")
+	move(a, Vector2i(6, 2), Vector2i(6, 3))
+	var bog := move(a, Vector2i(4, 4), Vector2i(4, 3))
+	check(bog.get("quicksand") == {"x": 4, "y": 3, "piece_id": id_at(a, Vector2i(4, 3)), "turns": 2} and bog["clash"] == null, "Quicksand catches the first enemy")
+	move(a, Vector2i(6, 3), Vector2i(6, 2))
+	check(a.validate(B, id_at(a, Vector2i(4, 3)), Vector2i(4, 3), Vector2i(4, 2)) == "That piece is frozen.", "the caught piece is stuck")
+
+	a = _quiet()
+	a.loadouts[B] = ["spy_card", "insight"]
+	a.use_powerup(W, "counterspell")
+	check(not a.rules_view(B)["effects"]["opponent"].any(func(e: Dictionary) -> bool: return e["type"] == "counterspell"), "black can't see the Counterspell")
+	move(a, Vector2i(4, 2), Vector2i(4, 3))
+	var fizzled := a.use_powerup(B, "spy_card")
+	check(fizzled["ok"] and fizzled["result"]["private"] == {"countered": true} and fizzled["event"].get("countered", false), "the next powerup fizzles")
+	check(a.used[B].has("spy_card") and a.rules_view(B)["revealed"].is_empty(), "the countered card is spent, with no effect")
+	check(a.use_powerup(B, "insight")["result"]["private"]["officers"] == 1, "only one card is countered")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 3)]], [["FLG", Vector2i(8, 7)], ["MAJ", Vector2i(4, 4)]])
+	a.use_powerup(W, "trench", {"piece_id": id_at(a, Vector2i(4, 3))})
+	check(not a.rules_view(B)["effects"]["opponent"].any(func(e: Dictionary) -> bool: return e["type"] == "trench"), "the Trench is secret")
+	move(a, Vector2i(0, 0), Vector2i(0, 1))
+	var dug := move(a, Vector2i(4, 4), Vector2i(4, 3))
+	check(dug["clash"]["outcome"] == "defender" and dug["clash"].get("trench") == W, "a Trench wins the defender a tie")
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 3)]], [["FLG", Vector2i(8, 7)], ["MAJ", Vector2i(4, 4)]])
+	a.use_powerup(W, "trench", {"piece_id": id_at(a, Vector2i(4, 3))})
+	check(move(a, Vector2i(4, 3), Vector2i(4, 4))["clash"]["outcome"] == "both", "a Trench doesn't help an attacker")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 3)]], [["FLG", Vector2i(8, 7)], ["G5", Vector2i(4, 5)]])
+	a.use_powerup(W, "ceasefire")
+	move(a, Vector2i(4, 3), Vector2i(4, 4))
+	check(a.validate(B, id_at(a, Vector2i(4, 5)), Vector2i(4, 5), Vector2i(4, 4)) == "Ceasefire: you can't attack this turn.", "Ceasefire forbids black's attacks")
+	check(a.observation(B)["no_attack"] and not a.legal_moves(B).any(func(m: Dictionary) -> bool: return m["to"] == Vector2i(4, 4)), "the AI sees the ceasefire")
+	move(a, Vector2i(4, 5), Vector2i(3, 5))
+	move(a, Vector2i(4, 4), Vector2i(4, 3))
+	check(a.validate(B, id_at(a, Vector2i(3, 5)), Vector2i(3, 5), Vector2i(3, 4)) == "", "and it ends with that turn")
+
+	a = _quiet()
+	a.use_powerup(W, "spy_card")
+	move(a, Vector2i(4, 2), Vector2i(4, 3))
+	var burned := a.use_powerup(B, "counter_intel")
+	check(burned["result"]["private"] == {"wiped": 1} and burned["forget"].size() == 1 and a.rules_view(W)["revealed"].is_empty(), "Counter-Intel wipes what white learned")
+
+	a = board([["FLG", Vector2i(0, 0)], ["MAJ", Vector2i(4, 2)], ["PVT", Vector2i(2, 3)]], [["FLG", Vector2i(8, 7)], ["PVT", Vector2i(2, 4)]])
+	check(not a.use_powerup(W, "promotion", {"piece_id": id_at(a, Vector2i(4, 2))})["ok"], "only Privates are promoted")
+	var promoted := a.use_powerup(W, "promotion", {"piece_id": id_at(a, Vector2i(2, 3))})
+	check(promoted["result"]["private"]["rank"] == "SGT" and promoted["event"]["public"].is_empty(), "Field Promotion makes a secret Sergeant")
+	check(move(a, Vector2i(2, 3), Vector2i(2, 4))["clash"]["outcome"] == "attacker", "the new Sergeant beats a Private")
+
+	a = _quiet()
+	a.loadouts[W] = ["recall", "insight", "jammer"]
+	check(not a.use_powerup(W, "recall")["ok"], "Recall needs a played card")
+	a.use_powerup(W, "insight")
+	var recalled := a.use_powerup(W, "recall")
+	check(recalled["result"]["private"] == {"recalled": "insight"} and not a.used[W].has("insight") and a.used[W].has("recall"), "Recall puts the last card back in your hand")
+	move(a, Vector2i(4, 2), Vector2i(4, 3))
+	move(a, Vector2i(4, 6), Vector2i(4, 5))
+	check(a.use_powerup(W, "insight")["ok"], "the recalled card works again")

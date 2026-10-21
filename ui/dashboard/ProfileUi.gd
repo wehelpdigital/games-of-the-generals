@@ -57,8 +57,10 @@ static func candy(bg: Color, pressed: bool, radius := 18) -> StyleBoxFlat:
 	s.border_width_bottom = 3 if pressed else 7
 	s.content_margin_left = 18
 	s.content_margin_right = 18
-	s.content_margin_top = 10.0 + (4.0 if pressed else 0.0)
-	s.content_margin_bottom = 10.0
+	# Text sits on the face above the thick bottom lip, and a little higher still because the
+	# heading font's capitals ride high in their line box: centred by the numbers looks low.
+	s.content_margin_top = 11.0 if pressed else 7.0
+	s.content_margin_bottom = 13.0
 	return s
 
 
@@ -79,7 +81,7 @@ static func play_button(title: String, subtitle: String, bg: Color, action: Call
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 18
 	row.offset_right = -14
-	row.offset_bottom = -4
+	row.offset_bottom = -10  # Centred on the face above the lip, nudged up for the font (see candy).
 	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var compact := height < 70.0
 	if icon != "":
@@ -113,8 +115,8 @@ static func tile(title: String, icon: String, bg: Color, action: Callable) -> Bu
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column := AppTheme.vbox(2)
 	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.offset_top = 8
-	column.offset_bottom = -10
+	column.offset_top = 5
+	column.offset_bottom = -14  # Centred on the face above the lip (see candy).
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	var glyph := TileIcon.new(icon, Vector2(38, 38))
 	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

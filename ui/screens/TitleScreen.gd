@@ -5,7 +5,6 @@ const WIDE := 1140.0  # From this width the guest showcase floats bottom-left; b
 
 var _account: HBoxContainer
 var _logo: GameLogo
-var _tags: HBoxContainer
 var _column: VBoxContainer
 var _second: Button  # "Shop" for players, "Sign up free" for guests.
 var _showcase: FeatureShowcase
@@ -30,11 +29,6 @@ func _ready() -> void:
 	_logo = GameLogo.new(240.0)
 	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	column.add_child(_logo)
-	_tags = AppTheme.hbox()
-	_tags.alignment = BoxContainer.ALIGNMENT_CENTER
-	_tags.add_child(AppTheme.pill("3D STRATEGY", AppTheme.BLUE))
-	_tags.add_child(AppTheme.pill("ONLINE + AI", AppTheme.PURPLE))
-	column.add_child(_tags)
 
 	column.add_child(_gap(10))
 	column.add_child(AppTheme.button("Play vs AI", "Primary", func() -> void: ui.show_screen("ai_setup"), 64))
@@ -91,7 +85,6 @@ func _ready() -> void:
 
 func open(_args: Dictionary) -> void:
 	_logo.intro()
-	AppTheme.pop_in(_tags, 0.9)
 	_refresh_account()
 
 
@@ -115,10 +108,8 @@ func _layout() -> void:
 	var brand_home: Control = _brand if short else _column
 	if _logo.get_parent() != brand_home:
 		_logo.reparent(brand_home, false)
-		_tags.reparent(brand_home, false)
 		if not short:
 			_column.move_child(_logo, 1)  # After the top gap.
-			_column.move_child(_tags, 2)
 	_brand.visible = short
 	_top_gap.custom_minimum_size.y = 56.0 if portrait else 0.0
 	# Landscape phones have no height for the showcase card (the 3D board still shows the looks),

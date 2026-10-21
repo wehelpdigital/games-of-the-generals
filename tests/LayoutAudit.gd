@@ -11,7 +11,7 @@ static func report(root: Node, tag: String) -> int:
 	for line in found:
 		print("OVERFLOW [%s] %s" % [tag, line])
 	var causes: Array[String] = []
-	_wide(root, view.x - 20.0, causes)
+	_wide(root, view.x - 4.0, causes)
 	for line in causes:
 		print("TOO WIDE [%s] %s" % [tag, line])
 	return found.size()

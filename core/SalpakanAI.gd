@@ -329,43 +329,65 @@ func _search(sides: PackedInt32Array, ranks: PackedInt32Array, moves: Array[Vect
 			world[enemy_cells[k]] = assignment[k]
 		worlds.append(world)
 
+	# The loops that pause for a frame are plain index loops, and the shortlist is sorted without a
+	# capturing lambda: Godot 4.7's VM intermittently crashed resuming `for x in typed_array`
+	# loops (and sorting lambdas) across an await in the depth-2 search.
 	var clock := Time.get_ticks_msec()
 	var scores := PackedFloat32Array()
 	scores.resize(moves.size())
-	for i in moves.size():
+	var i := 0
+	while i < moves.size():
 		var total := 0.0
-		for world in worlds:
+		for w in worlds.size():
 			var s := sides.duplicate()
-			var r := world.duplicate()
+			var r := worlds[w].duplicate()
 			_apply(s, r, moves[i].x, moves[i].y)
 			total += _evaluate(s, r, true)
 		scores[i] = total / sample_count - (SHUFFLE_PENALTY if _reverses(moves[i]) else 0.0)
+		i += 1
 		if Time.get_ticks_msec() - clock > FRAME_BUDGET_MS:
 			await Engine.get_main_loop().process_frame
 			clock = Time.get_ticks_msec()
 
-	var candidates: Array = range(moves.size())
+	var candidates := PackedInt32Array()
+	for m in moves.size():
+		candidates.append(m)
 	if _settings["depth"] >= 2:
-		candidates.sort_custom(func(a: int, b: int) -> bool: return scores[a] > scores[b])
-		candidates = candidates.slice(0, _settings["shortlist"])
-		for i: int in candidates:
+		candidates = _best_first(scores, _settings["shortlist"])
+		var k := 0
+		while k < candidates.size():
+			var m := candidates[k]
 			var total := 0.0
-			for world in worlds:
-				total += _reply_value(sides, world, moves[i])
+			var w := 0
+			while w < worlds.size():
+				total += _reply_value(sides, worlds[w], moves[m])
+				w += 1
 				if Time.get_ticks_msec() - clock > FRAME_BUDGET_MS:
 					await Engine.get_main_loop().process_frame
 					clock = Time.get_ticks_msec()
-			scores[i] = total / sample_count - (SHUFFLE_PENALTY if _reverses(moves[i]) else 0.0)
+			scores[m] = total / sample_count - (SHUFFLE_PENALTY if _reverses(moves[m]) else 0.0)
+			k += 1
 
 	var noise: float = _settings["noise"]
 	var best := -1
 	var best_score := -INF
-	for i: int in candidates:
-		var score := scores[i] + randfn(0.0, noise)
+	for m in candidates:
+		var score := scores[m] + randfn(0.0, noise)
 		if score > best_score:
 			best_score = score
-			best = i
+			best = m
 	return best
+
+
+## Indices of the `count` highest scores, best first.
+static func _best_first(scores: PackedFloat32Array, count: int) -> PackedInt32Array:
+	var order := PackedInt32Array()
+	for index in scores.size():
+		var at := order.size()
+		while at > 0 and scores[order[at - 1]] < scores[index]:
+			at -= 1
+		order.insert(at, index)
+	return order.slice(0, count)
 
 
 ## Our move, then the opponent's reply in one sampled world. The opponent is modelled as mostly,

@@ -6,6 +6,7 @@ extends Node
 const MAX_PLIES := 400
 
 var failures := 0
+var _only := ""  ## Run just the matchups whose title contains this (e.g. --only="Hard vs Medium").
 
 
 func _ready() -> void:
@@ -13,6 +14,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--games="):
 			games = int(arg.trim_prefix("--games="))
+		elif arg.begins_with("--only="):
+			_only = arg.trim_prefix("--only=")
 
 	var easy := await _matchup("Easy vs Random", SalpakanAI.Difficulty.EASY, -1, games)
 	var medium := await _matchup("Medium vs Random", SalpakanAI.Difficulty.MEDIUM, -1, games)
@@ -20,6 +23,11 @@ func _ready() -> void:
 	var hard_vs_easy := await _matchup("Hard vs Easy", SalpakanAI.Difficulty.HARD, SalpakanAI.Difficulty.EASY, games)
 	await _matchup("Hard vs Medium", SalpakanAI.Difficulty.HARD, SalpakanAI.Difficulty.MEDIUM, games)
 
+	if _only != "":
+		print("
+%s (%d failure%s)" % ["PASS" if failures == 0 else "FAIL", failures, "" if failures == 1 else "s"])
+		get_tree().quit(0 if failures == 0 else 1)
+		return
 	_check(medium["win_rate"] >= 0.75, "Medium beats a random mover (%d%%)" % roundi(medium["win_rate"] * 100))
 	_check(hard["win_rate"] >= 0.8, "Hard beats a random mover (%d%%)" % roundi(hard["win_rate"] * 100))
 	_check(hard_vs_easy["win_rate"] >= 0.6, "Hard beats Easy (%d%%)" % roundi(hard_vs_easy["win_rate"] * 100))
@@ -31,6 +39,8 @@ func _ready() -> void:
 
 ## `hero` plays a random colour each game against `rival` (-1 = random mover).
 func _matchup(title: String, hero: int, rival: int, games: int) -> Dictionary:
+	if _only != "" and not title.contains(_only):
+		return {"win_rate": 1.0, "avg_ms": 0.0}
 	var wins := 0
 	var draws := 0
 	var plies := 0

@@ -155,7 +155,7 @@ func preview_item(category: String, slug: String) -> void:
 		look["toppers"] = {"slots": slots.slice(0, ToppersLibrary.MAX_SLOTS)}
 	elif look.has(category):
 		look[category] = slug
-	set_showcase(look)
+	set_showcase(CosmeticCatalog.dress_with_pair(look, category, slug))
 	rig.frame(PREVIEW_SHOTS.get(category, "half"))
 
 

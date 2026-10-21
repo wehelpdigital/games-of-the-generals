@@ -72,6 +72,18 @@ static func info(category: String, slug: String) -> Dictionary:
 	return items(category).get(slug, {})
 
 
+## Some items name the cosmetics they look best with ("pair": {"chip": "pieces_..."}, e.g. pumpkin
+## shapes with the jack-o'-lantern skin). Previews and shop pictures wear the pair wherever the look
+## still has that category's default, so the item shows the way it was designed.
+static func dress_with_pair(look: Dictionary, category: String, slug: String) -> Dictionary:
+	var pair: Variant = info(category, slug).get("pair")
+	if pair is Dictionary:
+		for key: String in pair:
+			if look.get(key) == Loadout.DEFAULTS.get(key):
+				look[key] = pair[key]
+	return look
+
+
 ## The occasion an item belongs to (Seasons.OCCASIONS), or "" for the all-year catalogue.
 static func season_of(category: String, slug: String) -> String:
 	return str(info(category, slug).get("season", ""))

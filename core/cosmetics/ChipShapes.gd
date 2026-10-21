@@ -44,11 +44,17 @@ const STYLES := {
 	"shape_mochi": {"name": "Jelly Mochi", "rarity": "epic", "desc": "Squishy, wobbly mochi blobs that never stop jiggling.",
 		"swatch": [Color("ffd1ea"), Color("c9f5e8"), Color("fff4fa"), Color("78c46b")]},
 	"shape_pumpkin": {"name": "Pumpkins", "rarity": "epic", "season": "halloween", "desc": "Plump, ribbed pumpkins with a curly stem. The skin picks the colour.",
-		"swatch": [Color("ff8a1f"), Color("e0701a"), Color("4a6b2a")]},
+		"swatch": [Color("ff8a1f"), Color("e0701a"), Color("4a6b2a")], "pair": {"chip": "pieces_jack_o_lantern"}},
 	"shape_ornament": {"name": "Ornament Baubles", "rarity": "epic", "season": "christmas", "desc": "Shiny Christmas baubles with a little cap and hook.",
-		"swatch": [Color("d62f3a"), Color("ffcf3f"), Color("2f8f4e")]},
+		"swatch": [Color("d62f3a"), Color("ffcf3f"), Color("2f8f4e")], "pair": {"chip": "pieces_brass_gold"}},
 	"shape_gingerbread": {"name": "Gingerbread Folks", "rarity": "rare", "season": "christmas", "desc": "Little cookie people with iced cuffs, standing to attention.",
-		"swatch": [Color("c8803f"), Color("ffffff"), Color("e63946")]},
+		"swatch": [Color("c8803f"), Color("ffffff"), Color("e63946")], "pair": {"chip": "pieces_gingerbread"}},
+	"shape_heart": {"name": "Hearts", "rarity": "epic", "season": "valentines", "desc": "Chunky candy hearts on a little stand.",
+		"swatch": [Color("ff4f7b"), Color("ffc9da"), Color("a8244f")], "pair": {"chip": "pieces_sweetheart"}},
+	"shape_lucky_coin": {"name": "Lucky Coins", "rarity": "epic", "season": "lunar_new_year", "desc": "Fortune coins with a square frame around the rank.",
+		"swatch": [Color("ffcf3f"), Color("d4a017"), Color("d62828")], "pair": {"chip": "pieces_brass_gold"}},
+	"shape_easter_egg": {"name": "Painted Eggs", "rarity": "rare", "season": "summer", "desc": "Striped spring eggs in little cups.",
+		"swatch": [Color("8fd8ff"), Color("ff8ec0"), Color("ffe38a")], "pair": {"chip": "pieces_pastel_easter"}},
 }
 
 const ORB_AMBER := Color("ff8a1c")
@@ -145,6 +151,12 @@ static func _spec(slug: String) -> Dictionary:
 			return _ornament()
 		"shape_gingerbread":
 			return _gingerbread()
+		"shape_heart":
+			return _heart()
+		"shape_lucky_coin":
+			return _lucky_coin()
+		"shape_easter_egg":
+			return _easter_egg()
 	return _classic()
 
 
@@ -500,6 +512,61 @@ static func _gingerbread() -> Dictionary:
 		"face": pivot * Transform3D(Basis().scaled(Vector3.ONE * 0.6), Vector3(0, 0.3, t * 0.5 + 0.006)),
 		"back": _back(pivot * ShapeKit.at(Vector3(0, 0.32, -t * 0.5 - 0.006)), 0.24),
 		"pick": [Vector3(0.84, 0.8, 0.5), Vector3(0, 0.4, 0)],
+	}
+
+
+static func _heart() -> Dictionary:
+	# Two round lobes and a point (convex pieces triangulate cleanly), standing tilted toward its
+	# owner like the plaque.
+	var pivot := Transform3D(Basis(Vector3.RIGHT, -0.5), Vector3(0, 0.06, 0))
+	var lobe := ShapeKit.prism(InsigniaFactory.regular_polygon(28, 0.2), 0.16, 0.05, true)
+	var point := ShapeKit.prism(PackedVector2Array([Vector2(-0.355, 0.1), Vector2(0.0, -0.36), Vector2(0.355, 0.1)]), 0.16, 0.05)
+	return {
+		"parts": [
+			ShapeKit.part("body", lobe, pivot * ShapeKit.at(Vector3(-0.165, 0.46, 0))),
+			ShapeKit.part("body", lobe, pivot * ShapeKit.at(Vector3(0.165, 0.46, 0))),
+			ShapeKit.part("body", point, pivot * ShapeKit.at(Vector3(0, 0.39, 0))),
+			ShapeKit.part("base", ShapeKit.box(Vector3(0.7, 0.44, 0.1), 0.18, 0.035), ShapeKit.at(Vector3(0, 0.05, 0), ShapeKit.FLAT)),
+		],
+		"face": pivot * Transform3D(Basis().scaled(Vector3.ONE * 0.8), Vector3(0, 0.4, 0.085)),
+		"back": _back(pivot * ShapeKit.at(Vector3(0, 0.4, -0.085)), 0.3),
+		"pick": [Vector3(0.84, 0.86, 0.54), Vector3(0, 0.42, 0)],
+	}
+
+
+static func _lucky_coin() -> Dictionary:
+	# A thick gold coin; a raised square frame (the coin's "hole") holds the rank badge.
+	var parts := [
+		ShapeKit.part("body", ShapeKit.cylinder(0.39, 0.39, 0.12, 40), ShapeKit.at(Vector3(0, 0.06, 0))),
+		ShapeKit.part("base", ShapeKit.torus(0.34, 0.41, 40, 10), ShapeKit.at(Vector3(0, 0.122, 0)), 0.02),
+	]
+	for i in 4:
+		var a := TAU * i / 4.0
+		var along := Vector3(cos(a), 0, sin(a))
+		parts.append(ShapeKit.part("accent", ShapeKit.box(Vector3(0.36, 0.05, 0.035), 0.012, 0.008),
+			Transform3D(Basis(Vector3.UP, -a + PI / 2.0) * ShapeKit.FLAT, along * 0.19 + Vector3(0, 0.135, 0)), 0.0))
+		parts.append(ShapeKit.part("accent", ShapeKit.sphere(0.035, 0.03, 10), ShapeKit.at(Vector3(cos(a + PI / 4.0), 0, sin(a + PI / 4.0)) * 0.29 + Vector3(0, 0.125, 0)), 0.0))
+	return {
+		"parts": parts,
+		"face": _face_up(0.124, 0.62),
+		"back": null,
+		"pick": [Vector3(0.84, 0.36, 0.84), Vector3(0, 0.18, 0)],
+	}
+
+
+static func _easter_egg() -> Dictionary:
+	var center := Vector3(0, 0.38, 0)
+	return {
+		"parts": [
+			ShapeKit.part("body", ShapeKit.sphere(0.27, 0.66, 32), ShapeKit.at(center)),
+			ShapeKit.part("accent", ShapeKit.torus(0.255, 0.285, 36, 5), ShapeKit.at(center + Vector3(0, -0.12, 0)), 0.0),
+			ShapeKit.part("accent", ShapeKit.torus(0.235, 0.265, 36, 5), ShapeKit.at(center + Vector3(0, 0.16, 0)), 0.0),
+			ShapeKit.part("base", ShapeKit.cylinder(0.2, 0.15, 0.14, 24), ShapeKit.at(Vector3(0, 0.07, 0))),
+		],
+		"face": _face_tilted(Vector3(0, 0.42, 0.25), -0.5, 0.5),
+		"back": _back(ShapeKit.at(Vector3(0, 0.4, -0.27)) * Transform3D(Basis(Vector3.RIGHT, 0.3), Vector3.ZERO), 0.24),
+		"pick": [Vector3(0.64, 0.8, 0.64), Vector3(0, 0.38, 0)],
+		"idle": "sway",
 	}
 
 

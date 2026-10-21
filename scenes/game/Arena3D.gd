@@ -447,6 +447,87 @@ func _decor_snowy_village() -> void:
 	_put(_glow("sky_parol", Color("ffcf3f"), 1.8), _cyl(0.0, 3.0, 0.4, 5), Vector3(28.0, 18.0, -45.0), 0.0, Vector3.ONE, Vector3(PI / 2.0, 0, 0))
 
 
+func _decor_harvest_farm() -> void:
+	# A red barn with a white-trimmed door and a hay loft.
+	var barn := _toon("barn_red", Color("c8341c"), 0.06)
+	var trim := _toon("barn_trim", Color("fff6e8"), 0.04)
+	var barn_roof := _toon("barn_roof", Color("5a2a1a"), 0.05)
+	var barn_at := Vector3(-14.0, 0.0, -13.0)
+	var barn_yaw := atan2(barn_at.x, barn_at.z)
+	_put(barn, _box(Vector3(5.0, 3.2, 4.0)), barn_at + Vector3(0, GROUND_Y + 1.6, 0), barn_yaw)
+	_put(barn_roof, _cyl(0.0, 3.6, 1.8, 4), barn_at + Vector3(0, GROUND_Y + 4.1, 0), barn_yaw + PI / 4.0, Vector3(1.0, 1.0, 0.8))
+	var front := Vector3(-sin(barn_yaw), 0, -cos(barn_yaw))
+	_put(trim, _box(Vector3(1.6, 2.0, 0.1)), barn_at + front * 2.02 + Vector3(0, GROUND_Y + 1.0, 0), barn_yaw)
+	_put(barn, _box(Vector3(1.3, 1.75, 0.12)), barn_at + front * 2.05 + Vector3(0, GROUND_Y + 0.92, 0), barn_yaw)
+	# Round hay bales, corn stalks and a pumpkin patch around the table.
+	var hay := _toon("hay", Color("e8c25a"), 0.05)
+	for at in _ring(9, 9.0, 13.0):
+		var r := _rng.randf_range(0.6, 0.8)
+		_put(hay, _cyl(r, r, 0.9, 14), at + Vector3(0, GROUND_Y + r, 0), atan2(at.x, at.z), Vector3.ONE, Vector3(0, 0, PI / 2.0))
+	var stalk := _toon("corn_stalk", Color("7aa83a"), 0.03)
+	var cob := _toon("corn_cob", Color("ffd23f"), 0.03)
+	for at in _ring(26, 15.0, 22.0):
+		var h := _rng.randf_range(1.8, 2.6)
+		_put(stalk, _cyl(0.05, 0.08, h, 5), at + Vector3(0, GROUND_Y + h * 0.5, 0), 0.0, Vector3.ONE, Vector3(_rng.randf_range(-0.1, 0.1), 0, _rng.randf_range(-0.1, 0.1)))
+		_put(stalk, _cyl(0.0, 0.18, 0.9, 4), at + Vector3(0.18, GROUND_Y + h * 0.6, 0), 0.0, Vector3(1.0, 1.0, 0.3), Vector3(0, 0, -0.9))
+		_put(cob, _sphere(0.1), at + Vector3(0.07, GROUND_Y + h * 0.7, 0.05), 0.0, Vector3(0.8, 2.2, 0.8))
+	var pumpkin := _toon("farm_pumpkin", Color("ff8a1f"), 0.05)
+	var vine := _toon("farm_vine", Color("4a6b2a"), 0.03)
+	for at in _ring(14, 7.6, 10.0):
+		var size := _rng.randf_range(0.35, 0.6)
+		_put(pumpkin, _sphere(1.0), at + Vector3(0, GROUND_Y + size * 0.7, 0), 0.0, Vector3(size, size * 0.75, size))
+		_put(vine, _cyl(0.04, 0.06, 0.2, 5), at + Vector3(0, GROUND_Y + size * 1.4, 0))
+	# A wooden fence.
+	var wood := _toon("fence_wood", Color("a8783a"), 0.04)
+	for i in 40:
+		var a := TAU * i / 40.0
+		var at := Vector3(cos(a), 0, sin(a)) * 16.0
+		_put(wood, _box(Vector3(0.18, 1.1, 0.18)), at + Vector3(0, GROUND_Y + 0.55, 0))
+	for y: float in [0.45, 0.9]:
+		_put(wood, _torus(15.95, 16.05, 80), Vector3(0, GROUND_Y + y, 0))
+	_put(_glow("harvest_sun", Color("ffcf6a"), 1.4), _sphere(7.0), Vector3(30.0, 14.0, -55.0))
+
+
+func _decor_sunny_beach() -> void:
+	# The sea: a wide band of blue water with a foam line, out beyond the sand toward the horizon.
+	var sea := _toon("sea", Color("1fb3d6"), 0.0)
+	_put(sea, _box(Vector3(160.0, 0.1, 70.0)), Vector3(0, GROUND_Y + 0.02, -62.0))
+	var foam := _toon("foam", Color("ffffff"), 0.0)
+	for i in 3:
+		_put(foam, _box(Vector3(160.0, 0.06, 0.5)), Vector3(0, GROUND_Y + 0.05, -26.8 - i * 1.4))
+	# Palm trees with bending trunks.
+	var trunk := _toon("palm_trunk", Color("a8783a"), 0.04)
+	var frond := _toon("palm_frond", Color("2fa84a"), 0.04)
+	var coconut := _toon("coconut", Color("5a3a24"), 0.03)
+	for at in _ring(9, 10.0, 18.0):
+		var h := _rng.randf_range(3.2, 4.6)
+		var lean := Vector3(_rng.randf_range(-0.2, 0.2), 0, _rng.randf_range(-0.2, 0.2))
+		_put(trunk, _cyl(0.14, 0.24, h, 7), at + Vector3(0, GROUND_Y + h * 0.5, 0), 0.0, Vector3.ONE, lean)
+		var top := at + Vector3(lean.z * h * 0.5, GROUND_Y + h, -lean.x * h * 0.5)
+		for k in 6:
+			var yaw := TAU * k / 6.0
+			var out := Vector3(cos(yaw), 0, sin(yaw))
+			_put_along(frond, _cyl(0.02, 0.32, 1.9, 4), top + out * 0.6 + Vector3(0, -0.1, 0), out, 1.25)
+		_put(coconut, _sphere(0.16), top + Vector3(0.12, -0.15, 0.0))
+		_put(coconut, _sphere(0.16), top + Vector3(-0.1, -0.18, 0.08))
+	# Striped umbrellas, towels and a little sandcastle.
+	var umbrella_colors := [_toon("umbrella_red", Color("ff4f5a"), 0.04), _toon("umbrella_yellow", Color("ffcf3f"), 0.04),
+		_toon("umbrella_blue", Color("3d8bff"), 0.04)]
+	var pole := _toon("umbrella_pole", Color("fff6e8"), 0.03)
+	var towels := [_toon("towel_pink", Color("ff8ec0"), 0.02), _toon("towel_mint", Color("4dd6a8"), 0.02)]
+	for at in _ring(7, 8.0, 11.0):
+		_put(pole, _cyl(0.04, 0.04, 2.2, 5), at + Vector3(0, GROUND_Y + 1.1, 0))
+		_put(umbrella_colors[_rng.randi() % umbrella_colors.size()], _cyl(0.05, 1.3, 0.5, 8), at + Vector3(0, GROUND_Y + 2.3, 0))
+		_put(towels[_rng.randi() % towels.size()], _box(Vector3(0.9, 0.03, 1.7)), at + Vector3(0.9, GROUND_Y + 0.02, 0.3), _rng.randf() * TAU)
+	var sand := _toon("castle_sand", Color("eccf8a"), 0.04)
+	var castle_at := Vector3(9.0, 0.0, 6.0)
+	_put(sand, _box(Vector3(1.6, 0.6, 1.6)), castle_at + Vector3(0, GROUND_Y + 0.3, 0))
+	for k in 4:
+		var a := TAU * k / 4.0 + PI / 4.0
+		_put(sand, _cyl(0.3, 0.34, 1.0, 8), castle_at + Vector3(cos(a) * 0.85, GROUND_Y + 0.5, sin(a) * 0.85))
+	_put(_glow("beach_sun", Color("fff0a0"), 1.6), _sphere(6.0), Vector3(-26.0, 24.0, -60.0))
+
+
 func _decor_lava_pit() -> void:
 	var rock := _toon("basalt", Color("3a2b2e"), 0.07)
 	for at in _ring(16, 8.0, 12.0):

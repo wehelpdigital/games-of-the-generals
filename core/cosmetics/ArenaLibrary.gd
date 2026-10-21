@@ -135,6 +135,26 @@ const ARENAS := {
 		"ground": {"pattern": 3, "a": Color("f8fcff"), "b": Color("d6e6f5"), "scale": 0.4},
 		"particles": "snow",
 	},
+	"harvest_farm": {
+		"name": "Harvest Farm", "rarity": "epic", "season": "thanksgiving",
+		"desc": "A red barn, hay bales, corn stalks and a pumpkin patch at golden hour.",
+		"swatch": [Color("e8a33a"), Color("c8341c"), Color("7aa83a")],
+		"sky": [Color("ff9a5a"), Color("ffe0a8"), Color("f2c070")], "ambient": Color("ffe6c8"), "ambient_energy": 0.62,
+		"light": Color("ffd8a0"), "light_energy": 0.26,
+		"fog": Color("f6d8a8"), "fog_range": Vector2(20.0, 70.0),
+		"ground": {"pattern": 2, "a": Color("d8b45a"), "b": Color("c49a42"), "c": Color("8ab04a"), "scale": 0.6},
+		"particles": "dust",
+	},
+	"sunny_beach": {
+		"name": "Sunny Beach", "rarity": "epic", "season": "summer",
+		"desc": "Palm trees, beach umbrellas and a sparkling sea on a hot summer day.",
+		"swatch": [Color("f5e2b0"), Color("12b8c4"), Color("ff8a5a")],
+		"sky": [Color("2fa8ff"), Color("e8fbff"), Color("bdeef7")], "ambient": Color("e8f6ff"), "ambient_energy": 0.66,
+		"light": Color("fff4dc"), "light_energy": 0.27,
+		"fog": Color("d6f2ff"), "fog_range": Vector2(22.0, 75.0),
+		"ground": {"pattern": 5, "a": Color("f7e4b4"), "b": Color("ecd29a"), "scale": 0.5},
+		"particles": "",
+	},
 }
 
 

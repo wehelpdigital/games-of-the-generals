@@ -79,7 +79,7 @@ func _bake(category: String, slug: String) -> void:
 			pieces = _row()
 	if look.has(category):
 		look[category] = slug
-	_game.set_showcase(look, Loadout.complete({}))
+	_game.set_showcase(CosmeticCatalog.dress_with_pair(look, category, slug), Loadout.complete({}))
 	_game.board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
 	_game.board.sync_pieces(pieces)
 	_frame_camera(category, slug)

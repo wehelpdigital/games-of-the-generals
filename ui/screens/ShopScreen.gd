@@ -874,8 +874,10 @@ func _card(category: String, slug: String) -> PanelContainer:
 	var rarity := str(item.get("rarity", "common"))
 	line.add_child(_dot(_rarity_color(rarity)))
 	var rarity_label := AppTheme.label(rarity.capitalize(), "", 14, _rarity_color(rarity).darkened(0.15))
+	rarity_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rarity_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS  # Narrow phone cards: "Legend…" beside "3,000 cr".
+	rarity_label.clip_text = true
 	line.add_child(rarity_label)
-	line.add_child(AppTheme.spacer())
 	line.add_child(_price_label(category, slug))
 	box.add_child(line)
 	var action := _action(category, slug, 44)

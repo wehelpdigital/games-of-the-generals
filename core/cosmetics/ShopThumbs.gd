@@ -9,7 +9,7 @@ const DIR := "res://assets/shop_thumbs"
 const FRAMES := 8
 const ANIMATED := ["aura", "glow", "trail", "kill", "taunt", "ambience"]
 ## Which frame of a clip stands for the item where only a still fits (search results).
-const POSTER := {"trail": 3, "kill": 4, "taunt": 3}
+const POSTER := {"trail": 3, "kill": 3, "taunt": 3}
 
 static var _cache: Dictionary = {}  # path -> Texture2D or null
 

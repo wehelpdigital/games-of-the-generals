@@ -89,41 +89,97 @@ func _bake(category: String, slug: String) -> void:
 		var fx: Node = _game.board.get("_ambience_nodes").get(Ranks.WHITE)
 		if fx != null and fx.get("_flock_time") != null:
 			fx.set("_flock_start", float(fx.get("_time")) - float(fx.get("_flock_time")) * 0.35)
+		if fx != null and slug in ["ambience_army_march", "ambience_parade", "ambience_villagers"]:
+			fx.set("_time", 7.0)  # Walkers: well along the rim instead of just popping in.
 	if not ShopThumbs.is_clip(category):
 		_save(_grab(STILL), category, slug)
 		return
-	# Clips: start the demo, then grab frames spread over it.
-	var start := 0.0
-	var step := 0.12
+	# Clips: start the demo, then grab frames at set moments. Frame ShopThumbs.POSTER (the card's
+	# still) always lands on the peak: the explosion, the splat, the prop at full size.
+	var times: Array[float] = []
+	for i in ShopThumbs.FRAMES:
+		times.append(i * (0.3 if category == "ambience" else 0.12))
 	match category:
 		"trail":
 			_game.board.apply_move_result({"piece_id": "a", "from": {"x": 4, "y": 2}, "to": {"x": 5, "y": 2}, "clash": null})
 			_game.board.apply_move_result({"piece_id": "a", "from": {"x": 5, "y": 2}, "to": {"x": 4, "y": 2}, "clash": null})
-			start = 0.08
-			step = 0.11
+			for i in ShopThumbs.FRAMES:
+				times[i] = 0.08 + i * 0.11
 		"kill":
 			_game.board.apply_move_result({"piece_id": "hero", "from": {"x": 3, "y": 4}, "to": {"x": 4, "y": 4},
 				"clash": {"defender_id": "foe", "outcome": "attacker", "eliminated": ["foe"]}})
-			var impact: float = KillFX.ACTIONS.get(slug, {}).get("impact", 0.0)
-			start = 0.3
-			step = maxf(0.13, (impact + 0.9) / ShopThumbs.FRAMES)
+			times = _kill_times(slug)
 		"taunt":
 			TauntFX.throw(_game.board, Ranks.BLACK, slug, 7)
-			start = 0.1
-			step = 0.17
-		"ambience":
-			step = 0.3
-	var strip := Image.create_empty(FRAME.x * ShopThumbs.FRAMES, FRAME.y, false, Image.FORMAT_RGBA8)
-	await _wait(start)
+			# Close in on wherever this throw lands.
+			for child in _game.board.get_children():
+				if child is TauntFX and not child.is_queued_for_deletion():
+					var land: Vector3 = child.target_local
+					_aim(land + Vector3(0.0, 3.4, 2.1), land + Vector3(0.0, 0.2, -0.1), 27.0)
+			times = [0.45, 0.72, 0.92, 1.12, 1.28, 1.48, 1.72, 2.02]
+	var frames: Array[Image] = []
+	var began := Time.get_ticks_msec() / 1000.0
 	for i in ShopThumbs.FRAMES:
-		if i > 0:
-			await _wait(step)
-		var frame := await _grab_async(FRAME)
-		strip.blit_rect(frame, Rect2i(Vector2i.ZERO, FRAME), Vector2i(i * FRAME.x, 0))
+		var wait := times[i] - (Time.get_ticks_msec() / 1000.0 - began)
+		await _wait(maxf(wait, 0.0))
+		frames.append(await _grab_async(FRAME))
+	if category == "ambience":
+		# Ambience never peaks on cue: turn the loop so its busiest frame becomes the card still.
+		var busiest := _busiest(frames)
+		var poster: int = ShopThumbs.POSTER.get(category, 0)
+		var turned: Array[Image] = []
+		for i in frames.size():
+			turned.append(frames[(i + busiest - poster + frames.size()) % frames.size()])
+		frames = turned
+	var strip := Image.create_empty(FRAME.x * ShopThumbs.FRAMES, FRAME.y, false, Image.FORMAT_RGBA8)
+	for i in frames.size():
+		strip.blit_rect(frames[i], Rect2i(Vector2i.ZERO, FRAME), Vector2i(i * FRAME.x, 0))
 	_save(strip, category, slug)
 	while _game.board.is_animating():
 		await get_tree().process_frame
 	await _wait(0.4)
+
+
+## The frame that differs most from the clip's average look: the one with the most going on
+## (a firework mid-burst, the flock overhead, the column of soldiers in view).
+func _busiest(frames: Array[Image]) -> int:
+	var step := 4
+	var mean := {}
+	for f in frames:
+		for y in range(0, FRAME.y, step):
+			for x in range(0, FRAME.x, step):
+				var key := y * FRAME.x + x
+				mean[key] = mean.get(key, Color(0, 0, 0, 0)) + f.get_pixel(x, y) / float(frames.size())
+	var best := 0
+	var best_score := -1.0
+	for i in frames.size():
+		var score := 0.0
+		for y in range(0, FRAME.y, step):
+			for x in range(0, FRAME.x, step):
+				var a: Color = frames[i].get_pixel(x, y)
+				var m: Color = mean[y * FRAME.x + x]
+				score += absf(a.r - m.r) + absf(a.g - m.g) + absf(a.b - m.b)
+		if score > best_score:
+			best_score = score
+			best = i
+	return best
+
+
+## When to grab each kill frame: the build-up, then the peak on frame ShopThumbs.POSTER["kill"]
+## (just after impact), then the aftermath. The clash starts once the attacker's lunge lands.
+func _kill_times(slug: String) -> Array[float]:
+	var clash := 0.33
+	var impact: float = KillFX.ACTIONS.get(slug, {}).get("impact", 0.0)
+	var times: Array[float] = []
+	if impact > 0.0:
+		times.append_array([clash + impact * 0.2, clash + impact * 0.5, clash + impact * 0.8])
+	else:
+		times.append_array([clash - 0.25, clash - 0.12, clash + 0.0])
+	var peak := clash + impact + 0.1
+	times.append(peak)
+	for after: float in [0.16, 0.32, 0.52, 0.8]:
+		times.append(peak + after)
+	return times
 
 
 func _row() -> Array:
@@ -183,9 +239,11 @@ func _frame_camera(category: String, slug := "") -> void:
 		"trail":
 			_aim(Vector3(0.5, 2.0, 4.3), Vector3(0.5, 0.3, 1.5), 30.0)
 		"kill":
-			_aim(Vector3(-0.5, 2.9, 3.4), Vector3(-0.5, 0.5, -0.5), 40.0)
+			# The clash: the winner lunges from x -1 toward the loser at the origin of row 4 (z -0.5).
+			_aim(Vector3(-0.3, 1.9, 1.85), Vector3(-0.3, 0.68, -0.5), 38.0)
 		"taunt":
-			_aim(Vector3(0.0, 3.2, 5.6), Vector3(0.0, 0.5, 1.2), 44.0)
+			# Where the throw lands: the empty middle tile of the white half.
+			_aim(Vector3(0.0, 3.7, 3.5), Vector3(0.0, 0.25, 1.4), 34.0)
 		"topper":
 			_aim(Vector3(-4.5, 1.15, 4.9), Vector3(-5.62, 0.5, 3.0), 30.0)
 		"ambience":

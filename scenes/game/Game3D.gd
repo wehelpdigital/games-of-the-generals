@@ -21,6 +21,7 @@ func _ready() -> void:
 	if Graphics.effective() != "high":
 		get_tree().node_added.connect(_on_node_added)
 	board.camera = rig.camera
+	rig.touch_blocked = board.is_holding_piece  # Dragging a piece mustn't also pan the camera.
 	board.move_requested.connect(GameSession.request_move)
 	board.clash_impact.connect(rig.shake)
 	board.desync_detected.connect(GameSession.refresh)

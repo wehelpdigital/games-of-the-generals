@@ -344,6 +344,12 @@ func is_animating() -> bool:
 	return _busy
 
 
+## True while the pointer is down on a selected piece (about to drag it), so the camera leaves
+## that finger alone.
+func is_holding_piece() -> bool:
+	return _pressing and _selected != null
+
+
 # --- Animation queue --------------------------------------------------------------------------
 
 func _enqueue(job: Dictionary) -> void:

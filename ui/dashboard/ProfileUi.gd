@@ -211,6 +211,10 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 	name_label.clip_text = true
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(name_label)
+	if entry.get("title") != null and str(entry["title"]) != "":
+		var worn := AppTheme.label(str(entry["title"]), "MutedLabel", 14)
+		worn.add_theme_color_override("font_color", AppTheme.PURPLE)
+		title_row.add_child(worn)
 	names.add_child(title_row)
 	if sub != "":
 		var sub_label := AppTheme.label(sub, "MutedLabel", 15)

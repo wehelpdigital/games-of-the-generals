@@ -29,6 +29,7 @@ GameSession="*res://autoload/GameSession.gd"
 Loadout="*res://autoload/Loadout.gd"
 Profile="*res://autoload/Profile.gd"
 Social="*res://autoload/Social.gd"
+Economy="*res://autoload/Economy.gd"
 
 [display]
 

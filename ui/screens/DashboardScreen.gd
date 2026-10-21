@@ -249,6 +249,7 @@ func _fill_tiles() -> void:
 		["Guild", "shield", AppTheme.MINT, "guilds"],
 		["Profile", "person", AppTheme.PINK, "profile"],
 		["Ranks", "ranks", AppTheme.BRONZE, "ranks"],
+		["Awards", "crown", AppTheme.PURPLE, "achievements"],
 	]
 	for spec: Array in specs:
 		var target: String = spec[3]
@@ -496,6 +497,9 @@ func _refresh_profile() -> void:
 	_name_label.text = str(data.get("username", ApiManager.user.get("username", "Player")))
 	_insignia.set_tier(Profile.tier())
 	_rank_label.text = str(data.get("rank_name", PlayerRanks.name_of(Profile.tier())))
+	var title := Economy.title_of(data)
+	if title != "":
+		_rank_label.text += "  -  " + title
 	var progress := Profile.xp_progress()
 	if progress["maxed"]:
 		_xp_bar.set_progress(1, 1, "%s XP - MAX RANK" % ProfileUi.grouped(progress["xp"]))

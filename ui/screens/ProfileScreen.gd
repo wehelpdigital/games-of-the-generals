@@ -73,6 +73,8 @@ func _render() -> void:
 	buttons.add_theme_constant_override("h_separation", 8)
 	buttons.add_theme_constant_override("v_separation", 8)
 	buttons.add_child(ProfileUi.small_button("Rank ladder", "Accent", func() -> void: ui.show_screen("ranks"), 42))
+	if ui.has_screen("achievements"):
+		buttons.add_child(ProfileUi.small_button("Achievements & titles", "Secondary", func() -> void: ui.show_screen("achievements"), 42))
 	buttons.add_child(ProfileUi.small_button("Share & earn XP", "Primary", func() -> void: ShareSheet.open(ui), 42))
 	who.add_child(buttons)
 	top.add_child(who)

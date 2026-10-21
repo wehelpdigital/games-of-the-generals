@@ -139,6 +139,10 @@ func _header(user: Dictionary, created_at: String, mine: bool) -> HBoxContainer:
 		var short := AppTheme.label(PlayerRanks.short_of(tier), "MutedLabel", 12)
 		header.add_child(short)
 	header.add_child(name_label)
+	if user.get("title") != null and str(user["title"]) != "" and not compact:
+		var title := AppTheme.label(str(user["title"]), "MutedLabel", 12)
+		title.add_theme_color_override("font_color", AppTheme.PURPLE)
+		header.add_child(title)
 	var time := AppTheme.label(_clock(created_at), "MutedLabel", 11 if compact else 12)
 	header.add_child(time)
 	if mine:

@@ -284,6 +284,7 @@ func _show_result_card() -> void:
 		var mine: Dictionary = rating[GameSession.my_side()]
 		var delta := int(mine.get("after", 0)) - int(mine.get("before", 0))
 		box.add_child(AppTheme.pill("ELO %s  (%+d)" % [AppTheme.num(mine.get("after")), delta], AppTheme.MINT if delta >= 0 else AppTheme.RED))
+	box.add_child(MatchRewardsView.new())  # Credits, XP, missions and achievements (Economy).
 	var practice := GameSession.kind == GameSession.Kind.PRACTICE
 	box.add_child(AppTheme.button("Play again" if practice else "Back to lobby", "Primary", _play_again.bind(practice), 60))
 	var clashes: Array = info.get("clashes", [])

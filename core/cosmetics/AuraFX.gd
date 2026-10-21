@@ -80,6 +80,11 @@ const STYLES := {
 		"glow": Color("7fd6ff"), "shape": "note", "colors": [Color("ffffff"), Color("b8e6ff"), Color("c9a0ff")],
 		"additive": false, "amount": 5, "lifetime": 1.6, "size": 0.21, "rise": Vector2(0.25, 0.45), "gravity": 0.0,
 		"radius": 0.46, "height": 0.2, "spin": 30.0},
+	"aura_witch_wisps": {"name": "Witch's Wisps", "rarity": "epic", "season": "halloween", "desc": "Green and purple witch-fire flickers around every piece.",
+		"swatch": [Color("7dff5a"), Color("8b5cf6"), Color("2b1740")],
+		"glow": Color("7dff5a"), "shape": "flame", "colors": [Color("d8ff8a"), Color("7dff5a"), Color("8b5cf6")],
+		"additive": false, "amount": 8, "lifetime": 0.85, "size": 0.3, "rise": Vector2(0.3, 0.6), "gravity": 0.45,
+		"radius": 0.44, "height": 0.06},
 }
 
 static var _ring_materials: Dictionary = {}

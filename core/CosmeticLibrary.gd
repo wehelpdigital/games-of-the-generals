@@ -99,6 +99,20 @@ const BOARD_THEMES := {
 		"frame": Color("2b2121"), "bed": Color("ff5a1f"), "tile_a": Color("3d3130"), "tile_b": Color("302625"),
 		"divider": Color("ffb020"), "glow": 2.2, "tile_pattern": "cracks", "pattern_glow": Color("ff6a1a"),
 	},
+	"board_pumpkin_patch": {
+		"name": "Pumpkin Patch", "rarity": "rare", "season": "halloween", "desc": "Pumpkin-orange frame on a midnight bed.",
+		"swatch": [Color("ff7a12"), Color("ffd8a8"), Color("f4a85e"), Color("8b5cf6")],
+		"frame": Color("ff7a12"), "bed": Color("2b1740"), "tile_a": Color("ffd8a8"), "tile_b": Color("f4a85e"),
+		"divider": Color("8b5cf6"), "glow": 0.6, "tile_pattern": "dapple",
+		"sky_top": Color("2a1d3e"), "sky_horizon": Color("ff9a5a"), "ambient": Color("e0c8f0"),
+	},
+	"board_candy_cane": {
+		"name": "Candy Cane Lane", "rarity": "rare", "season": "christmas", "desc": "Red and white stripes with an evergreen centre line.",
+		"swatch": [Color("d62f3a"), Color("fff6f6"), Color("ffdede"), Color("2f8f4e")],
+		"frame": Color("d62f3a"), "bed": Color("7a1520"), "tile_a": Color("fff6f6"), "tile_b": Color("ffdede"),
+		"divider": Color("2f8f4e"), "glow": 0.0, "tile_pattern": "candy",
+		"sky_top": Color("6f9fe0"), "sky_horizon": Color("fff0f0"), "ambient": Color("f0e0e8"),
+	},
 }
 
 ## How one player's half of the board looks (rows 0–3 for white, 4–7 for black). Both players see
@@ -162,6 +176,16 @@ const TERRITORIES := {
 		"name": "Cotton Candy", "rarity": "common", "desc": "Pastel pink and sky-blue squares.",
 		"swatch": [Color("ffe0f0"), Color("d8f0ff")],
 		"tile_a": Color("ffe0f0"), "tile_b": Color("d4efff"),
+	},
+	"territory_graveyard": {
+		"name": "Graveyard Soil", "rarity": "rare", "season": "halloween", "desc": "Dark cracked soil glowing an eerie green.",
+		"swatch": [Color("4a3f5e"), Color("3d3350"), Color("7dff9a")],
+		"tile_a": Color("4a3f5e"), "tile_b": Color("3d3350"), "pattern": "cracks", "pattern_glow": Color("7dff9a"),
+	},
+	"territory_fresh_snow": {
+		"name": "Fresh Snow", "rarity": "common", "season": "christmas", "desc": "Soft, sparkly new snow on your half.",
+		"swatch": [Color("f7fbff"), Color("e2eef9"), Color("bfe3ff")],
+		"tile_a": Color("f7fbff"), "tile_b": Color("e2eef9"), "pattern": "dapple",
 	},
 }
 
@@ -253,6 +277,18 @@ const PIECE_SKINS := {
 		"swatch": [Color("fff4dc"), Color("e0a520"), Color("4a1e6b"), Color("f0c03a")],
 		"white": {"body": Color("fff4dc"), "base": Color("e0a520"), "ink": Color("c98a12"), "label": Color("5a3a08"), "label_outline": Color("ffffff"), "shine": 0.7},
 		"black": {"body": Color("4f2073"), "base": Color("f0c03a"), "ink": Color("f0c03a"), "label": Color("ffe9a8"), "label_outline": Color("24093a"), "shine": 0.7},
+	},
+	"pieces_jack_o_lantern": {
+		"name": "Jack-o'-Lantern", "rarity": "rare", "season": "halloween", "desc": "Pumpkin orange against a witchy purple-black.",
+		"swatch": [Color("ff8a1f"), Color("2b1740"), Color("2b2140"), Color("7dff9a")],
+		"white": {"body": Color("ff8a1f"), "base": Color("2b1740"), "ink": Color("2b1740"), "label": Color("2b1740"), "label_outline": Color("ffe0b8"), "shine": 0.35},
+		"black": {"body": Color("2b2140"), "base": Color("ff7a12"), "ink": Color("7dff9a"), "label": Color("ffffff"), "label_outline": Color("1d1736"), "shine": 0.35},
+	},
+	"pieces_gingerbread": {
+		"name": "Gingerbread", "rarity": "rare", "season": "christmas", "desc": "Fresh-baked cookies with white and green icing.",
+		"swatch": [Color("c8803f"), Color("ffffff"), Color("7a4a26"), Color("2f8f4e")],
+		"white": {"body": Color("c8803f"), "base": Color("ffffff"), "ink": Color("e63946"), "label": Color("4a2a12"), "label_outline": Color("fff4e0"), "shine": 0.2},
+		"black": {"body": Color("7a4a26"), "base": Color("2f8f4e"), "ink": Color("ffffff"), "label": Color("ffffff"), "label_outline": Color("3a1f0a"), "shine": 0.2},
 	},
 }
 

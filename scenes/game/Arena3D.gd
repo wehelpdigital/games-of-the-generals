@@ -369,6 +369,84 @@ func _decor_haunted_grove() -> void:
 	_put(_glow("moon", Color("fff3c4"), 1.4), _sphere(6.0), Vector3(-34.0, 22.0, -48.0))
 
 
+func _decor_spooky_graveyard() -> void:
+	var stone := _toon("tombstone", Color("9a94b0"), 0.05)
+	var dark := _toon("tombstone_dark", Color("6f688a"), 0.05)
+	for at in _ring(22, 8.5, 15.0):
+		var yaw := atan2(at.x, at.z) + _rng.randf_range(-0.35, 0.35)
+		var tilt := Vector3(_rng.randf_range(-0.16, 0.16), 0, _rng.randf_range(-0.12, 0.12))
+		var key := stone if _rng.randf() < 0.6 else dark
+		var h := _rng.randf_range(0.8, 1.3)
+		_put(key, _box(Vector3(0.8, h, 0.24)), at + Vector3(0, GROUND_Y + h * 0.5, 0), yaw, Vector3.ONE, tilt)
+		_put(key, _cyl(0.4, 0.4, 0.24, 14), at + Vector3(0, GROUND_Y + h, 0), yaw, Vector3.ONE, Vector3(PI / 2.0, 0, 0) + tilt)
+	# A crooked iron fence ring.
+	var iron := _toon("iron", Color("1d1726"), 0.04)
+	for i in 64:
+		var a := TAU * i / 64.0
+		var at := Vector3(cos(a), 0, sin(a)) * 17.0
+		_put(iron, _cyl(0.05, 0.05, 1.5, 5), at + Vector3(0, GROUND_Y + 0.75, 0), 0.0, Vector3.ONE, Vector3(_rng.randf_range(-0.08, 0.08), 0, 0))
+		_put(iron, _cyl(0.0, 0.09, 0.22, 4), at + Vector3(0, GROUND_Y + 1.6, 0))
+	for y: float in [0.5, 1.2]:
+		_put(iron, _torus(16.95, 17.05, 96), Vector3(0, GROUND_Y + y, 0))
+	var pumpkin := _glow("lantern_pumpkin", Color("ff8a2a"), 1.6)
+	var stalk := _toon("stalk", Color("4a6b2a"), 0.03)
+	for at in _ring(12, 7.6, 10.5):
+		_put(pumpkin, _sphere(1.0), at + Vector3(0, GROUND_Y + 0.3, 0), 0.0, Vector3(0.5, 0.38, 0.5))
+		_put(stalk, _cyl(0.05, 0.07, 0.22, 5), at + Vector3(0, GROUND_Y + 0.74, 0))
+	# Undas candles on the graves.
+	var wax := _toon("candle", Color("fff6e0"), 0.03)
+	var flame := _glow("candle_flame", Color("ffcf5a"), 2.4)
+	for at in _ring(26, 8.0, 13.5):
+		var h := _rng.randf_range(0.2, 0.4)
+		_put(wax, _cyl(0.06, 0.06, h, 8), at + Vector3(0, GROUND_Y + h * 0.5, 0))
+		_put(flame, _sphere(1.0), at + Vector3(0, GROUND_Y + h + 0.07, 0), 0.0, Vector3(0.05, 0.1, 0.05))
+	var bark := _toon("dead_tree", Color("2b2236"), 0.07)
+	for at in _ring(8, 18.0, 26.0):
+		var h := _rng.randf_range(4.0, 6.0)
+		_put(bark, _cyl(0.14, 0.45, h, 6), at + Vector3(0, GROUND_Y + h * 0.5, 0), 0.0, Vector3.ONE, Vector3(_rng.randf_range(-0.1, 0.1), 0, _rng.randf_range(-0.1, 0.1)))
+		for i in 3:
+			var yaw := _rng.randf() * TAU
+			var out := Vector3(cos(yaw), 0, sin(yaw))
+			_put_along(bark, _cyl(0.04, 0.12, 1.8, 5), at + out * 0.6 + Vector3(0, GROUND_Y + h * _rng.randf_range(0.6, 0.85), 0), out, 0.9)
+	_put(_glow("big_moon", Color("ffb45a"), 1.5), _sphere(8.0), Vector3(-30.0, 20.0, -50.0))
+
+
+func _decor_snowy_village() -> void:
+	var walls := [_toon("house_red", Color("d9573f"), 0.05), _toon("house_cream", Color("f4e3c4"), 0.05),
+		_toon("house_mint", Color("9fd8c2"), 0.05), _toon("house_ginger", Color("c8803f"), 0.05)]
+	var roof := _toon("roof", Color("6b3a2a"), 0.05)
+	var snow := _toon("snow_cap", Color("ffffff"), 0.04)
+	var window := _glow("window", Color("ffd36a"), 1.8)
+	for at in _ring(10, 12.0, 18.0):
+		var yaw := atan2(at.x, at.z)
+		var w := _rng.randf_range(1.6, 2.4)
+		var h := _rng.randf_range(1.4, 2.0)
+		_put(walls[_rng.randi() % walls.size()], _box(Vector3(w, h, w * 0.85)), at + Vector3(0, GROUND_Y + h * 0.5, 0), yaw)
+		_put(roof, _cyl(0.0, w * 0.82, 1.1, 4), at + Vector3(0, GROUND_Y + h + 0.5, 0), yaw + PI / 4.0)
+		_put(snow, _cyl(0.0, w * 0.74, 0.7, 4), at + Vector3(0, GROUND_Y + h + 0.75, 0), yaw + PI / 4.0)
+		var front := Vector3(-sin(yaw), 0, -cos(yaw))
+		_put(window, _box(Vector3(0.36, 0.36, 0.06)), at + front * (w * 0.43) + Vector3(0, GROUND_Y + h * 0.55, 0), yaw)
+	var pine := _toon("pine", Color("2f7a4a"), 0.05)
+	var trunk := _toon("trunk", Color("6b3e22"), 0.04)
+	var bauble_colors := [_glow("bauble_r", Color("ff4f5a"), 1.4), _glow("bauble_y", Color("ffcf3f"), 1.4), _glow("bauble_b", Color("5fa8ff"), 1.4)]
+	for at in _ring(16, 9.0, 24.0):
+		var s := _rng.randf_range(0.8, 1.4)
+		_put(trunk, _cyl(0.15, 0.2, 0.6, 6), at + Vector3(0, GROUND_Y + 0.3 * s, 0), 0.0, Vector3.ONE * s)
+		for k in 3:
+			_put(pine, _cyl(0.0, (1.1 - k * 0.28) * s, 1.0 * s, 8), at + Vector3(0, GROUND_Y + (0.8 + k * 0.6) * s, 0))
+			_put(snow, _cyl(0.0, (0.55 - k * 0.14) * s, 0.4 * s, 8), at + Vector3(0, GROUND_Y + (1.15 + k * 0.6) * s, 0))
+		for k in 4:
+			var a := _rng.randf() * TAU
+			_put(bauble_colors[k % 3], _sphere(0.09 * s), at + Vector3(cos(a) * 0.6 * s, GROUND_Y + (0.9 + k * 0.35) * s, sin(a) * 0.6 * s))
+	var post := _toon("lamp_post", Color("2a2d40"), 0.04)
+	var lamp := _glow("lamp", Color("fff0b0"), 2.2)
+	for at in _ring(8, 8.0, 9.5):
+		_put(post, _cyl(0.06, 0.08, 2.2, 6), at + Vector3(0, GROUND_Y + 1.1, 0))
+		_put(lamp, _sphere(0.2), at + Vector3(0, GROUND_Y + 2.35, 0))
+	# A big parol (star lantern) glowing in the sky.
+	_put(_glow("sky_parol", Color("ffcf3f"), 1.8), _cyl(0.0, 3.0, 0.4, 5), Vector3(28.0, 18.0, -45.0), 0.0, Vector3.ONE, Vector3(PI / 2.0, 0, 0))
+
+
 func _decor_lava_pit() -> void:
 	var rock := _toon("basalt", Color("3a2b2e"), 0.07)
 	for at in _ring(16, 8.0, 12.0):

@@ -52,6 +52,14 @@ const STYLES := {
 		"swatch": [Color("ff4d6d"), Color("4dffb0"), Color("6f8bff"), Color("ffd23f")],
 		"shape": "square", "colors": [Color("ffffff"), Color("ffffff"), Color("ffffff")], "additive": false,
 		"amount": 24, "lifetime": 0.6, "size": 0.14, "velocity": 0.4, "gravity": -1.5, "pixels": true},
+	"trail_bat_swarm": {"name": "Bat Swarm", "rarity": "rare", "season": "halloween", "desc": "A flutter of little bats follows every move.",
+		"swatch": [Color("2b1740"), Color("8b5cf6"), Color("ff7a12")],
+		"shape": "bat", "colors": [Color("4a2a6e"), Color("2b1740"), Color("1d1030")], "additive": false,
+		"amount": 18, "lifetime": 0.9, "size": 0.3, "velocity": 0.6, "gravity": -0.8},
+	"trail_candy_cane": {"name": "Candy Canes", "rarity": "rare", "season": "christmas", "desc": "Striped candy canes tumble out behind your pieces.",
+		"swatch": [Color("e63946"), Color("ffffff"), Color("2f8f4e")],
+		"shape": "candy_cane", "colors": [Color("ff5a64"), Color("e63946"), Color("b81f2e")], "additive": false,
+		"amount": 16, "lifetime": 0.8, "size": 0.3, "velocity": 0.35, "gravity": 0.6, "spin": 240.0},
 }
 
 

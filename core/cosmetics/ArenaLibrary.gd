@@ -115,6 +115,26 @@ const ARENAS := {
 		"ground": {"pattern": -1},
 		"particles": "stardust",
 	},
+	"spooky_graveyard": {
+		"name": "Spooky Graveyard", "rarity": "epic", "season": "halloween",
+		"desc": "Crooked tombstones, glowing jack-o'-lanterns, Undas candles and a huge orange moon.",
+		"swatch": [Color("2a1d3e"), Color("ff7a12"), Color("9a94b0")],
+		"sky": [Color("150a2a"), Color("ff7a3a"), Color("3a2346")], "ambient": Color("c8b4f0"), "ambient_energy": 0.56,
+		"light": Color("ffd8b0"), "light_energy": 0.22,
+		"fog": Color("402a55"), "fog_range": Vector2(16.0, 55.0),
+		"ground": {"pattern": 9, "a": Color("2d2440"), "b": Color("3a2e52"), "c": Color("6a5a90"), "glow": Color("ff8a2a"), "glow_strength": 1.2, "scale": 0.5},
+		"particles": "wisps",
+	},
+	"snowy_village": {
+		"name": "Snowy Village", "rarity": "epic", "season": "christmas",
+		"desc": "Gingerbread-coloured houses with glowing windows, snowy pines and lamp posts.",
+		"swatch": [Color("f6fbff"), Color("d62f3a"), Color("2f8f4e")],
+		"sky": [Color("6f9fe0"), Color("e8f2ff"), Color("dbe9f7")], "ambient": Color("dce8ff"), "ambient_energy": 0.66,
+		"light": Color("fff2e0"), "light_energy": 0.23,
+		"fog": Color("e8f2ff"), "fog_range": Vector2(16.0, 60.0),
+		"ground": {"pattern": 3, "a": Color("f8fcff"), "b": Color("d6e6f5"), "scale": 0.4},
+		"particles": "snow",
+	},
 }
 
 

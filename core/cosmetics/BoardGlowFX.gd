@@ -91,6 +91,12 @@ const STYLES := {
 		"falloff": 1.6, "pulse": 0.3,
 		"shape": "petal", "colors": [Color("ffe3ee"), Color("ffb3d1"), Color("ff8fb8")], "additive": false,
 		"amount": 30, "lifetime": 2.2, "size": 0.15, "rise": Vector2(0.1, 0.35), "gravity": -0.1, "spin": 200.0},
+	"glow_christmas_lights": {"name": "Christmas Lights", "rarity": "epic", "season": "christmas", "desc": "A string of twinkling coloured bulbs along your edge.",
+		"swatch": [Color("ff4f5a"), Color("ffcf3f"), Color("3ddc84"), Color("3d8bff")],
+		"base": Color("1f6b3a"), "tip": Color("2f8f4e", 0.0), "height": 0.25, "flare": 0.05, "blend": "mix",
+		"band": 0.12, "boost": 1.2, "falloff": 2.2, "pulse": 0.2,
+		"shape": "dot", "colors": [Color("ffffff"), Color("ffffff"), Color("ffffff")], "additive": false,
+		"amount": 34, "lifetime": 0.9, "size": 0.2, "rise": Vector2(0.0, 0.05), "gravity": 0.0, "rainbow_particles": true, "flicker": true},
 }
 
 static var _materials: Dictionary = {}

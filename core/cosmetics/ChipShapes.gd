@@ -43,6 +43,12 @@ const STYLES := {
 		"swatch": [Color("ff7a3d"), Color("ffd27a"), Color("c8342d"), Color("1d1736")]},
 	"shape_mochi": {"name": "Jelly Mochi", "rarity": "epic", "desc": "Squishy, wobbly mochi blobs that never stop jiggling.",
 		"swatch": [Color("ffd1ea"), Color("c9f5e8"), Color("fff4fa"), Color("78c46b")]},
+	"shape_pumpkin": {"name": "Pumpkins", "rarity": "epic", "season": "halloween", "desc": "Plump, ribbed pumpkins with a curly stem. The skin picks the colour.",
+		"swatch": [Color("ff8a1f"), Color("e0701a"), Color("4a6b2a")]},
+	"shape_ornament": {"name": "Ornament Baubles", "rarity": "epic", "season": "christmas", "desc": "Shiny Christmas baubles with a little cap and hook.",
+		"swatch": [Color("d62f3a"), Color("ffcf3f"), Color("2f8f4e")]},
+	"shape_gingerbread": {"name": "Gingerbread Folks", "rarity": "rare", "season": "christmas", "desc": "Little cookie people with iced cuffs, standing to attention.",
+		"swatch": [Color("c8803f"), Color("ffffff"), Color("e63946")]},
 }
 
 const ORB_AMBER := Color("ff8a1c")
@@ -133,6 +139,12 @@ static func _spec(slug: String) -> Dictionary:
 			return _lantern()
 		"shape_mochi":
 			return _mochi()
+		"shape_pumpkin":
+			return _pumpkin()
+		"shape_ornament":
+			return _ornament()
+		"shape_gingerbread":
+			return _gingerbread()
 	return _classic()
 
 
@@ -432,6 +444,62 @@ static func _mochi() -> Dictionary:
 		"back": null,
 		"pick": [Vector3(0.8, 0.5, 0.8), Vector3(0, 0.25, 0)],
 		"idle": "wobble",
+	}
+
+
+static func _pumpkin() -> Dictionary:
+	var center := Vector3(0, 0.27, 0)
+	var parts := [ShapeKit.part("body", ShapeKit.sphere(0.3, 0.46, 24), ShapeKit.at(center), 0.0)]
+	for i in 8:
+		var a := TAU * i / 8.0
+		parts.append(ShapeKit.part("body", ShapeKit.sphere(0.19, 0.48, 16), ShapeKit.at(center + Vector3(cos(a), 0, sin(a)) * 0.17)))
+	parts.append(ShapeKit.part("leaf", ShapeKit.cylinder(0.035, 0.05, 0.16, 8), ShapeKit.at(Vector3(0.02, 0.55, 0), Basis(Vector3.BACK, -0.25)), 0.015))
+	parts.append(ShapeKit.part("leaf", ShapeKit.torus(0.03, 0.05, 12, 5), ShapeKit.at(Vector3(0.08, 0.6, 0), Basis(Vector3.RIGHT, PI / 2.0)), 0.01))
+	return {
+		"parts": parts,
+		"face": _face_tilted(Vector3(0, 0.33, 0.36), -0.45, 0.5),
+		"back": _back(ShapeKit.at(Vector3(0, 0.31, -0.37)) * Transform3D(Basis(Vector3.RIGHT, 0.3), Vector3.ZERO), 0.26),
+		"pick": [Vector3(0.78, 0.66, 0.78), Vector3(0, 0.3, 0)],
+	}
+
+
+static func _ornament() -> Dictionary:
+	var center := Vector3(0, 0.34, 0)
+	return {
+		"parts": [
+			ShapeKit.part("body", ShapeKit.sphere(0.31, -1.0, 32), ShapeKit.at(center)),
+			ShapeKit.part("base", ShapeKit.torus(0.3, 0.33, 40, 6), ShapeKit.at(center), 0.0),
+			ShapeKit.part("accent", ShapeKit.cylinder(0.08, 0.09, 0.08, 16), ShapeKit.at(Vector3(0, 0.67, 0))),
+			ShapeKit.part("accent", ShapeKit.torus(0.03, 0.05, 14, 5), ShapeKit.at(Vector3(0, 0.74, 0), Basis(Vector3.RIGHT, PI / 2.0)), 0.012),
+			ShapeKit.part("base", ShapeKit.cylinder(0.14, 0.17, 0.05, 20), ShapeKit.at(Vector3(0, 0.025, 0))),
+		],
+		"face": _face_tilted(Vector3(0, 0.4, 0.29), -0.5, 0.56),
+		"back": _back(ShapeKit.at(Vector3(0, 0.36, -0.32)) * Transform3D(Basis(Vector3.RIGHT, 0.3), Vector3.ZERO), 0.26),
+		"pick": [Vector3(0.7, 0.8, 0.7), Vector3(0, 0.38, 0)],
+		"idle": "sway",
+	}
+
+
+static func _gingerbread() -> Dictionary:
+	var pivot := Transform3D(Basis(Vector3.RIGHT, -0.42), Vector3(0, 0.08, 0))
+	var t := 0.1
+	var parts := [
+		ShapeKit.part("base", ShapeKit.box(Vector3(0.72, 0.42, 0.08), 0.13, 0.03), ShapeKit.at(Vector3(0, 0.04, 0), ShapeKit.FLAT)),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.34, 0.36, t), 0.12, 0.03), pivot * ShapeKit.at(Vector3(0, 0.3, 0))),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.27, 0.27, t), 0.13, 0.03), pivot * ShapeKit.at(Vector3(0, 0.6, 0))),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.34, 0.12, t), 0.06, 0.02), pivot * ShapeKit.at(Vector3(0.26, 0.4, 0), Basis(Vector3.BACK, 0.35))),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.34, 0.12, t), 0.06, 0.02), pivot * ShapeKit.at(Vector3(-0.26, 0.4, 0), Basis(Vector3.BACK, -0.35))),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.13, 0.3, t), 0.06, 0.02), pivot * ShapeKit.at(Vector3(0.1, 0.1, 0), Basis(Vector3.BACK, 0.15))),
+		ShapeKit.part("body", ShapeKit.box(Vector3(0.13, 0.3, t), 0.06, 0.02), pivot * ShapeKit.at(Vector3(-0.1, 0.1, 0), Basis(Vector3.BACK, -0.15))),
+	]
+	# Iced cuffs on wrists and ankles.
+	for spot: Vector3 in [Vector3(0.37, 0.44, 0.0), Vector3(-0.37, 0.44, 0.0), Vector3(0.12, 0.0, 0.0), Vector3(-0.12, 0.0, 0.0)]:
+		parts.append(ShapeKit.part("head", ShapeKit.box(Vector3(0.04, 0.13, t + 0.02), 0.015, 0.006), pivot * ShapeKit.at(spot, Basis(Vector3.BACK, 0.35 if spot.x > 0.2 else (-0.35 if spot.x < -0.2 else 0.0))), 0.0))
+	return {
+		"parts": parts,
+		"face": pivot * Transform3D(Basis().scaled(Vector3.ONE * 0.6), Vector3(0, 0.3, t * 0.5 + 0.006)),
+		"back": _back(pivot * ShapeKit.at(Vector3(0, 0.32, -t * 0.5 - 0.006)), 0.24),
+		"pick": [Vector3(0.84, 0.8, 0.5), Vector3(0, 0.4, 0)],
 	}
 
 

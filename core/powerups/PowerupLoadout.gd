@@ -2,7 +2,8 @@ class_name PowerupLoadout
 extends Node
 ## The 3 powerups the player brings into matches and which ones their rank has unlocked. Synced
 ## with GET /api/powerups and GET/PUT /api/powerups/loadout when logged in, and kept in
-## user://powerups.cfg so offline practice works too. Logged out, only rank-0 powerups unlock.
+## user://powerups.cfg so offline practice works too. Logged out, only rank-0 powerups unlock
+## (unless the server's "unlock all" setting is on: GET /api/powerups is public).
 ## Lives on GameSession as `GameSession.powerups`.
 
 signal changed
@@ -13,6 +14,7 @@ var slots: Array[String] = PowerupLibrary.DEFAULT_LOADOUT.duplicate()
 var _server_unlocked: Array = []  # ids the server says are unlocked
 var _server_loaded := false
 var _fetching := false
+var _fetch_again := false
 
 
 func _ready() -> void:
@@ -23,8 +25,7 @@ func _ready() -> void:
 			slots = saved
 	ApiManager.auth_changed.connect(_on_auth_changed)
 	ApiManager.user_updated.connect(func(_user: Dictionary) -> void: changed.emit())
-	if ApiManager.is_logged_in():
-		fetch()
+	fetch()
 
 
 ## The player's account rank (0 when logged out).
@@ -39,7 +40,7 @@ func tier() -> int:
 
 
 func is_unlocked(id: String) -> bool:
-	if ApiManager.is_logged_in() and _server_loaded:
+	if _server_loaded:
 		return _server_unlocked.has(id)
 	return PowerupLibrary.unlock_tier(id) <= tier()
 
@@ -58,26 +59,32 @@ func active_slots() -> Array[String]:
 	return list
 
 
-## Coroutine: loads unlocks and the saved loadout from the server.
+## Coroutine: loads unlocks (guests count as rank 0) and, when logged in, the saved loadout.
 func fetch() -> void:
-	if _fetching or not ApiManager.is_logged_in():
+	if _fetching:
+		_fetch_again = true  # The login changed mid-flight: fetch again afterwards.
 		return
 	_fetching = true
-	var library := await ApiManager.request(HTTPClient.METHOD_GET, "/api/powerups")
+	var library := await ApiManager.request(HTTPClient.METHOD_GET, "/api/powerups", null, ApiManager.is_logged_in())
 	if library.ok and library.data.get("data") is Array:
 		_server_unlocked.clear()
 		for entry: Variant in library.data["data"]:
 			if entry is Dictionary and entry.get("unlocked", false):
 				_server_unlocked.append(str(entry.get("id", "")))
 		_server_loaded = true
-	var loadout := await ApiManager.request(HTTPClient.METHOD_GET, "/api/powerups/loadout")
-	if loadout.ok and loadout.data.get("slots") is Array:
-		var remote := PowerupLibrary.sanitize(loadout.data["slots"])
+	var loadout := {}
+	if ApiManager.is_logged_in():
+		loadout = await ApiManager.request(HTTPClient.METHOD_GET, "/api/powerups/loadout")
+	if loadout.get("ok", false) and loadout["data"].get("slots") is Array:
+		var remote := PowerupLibrary.sanitize(loadout["data"]["slots"])
 		if not remote.is_empty():
 			slots = remote
 			_save_local()
 	_fetching = false
 	changed.emit()
+	if _fetch_again:
+		_fetch_again = false
+		fetch()
 
 
 ## Coroutine: picks a new loadout. Returns "" when saved, otherwise what's wrong.
@@ -104,10 +111,8 @@ func _save_local() -> void:
 	cfg.save(SAVE_FILE)
 
 
-func _on_auth_changed(logged_in: bool) -> void:
+func _on_auth_changed(_logged_in: bool) -> void:
 	_server_loaded = false
 	_server_unlocked.clear()
-	if logged_in:
-		fetch()
-	else:
-		changed.emit()
+	changed.emit()
+	fetch()

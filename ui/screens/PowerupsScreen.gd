@@ -27,7 +27,6 @@ var _width := 0.0  # The body width the cards were last sized for.
 func _ready() -> void:
 	_page = ProfileUi.page(self, "Powerups", func() -> void: ui.home(), 1000)
 	_body = _page["body"]
-	_body.resized.connect(_size_cards)
 	get_viewport().size_changed.connect(_layout)
 	GameSession.powerups.changed.connect(_on_loadout_changed)
 	_build()
@@ -101,9 +100,9 @@ func _build() -> void:
 
 ## Card sizes follow the page: two per row on phones, up to six on wide screens.
 func _size_cards() -> void:
-	var width := _body.size.x if _body.size.x > 0.0 else float(_page["max_width"]) - 60.0
+	var width := _content_width()
 	if is_equal_approx(width, _width):
-		return  # Only the height changed.
+		return
 	_width = width
 	var columns := clampi(int((width + GAP) / (170.0 + GAP)), 2, 6)
 	var card_width := floorf(minf((width - GAP * (columns - 1)) / columns, 210.0))
@@ -115,6 +114,14 @@ func _size_cards() -> void:
 	_fill_tray(width)
 
 
+## The body's width, from the page's own size (not from the body, which the cards would hold wide).
+func _content_width() -> float:
+	var card: PanelContainer = _page["card"]
+	var style := card.get_theme_stylebox("panel")
+	var width := card.custom_minimum_size.x if card.custom_minimum_size.x > 0.0 else float(_page["max_width"])
+	return floorf(width - style.get_content_margin(SIDE_LEFT) - style.get_content_margin(SIDE_RIGHT) - 20.0)  # 20: the scroll bar.
+
+
 func _refresh() -> void:
 	for id: String in _cards:
 		var card: PowerupCard = _cards[id]
@@ -124,12 +131,12 @@ func _refresh() -> void:
 	_shown_label.text = "Showing %d of %d cards" % [shown, _cards.size()]
 	ProfileUi.select_tab(_kind_tabs, _kind)
 	ProfileUi.select_tab(_rarity_tabs, _rarity)
-	_fill_tray(_body.size.x)
+	_fill_tray(_content_width())
 
 
 func _fill_tray(width: float) -> void:
 	ProfileUi.clear(_tray)
-	var slot_width := floorf(clampf((maxf(width, 300.0) - 40.0 - (GAP - 2.0) * 4.0) / 5.0, 56.0, 124.0))
+	var slot_width := floorf(clampf((width - 30.0 - (GAP - 2.0) * 4.0) / 5.0, 44.0, 124.0))  # 30: the tray panel padding.
 	for i in PowerupLibrary.MAX_SLOTS:
 		if i < _selected.size():
 			var card := PowerupCard.new(_selected[i], slot_width)

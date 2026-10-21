@@ -360,7 +360,7 @@ static func fit_page(p: Dictionary, view: Vector2) -> bool:
 		holder.add_theme_constant_override("margin_" + side, margin)
 	var style := card.get_theme_stylebox("panel") as StyleBoxFlat
 	style.set_content_margin_all(12 if narrow else 20)
-	card.custom_minimum_size.x = minf(float(p["max_width"]), frame.size.x - margin * 2.0)
+	card.custom_minimum_size.x = floorf(minf(float(p["max_width"]), frame.size.x - margin * 2.0))  # Whole pixels: a fraction rounds the page wider than the screen.
 	return portrait
 
 

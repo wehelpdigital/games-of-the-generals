@@ -152,6 +152,7 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	sub.clip_text = true
 	info.add_child(sub)
 	line.add_child(info)
+	line.add_child(GameOptions.mode_pill(str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT))))
 	if room.get("has_password", false):
 		var lock := _icon("lock", 28.0)
 		lock.tooltip_text = "Password required"
@@ -175,13 +176,36 @@ static func _icon(icon_name: String, size: float) -> TextureRect:
 	return icon
 
 
-## Joins a room; locked rooms ask for the password first. Also used by the lobby list.
+## Joins a room: shows the host's powerup rules (and asks a locked room's password) first. Also
+## used by the lobby list.
 func join_room(room: Dictionary) -> void:
 	var id := int(room.get("id", 0))
+	var field: LineEdit = null
+	var extra: Control = null
 	if room.get("has_password", false):
-		_ask_password(room)
-		return
-	await _run(Social.join_room.bind(id, ""))
+		var box := AppTheme.vbox(8)
+		var head := AppTheme.hbox(8)
+		head.add_child(_icon("lock", 28.0))
+		var note := ProfileUi.wrap("This room is locked. Enter its password to join.", 16, AppTheme.MUTED)
+		note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		head.add_child(note)
+		box.add_child(head)
+		field = AppTheme.field("Password", true)
+		field.max_length = 40
+		box.add_child(field)
+		extra = box
+	var opts := {
+		"title": str(room.get("name", "Room")),
+		"subtitle": "The host chose these rules.",
+		"confirm": "Join",
+		"fixed_mode": str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT)),
+		"extra": extra,
+	}
+	if field:
+		opts["check"] = func() -> String: return "Type the password first." if field.text == "" else ""
+	GameOptions.ask(ui, opts, func(_mode: String) -> void: _run(Social.join_room.bind(id, field.text if field else "")))
+	if field:
+		field.grab_focus.call_deferred()
 
 
 ## Your own room is a waiting match: open it to wait at the table.
@@ -189,52 +213,17 @@ func _open_own(id: int) -> void:
 	await _run(GameSession.open_match.bind(id))
 
 
-func _ask_password(room: Dictionary) -> void:
-	var card := AppTheme.card()
-	var box := AppTheme.vbox(14)
-	card.add_child(box)
-	var head := AppTheme.hbox(10)
-	head.add_child(_icon("lock", 34.0))
-	var title := AppTheme.label(str(room.get("name", "Room")), "HeadingLabel", 28)
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	box.add_child(head)
-	var note := AppTheme.label("This room is locked. Enter its password to join.", "MutedLabel")
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(note)
-	var field := AppTheme.field("Password", true)
-	box.add_child(field)
-	var id := int(room.get("id", 0))
-	var submit := func() -> void: _join_locked(id, field.text)
-	field.text_submitted.connect(func(_text: String) -> void: submit.call())
-	var row := AppTheme.hbox(12)
-	var cancel := AppTheme.button("Cancel", "Ghost", ui.close_dialog)
-	var join := AppTheme.button("Join", "Success", submit)
-	cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	join.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(cancel)
-	row.add_child(join)
-	box.add_child(row)
-	ui.show_overlay(AppTheme.centered(card, 440))
-	AppTheme.pop_in(card)
-	field.grab_focus.call_deferred()
-
-
-func _join_locked(id: int, password: String) -> void:
-	if password == "":
-		ui.toast("Type the password first.", AppTheme.MUTED)
-		return
-	ui.close_dialog()
-	await _run(Social.join_room.bind(id, password))
-
-
 func _create_room() -> void:
 	var room_name := _name.text.strip_edges()
 	if room_name.length() < 3:
 		ui.toast("Give your room a name (3+ letters).", AppTheme.MUTED)
 		return
-	await _run(Social.create_room.bind(room_name, _password.text))
+	var password := _password.text
+	GameOptions.ask(ui, {
+		"title": "Host \"%s\"" % room_name,
+		"subtitle": "Everyone who joins plays by your rules.",
+		"confirm": "Host Room",
+	}, func(mode: String) -> void: _run(Social.create_room.bind(room_name, password, mode)))
 
 
 ## Runs a room request with the buttons locked. Success switches to the HUD by itself.

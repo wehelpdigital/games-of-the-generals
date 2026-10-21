@@ -25,6 +25,7 @@ var _poll: Timer
 var _searching := false
 var _opening := false
 var _waited := 0.0
+var _mode := PowerupLibrary.MODE_SELECT  # Powerup rules of the running search.
 
 
 func _ready() -> void:
@@ -125,6 +126,7 @@ func open(_args: Dictionary) -> void:
 	match str(res.data.get("status", "idle")):
 		"queued":
 			_waited = float(res.data.get("waited_seconds", 0))
+			_mode = str(res.data.get("powerup_mode", _mode))
 			_set_searching(true)
 		"matched":
 			_open_found(res)
@@ -145,8 +147,17 @@ func _show_rank() -> void:
 
 
 func _start_search() -> void:
+	GameOptions.ask(ui, {
+		"title": "Ranked Match",
+		"subtitle": "You'll face someone of your rank who picked the same powerup rules.",
+		"confirm": "Find ranked match",
+	}, _queue)
+
+
+func _queue(mode: String) -> void:
+	_mode = mode
 	_find.disabled = true
-	var res: Dictionary = await Social.queue_ranked()
+	var res: Dictionary = await Social.queue_ranked(mode)
 	_find.disabled = false
 	if not res.ok:
 		if res.status == 401:
@@ -209,6 +220,7 @@ func _update_search_text() -> void:
 	else:
 		_headline.text = "Widening the search further..."
 		AppTheme.set_pill(_window, "NOW MATCHING %s TO %s" % [PlayerRanks.short_of(tier - 2), PlayerRanks.short_of(tier + 2)], AppTheme.PINK)
+	_headline.text += "\n" + {"off": "No powerups", "random": "Random powerups"}.get(_mode, "Pick-5 powerups")
 
 
 func _poll_status() -> void:
@@ -224,7 +236,7 @@ func _poll_status() -> void:
 			_waited = maxf(_waited, float(res.data.get("waited_seconds", _waited)))
 		"idle":
 			# The server dropped us (e.g. a long stall): quietly queue again.
-			Social.queue_ranked()
+			Social.queue_ranked(_mode)
 
 
 func _on_ranked_matched(match_id: int) -> void:

@@ -236,8 +236,8 @@ func list_rooms() -> Dictionary:
 
 
 ## Hosts a room and opens it (GameSession switches to the in-match HUD).
-func create_room(room_name: String, password: String) -> Dictionary:
-	var body := {"name": room_name.strip_edges()}
+func create_room(room_name: String, password: String, mode := PowerupLibrary.MODE_SELECT) -> Dictionary:
+	var body := {"name": room_name.strip_edges(), "powerup_mode": mode}
 	if password != "":
 		body["password"] = password
 	var request := func() -> Dictionary: return await ApiManager.request(HTTPClient.METHOD_POST, "/api/rooms", body)
@@ -250,8 +250,9 @@ func join_room(id: int, password: String) -> Dictionary:
 	return friendly(await GameSession._online_request(request))
 
 
-func queue_ranked() -> Dictionary:
-	return friendly(await ApiManager.request(HTTPClient.METHOD_POST, "/api/ranked/queue"))
+## Joins the ranked queue with the chosen powerup rules (you're only paired with the same).
+func queue_ranked(mode := PowerupLibrary.MODE_SELECT) -> Dictionary:
+	return friendly(await ApiManager.request(HTTPClient.METHOD_POST, "/api/ranked/queue", {"powerup_mode": mode}))
 
 
 func ranked_status() -> Dictionary:

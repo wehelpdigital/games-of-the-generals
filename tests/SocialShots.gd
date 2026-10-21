@@ -38,7 +38,7 @@ func _ready() -> void:
 	ui.show_screen("rooms")
 	rooms.call("show_rooms", ROOMS)
 	await _shot("01_rooms", 0.8)
-	rooms.call("_ask_password", ROOMS[0])
+	rooms.call("join_room", ROOMS[0])
 	await _shot("02_room_password", 0.5)
 	ui.close_dialog()
 

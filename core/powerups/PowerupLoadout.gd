@@ -45,6 +45,11 @@ func is_unlocked(id: String) -> bool:
 	return PowerupLibrary.unlock_tier(id) <= tier()
 
 
+## How many a Select hand holds: 5, or every unlocked one if fewer are unlocked.
+func hand_size() -> int:
+	return mini(PowerupLibrary.MAX_SLOTS, unlocked_ids().size())
+
+
 ## Every powerup this player may bring (the server's unlocks once known, else by rank).
 func unlocked_ids() -> Array[String]:
 	var list: Array[String] = []
@@ -99,8 +104,8 @@ func fetch() -> void:
 ## Coroutine: picks a new loadout. Returns "" when saved, otherwise what's wrong.
 func save(new_slots: Array) -> String:
 	var clean := PowerupLibrary.sanitize(new_slots)
-	if clean.size() != PowerupLibrary.MAX_SLOTS:
-		return "Pick exactly %d powerups." % PowerupLibrary.MAX_SLOTS
+	if clean.size() != hand_size():
+		return "Pick exactly %d powerups." % hand_size()
 	for id in clean:
 		if not is_unlocked(id):
 			return "%s unlocks at %s." % [PowerupLibrary.display_name(id), PlayerRanks.name_of(PowerupLibrary.unlock_tier(id))]

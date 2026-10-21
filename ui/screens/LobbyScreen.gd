@@ -147,7 +147,8 @@ func _match_row(entry: Dictionary) -> PanelContainer:
 		lock.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		line.add_child(lock)
 	var id := int(entry.get("id", 0))
-	var join := AppTheme.button("Join", "Success", _join_entry.bind(entry) if is_room else _join.bind(id), 46)
+	line.add_child(GameOptions.mode_pill(str(entry.get("powerup_mode", PowerupLibrary.MODE_SELECT))))
+	var join := AppTheme.button("Join", "Success", _join_entry.bind(entry) if is_room else _join.bind(id, str(entry.get("powerup_mode", PowerupLibrary.MODE_SELECT))), 46)
 	_buttons.append(join)
 	line.add_child(join)
 	return row
@@ -173,15 +174,21 @@ func _show_resume(view: Variant) -> void:
 
 
 func _quick_match() -> void:
-	await _run(GameSession.find_match)
+	GameOptions.ask(ui, {
+		"title": "Quick Match",
+		"subtitle": "You'll face someone who picked the same powerup rules.",
+		"confirm": "Find match",
+	}, func(mode: String) -> void: _run(GameSession.find_match.bind(mode)))
 
 
 func _create_match() -> void:
-	await _run(GameSession.create_match)
+	GameOptions.ask(ui, {"title": "Host Match", "subtitle": "Your rules: whoever joins plays by them.", "confirm": "Host"},
+		func(mode: String) -> void: _run(GameSession.create_match.bind(mode)))
 
 
-func _join(id: int) -> void:
-	await _run(GameSession.join_match.bind(id))
+func _join(id: int, mode := PowerupLibrary.MODE_SELECT) -> void:
+	GameOptions.ask(ui, {"title": "Join Match", "subtitle": "The host chose these rules.", "confirm": "Join", "fixed_mode": mode},
+		func(_mode: String) -> void: _run(GameSession.join_match.bind(id)))
 
 
 ## Rooms join through the rooms screen, which asks for the password when there is one.

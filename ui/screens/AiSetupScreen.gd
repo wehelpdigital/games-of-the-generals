@@ -1,5 +1,5 @@
 extends Screen
-## Pick an AI difficulty and start an offline practice game.
+## Pick an AI difficulty, then the powerup rules (GameOptions), and start an offline practice game.
 
 const LEVELS := [
 	{"level": SalpakanAI.Difficulty.EASY, "title": "Rookie", "kind": "Success", "badge": "PVT",
@@ -63,4 +63,9 @@ func _start(level: int) -> void:
 		ui.toast("Log in to challenge the Officer and General AIs.", AppTheme.BLUE)
 		ui.show_screen("auth", {"next": "ai_setup"})
 		return
-	GameSession.start_practice(level as SalpakanAI.Difficulty)
+	var title: String = LEVELS.filter(func(e: Dictionary) -> bool: return e["level"] == level)[0]["title"]
+	GameOptions.ask(ui, {
+		"title": "Play vs %s" % title,
+		"subtitle": "With powerups on, the AI gets 5 random ones too.",
+		"confirm": "Start",
+	}, func(mode: String) -> void: GameSession.start_practice(level as SalpakanAI.Difficulty, mode))

@@ -24,7 +24,7 @@ func _ready() -> void:
 	GameSession.submit_setup(board.get_setup_placements())
 	await wait_until(func() -> bool: return GameSession.status() == "active" and not board.is_animating())
 	var arbiter: LocalArbiter = GameSession._arbiter
-	arbiter.loadouts[W] = ["spy_card", "freeze", "fortify"]
+	arbiter.loadouts[W] = ["spy_card", "freeze", "fortify", "smoke_screen", "insight"]
 	_reload()
 	await _shot("02_hud_powerups", 1.0)
 

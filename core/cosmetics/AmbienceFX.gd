@@ -78,6 +78,25 @@ const STYLES := {
 		"swatch": [Color("ff4d6d"), Color("ffd23f"), Color("4dffb0"), Color("6f8bff")]},
 	"ambience_bubbles": {"name": "Bubble Breeze", "rarity": "common", "desc": "Soap bubbles float up from your tiles and pop.",
 		"swatch": [Color("ffffff"), Color("b8ecff"), Color("ffb3ec")]},
+	# Holidays.
+	"ambience_haunted_night": {"name": "Haunted Night", "rarity": "epic", "season": "halloween", "desc": "Jack-o'-lantern lights float through purple mist while bats flit overhead.",
+		"swatch": [Color("2a1d3e"), Color("ff8a1f"), Color("8b5cf6")]},
+	"ambience_santa_sleigh": {"name": "Santa's Sleigh", "rarity": "legendary", "season": "christmas", "desc": "A sleigh and four reindeer fly over your half in a trail of sparkles, through gentle snow.",
+		"swatch": [Color("d62f3a"), Color("8a5a2a"), Color("ffcf3f"), Color("ffffff")]},
+	"ambience_midnight_fireworks": {"name": "Midnight Countdown", "rarity": "epic", "season": "new_year", "desc": "Gold and silver fireworks and a shower of golden sparkles.",
+		"swatch": [Color("1d1736"), Color("ffcf3f"), Color("e8eef8")]},
+	"ambience_heart_balloons": {"name": "Heart Balloons", "rarity": "rare", "season": "valentines", "desc": "Heart-shaped balloons float up from your side.",
+		"swatch": [Color("ff2f5f"), Color("ff7aa0"), Color("ffb3d1")]},
+	"ambience_red_lanterns": {"name": "Lantern Festival", "rarity": "epic", "season": "lunar_new_year", "desc": "Strings of glowing red lanterns sway above your half.",
+		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("5a3a24")]},
+	"ambience_harvest_breeze": {"name": "Harvest Breeze", "rarity": "common", "season": "thanksgiving", "desc": "A gusty autumn wind full of red and gold leaves.",
+		"swatch": [Color("ffc93c"), Color("ff8a1f"), Color("c8341c")]},
+	"ambience_seaside_gulls": {"name": "Seaside Gulls", "rarity": "rare", "season": "summer", "desc": "Seagulls glide past while the sun glints over your side.",
+		"swatch": [Color("ffffff"), Color("12b8c4"), Color("fff1b0")]},
+	"ambience_kalayaan_fireworks": {"name": "Kalayaan Sky", "rarity": "epic", "season": "kalayaan", "desc": "Blue, red and gold fireworks with golden stars drifting down.",
+		"swatch": [Color("0038a8"), Color("ce1126"), Color("fcd116")]},
+	"ambience_banderitas": {"name": "Banderitas", "rarity": "rare", "season": "fiesta", "desc": "Strings of colourful fiesta bunting flutter over your half.",
+		"swatch": [Color("ff3d7f"), Color("ffcf3f"), Color("27c98f"), Color("3d8bff")]},
 }
 
 
@@ -85,6 +104,7 @@ var style := NONE
 var _actors: Array[Dictionary] = []  # {node, tick: Callable(actor, t, delta)}
 var _spawners: Array[Dictionary] = []  # {every: Vector2, next: float, spawn: Callable}
 var _time := 0.0
+var _firework_palette: Array = []  # Themed shows (New Year gold, Kalayaan blue/red/gold); empty = any hue.
 
 
 ## A ready node for `side`'s half, or null for "none". Add it under the board.
@@ -169,6 +189,37 @@ func _ready() -> void:
 			confetti.color_initial_ramp = FxTextures.rainbow()
 		"ambience_bubbles":
 			_bubbles()
+		"ambience_haunted_night":
+			_fog(12, [Color("6a4a9a", 0.0), Color("5a3a8a", 0.32), Color("3a2a5a", 0.0)], 0.35)
+			_pumpkin_lights()
+			_flock(true)
+		"ambience_santa_sleigh":
+			_fall("snowflake", false, 40, 0.16, [Color("ffffff"), Color("e2f2ff"), Color("b8dcff")], 0.5, Vector3(0.2, 0.0, 0.0), 120.0)
+			_sleigh()
+		"ambience_midnight_fireworks":
+			_firework_palette = [Color("ffcf3f"), Color("fff1b0"), Color("e8eef8"), Color("ffb020")]
+			_every(Vector2(0.5, 1.1), _firework)
+			_fall("sparkle", false, 36, 0.16, [Color("fff6c8"), Color("ffd24a"), Color("ffa21f")], 0.4, Vector3.ZERO, 180.0)
+		"ambience_heart_balloons":
+			_heart_balloons()
+			_fall("heart", false, 18, 0.18, [Color("ffe3ec"), Color("ff7aa0"), Color("ff2f5f")], 0.35, Vector3(0.2, 0.0, 0.0), 60.0)
+		"ambience_red_lanterns":
+			_lantern_strings()
+			_fall("coin", false, 14, 0.16, [Color("fff1b0"), Color("ffcf3f"), Color("d4a017")], 0.45, Vector3.ZERO, 260.0)
+		"ambience_harvest_breeze":
+			var gust := _fall("leaf", false, 46, 0.3, [Color("ffc93c"), Color("ff8a1f"), Color("d6401c")], 0.7, Vector3(2.6, 0.0, 0.0), 300.0)
+			gust.position.x -= 2.5
+			gust.color_initial_ramp = FxTextures.gradient([Color("ffd23f"), Color("ff8a1f"), Color("d6401c"), Color("8a4a1e")], false)
+		"ambience_seaside_gulls":
+			_flock(false, true)
+			_glints()
+		"ambience_kalayaan_fireworks":
+			_firework_palette = [Color("3d6bff"), Color("ff3d4a"), Color("fcd116"), Color("ffffff")]
+			_every(Vector2(0.6, 1.3), _firework)
+			_fall("star", false, 22, 0.2, [Color("fff6c8"), Color("fcd116"), Color("ffb020")], 0.35, Vector3.ZERO, 120.0)
+		"ambience_banderitas":
+			_banderitas()
+			_fall("square", false, 24, 0.1, [Color.WHITE, Color.WHITE, Color.WHITE], 0.6, Vector3(0.3, 0.0, 0.0), 540.0).color_initial_ramp = FxTextures.rainbow()
 
 
 func _process(delta: float) -> void:
@@ -458,6 +509,9 @@ func _firework() -> void:
 func _firework_burst(at: Vector3) -> void:
 	var hue := randf()
 	var base := Color.from_hsv(hue, 0.75, 1.0)
+	if not _firework_palette.is_empty():
+		base = _firework_palette.pick_random()
+		hue = base.h
 	var p := FxTextures.particles("star" if randf() < 0.5 else "sparkle", false, _scaled(50), 1.3, 0.3)
 	p.local_coords = false
 	p.one_shot = true
@@ -561,10 +615,10 @@ func _flap(actor: Dictionary, t: float, rate: float, amount: float) -> void:
 
 # --- Fly-bys -------------------------------------------------------------------------------------
 
-func _flock(bats: bool) -> void:
+func _flock(bats: bool, gulls := false) -> void:
 	var count := 4 if reduced else (6 if bats else 7)
-	var key := "bat" if bats else "bird"
-	var body_color := "2a1f3a" if bats else "3a3150"
+	var key := "bat" if bats else ("gull" if gulls else "bird")
+	var body_color := "2a1f3a" if bats else ("ffffff" if gulls else "3a3150")
 	var body := [
 		PropKit.pt(body_color, ShapeKit.capsule(0.045, 0.2), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
 		PropKit.pt(body_color, ShapeKit.sphere(0.045), Vector3(0.0, 0.03, -0.1)),
@@ -573,7 +627,8 @@ func _flock(bats: bool) -> void:
 		body.append(PropKit.pt("ffb020", ShapeKit.cone(0.02, 0.06, 8), Vector3(0.0, 0.03, -0.16), Vector3(-PI / 2.0, 0.0, 0.0), 0.0))
 	var wing_poly := PackedVector2Array([Vector2(0.0, 0.03), Vector2(-0.2, 0.0), Vector2(-0.26, -0.05), Vector2(-0.12, -0.04), Vector2(0.0, -0.05)]) if bats \
 		else PackedVector2Array([Vector2(0.0, 0.04), Vector2(-0.22, 0.01), Vector2(-0.18, -0.03), Vector2(0.0, -0.04)])
-	var wing := [PropKit.pt("4a3a6a" if bats else "5a4f78", ShapeKit.prism(wing_poly, 0.012, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.01)]
+	var wing_color := "4a3a6a" if bats else ("dfe6ee" if gulls else "5a4f78")
+	var wing := [PropKit.pt(wing_color, ShapeKit.prism(wing_poly, 0.012, 0.004), Vector3.ZERO, Vector3(-PI / 2.0, 0.0, 0.0), 0.01)]
 	for i in count:
 		var parts := _winged(key, body, wing, 0.04)
 		var root: Node3D = parts["root"]
@@ -933,3 +988,195 @@ func _place_on_rim(node: Node3D, along: float, forward: bool, step: float) -> vo
 	node.scale = Vector3.ONE * PEOPLE_SCALE * fade
 	node.position = Vector3(at.x, RIM_Y + absf(sin(step)) * 0.035, at.y)
 	node.rotation = Vector3(0.0, atan2(-heading.x, -heading.y), sin(step) * 0.08)
+
+
+# --- Holiday ambience ----------------------------------------------------------------------------
+
+## Floating jack-o'-lantern lights drifting over the tiles.
+func _pumpkin_lights() -> void:
+	var p := FxTextures.particles("pumpkin", false, _scaled(14), 4.0, 0.3)
+	p.local_coords = true
+	p.preprocess = 4.0
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.position = Vector3(0.0, 1.5, 2.0)
+	p.emission_box_extents = Vector3(HALF_X, 0.5, 2.0)
+	p.direction = Vector3.UP
+	p.spread = 180.0
+	p.initial_velocity_min = 0.08
+	p.initial_velocity_max = 0.25
+	p.gravity = Vector3.ZERO
+	p.angle_min = -15.0
+	p.angle_max = 15.0
+	p.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.0), Vector2(0.2, 1.0), Vector2(0.8, 1.0), Vector2(1.0, 0.0)])
+	p.color_ramp = FxTextures.gradient([Color("ffb04a"), Color("ff8a1f"), Color("ff7a12")])
+	p.emitting = true
+	add_child(p)
+
+
+## Santa's sleigh and four reindeer cross the sky every few seconds, trailing sparkles.
+func _sleigh() -> void:
+	var team := Node3D.new()
+	var parts := [
+		PropKit.pt("d62f3a", ShapeKit.box(Vector3(0.5, 0.22, 0.3), 0.05, 0.02), Vector3(0, 0.15, 0)),
+		PropKit.pt("d62f3a", ShapeKit.box(Vector3(0.12, 0.34, 0.3), 0.05, 0.02), Vector3(0.24, 0.2, 0)),
+		PropKit.pt("ffcf3f", ShapeKit.box(Vector3(0.62, 0.025, 0.025), 0.008, 0.004), Vector3(0.02, 0.0, 0.13)),
+		PropKit.pt("ffcf3f", ShapeKit.box(Vector3(0.62, 0.025, 0.025), 0.008, 0.004), Vector3(0.02, 0.0, -0.13)),
+		PropKit.pt("ffcf3f", ShapeKit.torus(0.05, 0.07, 12, 4), Vector3(0.34, 0.06, 0.13), Vector3(PI / 2.0, 0, 0), 0.0),
+		PropKit.pt("ffcf3f", ShapeKit.torus(0.05, 0.07, 12, 4), Vector3(0.34, 0.06, -0.13), Vector3(PI / 2.0, 0, 0), 0.0),
+		PropKit.pt("8a5a2a", ShapeKit.sphere(0.13, 0.22, 12), Vector3(-0.17, 0.33, 0)),
+		PropKit.pt("d62f3a", ShapeKit.capsule(0.08, 0.2, 12), Vector3(0.02, 0.36, 0)),
+		PropKit.pt("ffd6b0", ShapeKit.sphere(0.06, -1.0, 12), Vector3(0.02, 0.52, 0)),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.06, 0.08, 10), Vector3(0.06, 0.48, 0), Vector3.ZERO, 0.0),
+		PropKit.pt("d62f3a", ShapeKit.cone(0.06, 0.12, 10), Vector3(0.0, 0.61, 0), Vector3(0, 0, 0.4)),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.025, -1.0, 8), Vector3(-0.05, 0.66, 0), Vector3.ZERO, 0.0),
+	]
+	team.add_child(PropKit.model("sleigh", parts))
+	for i in 4:
+		var deer := [
+			PropKit.pt("8a5a2a", ShapeKit.capsule(0.055, 0.26, 10), Vector3(0, 0.0, 0), Vector3(0, 0, PI / 2.0)),
+			PropKit.pt("8a5a2a", ShapeKit.sphere(0.05, -1.0, 10), Vector3(0.15, 0.08, 0)),
+			PropKit.pt("c8a070", ShapeKit.cone(0.015, 0.09, 6), Vector3(0.13, 0.15, 0.025), Vector3(0.3, 0, -0.3), 0.0),
+			PropKit.pt("c8a070", ShapeKit.cone(0.015, 0.09, 6), Vector3(0.13, 0.15, -0.025), Vector3(-0.3, 0, -0.3), 0.0),
+			PropKit.pt("6a4020", ShapeKit.cylinder(0.012, 0.012, 0.12, 5), Vector3(0.08, -0.08, 0.03), Vector3(0, 0, 0.6), 0.0),
+			PropKit.pt("6a4020", ShapeKit.cylinder(0.012, 0.012, 0.12, 5), Vector3(-0.08, -0.08, -0.03), Vector3(0, 0, -0.6), 0.0),
+		]
+		if i == 0:
+			deer.append(PropKit.pt("ff3d3d|g2.0", ShapeKit.sphere(0.02, -1.0, 8), Vector3(0.2, 0.08, 0), Vector3.ZERO, 0.0))
+		var reindeer := PropKit.model("reindeer_lead" if i == 0 else "reindeer", deer)
+		reindeer.position = Vector3(0.62 + floori(i / 2.0) * 0.38, 0.22, 0.12 if i % 2 == 0 else -0.12)
+		team.add_child(reindeer)
+	var trail := FxTextures.particles("sparkle", false, _scaled(30), 0.9, 0.16)
+	trail.local_coords = false
+	trail.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	trail.emission_sphere_radius = 0.1
+	trail.spread = 180.0
+	trail.initial_velocity_max = 0.15
+	trail.gravity = Vector3(0, -0.4, 0)
+	trail.color_ramp = FxTextures.gradient([Color("ffffff"), Color("fff1b0"), Color("ffcf3f")])
+	trail.position = Vector3(-0.3, 0.1, 0)
+	trail.emitting = true
+	team.add_child(trail)
+	team.scale = Vector3.ONE * 1.6
+	_actor(team, _tick_sleigh, {"trail": trail, "cycle": 10.0})
+
+
+func _tick_sleigh(actor: Dictionary, t: float, _delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var cycle: float = float(actor["cycle"]) * (1.6 if reduced else 1.0)
+	var k := fposmod(t + 1.0, cycle) / 5.5
+	node.visible = k <= 1.0
+	(actor["trail"] as CPUParticles3D).emitting = node.visible
+	if not node.visible:
+		return
+	node.position = Vector3(lerpf(-9.0, 9.0, k), 3.3 + sin(k * PI) * 0.6 + sin(t * 4.0) * 0.06, lerpf(1.0, 2.6, k))
+	node.rotation = Vector3(0.0, 0.0, cos(k * PI) * 0.12)
+
+
+## Heart-shaped balloons drifting up from the tiles on ribbons.
+func _heart_balloons() -> void:
+	var colors := ["ff2f5f", "ff7aa0", "e8344e", "ffb3d1"]
+	for i in (4 if reduced else 7):
+		var color: String = colors[i % colors.size()]
+		var balloon := PropKit.model("heart_balloon_" + color, [
+			PropKit.pt(color, ShapeKit.sphere(0.11, -1.0, 14), Vector3(-0.075, 0.05, 0)),
+			PropKit.pt(color, ShapeKit.sphere(0.11, -1.0, 14), Vector3(0.075, 0.05, 0)),
+			PropKit.pt(color, ShapeKit.cone(0.155, 0.2, 14), Vector3(0, -0.09, 0), Vector3(PI, 0, 0)),
+			PropKit.pt("ffffff", ShapeKit.sphere(0.025, -1.0, 6), Vector3(-0.09, 0.1, 0.09), Vector3.ZERO, 0.0),
+			PropKit.pt("c8c0b0", ShapeKit.cylinder(0.004, 0.004, 0.5, 4), Vector3(0, -0.44, 0), Vector3.ZERO, 0.0),
+		])
+		balloon.scale = Vector3.ONE * 1.5
+		_actor(balloon, _tick_heart_balloon, {"x": randf_range(-HALF_X, HALF_X), "z": randf_range(0.5, 3.6),
+			"phase": i * 2.3, "period": randf_range(11.0, 15.0)})
+
+
+func _tick_heart_balloon(actor: Dictionary, t: float, _delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var period: float = actor["period"]
+	var ph: float = actor["phase"]
+	var k := fposmod(t + ph, period) / period
+	node.position = Vector3(float(actor["x"]) + sin(t * 0.6 + ph) * 0.35, lerpf(1.2, 6.5, k), float(actor["z"]))
+	node.scale = Vector3.ONE * 1.5 * clampf(minf(k * 10.0, (1.0 - k) * 6.0), 0.0, 1.0)
+	node.rotation.z = sin(t * 1.2 + ph) * 0.15
+
+
+## Strings of glowing red lanterns across your half.
+func _lantern_strings() -> void:
+	for row in 2:
+		var z := 1.0 + row * 2.0
+		var cord := []
+		for i in 10:
+			var x0 := lerpf(-HALF_X - 0.6, HALF_X + 0.6, i / 10.0)
+			var x1 := lerpf(-HALF_X - 0.6, HALF_X + 0.6, (i + 1) / 10.0)
+			var a := Vector3(x0, _sag(x0), z)
+			var b := Vector3(x1, _sag(x1), z)
+			cord.append(PropKit.pt("5a3a24", ShapeKit.cylinder(0.008, 0.008, (b - a).length(), 4), (a + b) * 0.5,
+				Vector3(0, 0, atan2(b.y - a.y, b.x - a.x) - PI / 2.0), 0.0))
+		add_child(PropKit.model("lantern_cord_%d" % row, cord))
+		for i in 5:
+			var x := lerpf(-3.6, 3.6, i / 4.0) + (0.4 if row == 1 else 0.0)
+			var lantern := PropKit.model("hanging_lantern", [
+				PropKit.pt("ffcf3f", ShapeKit.cylinder(0.06, 0.07, 0.04, 12), Vector3(0, -0.08, 0)),
+				PropKit.pt("e8282e|g0.8", ShapeKit.sphere(0.13, 0.22, 16), Vector3(0, -0.22, 0)),
+				PropKit.pt("ffcf3f", ShapeKit.cylinder(0.07, 0.06, 0.04, 12), Vector3(0, -0.35, 0)),
+				PropKit.pt("ffcf3f", ShapeKit.cylinder(0.006, 0.006, 0.08, 5), Vector3(0, -0.41, 0), Vector3.ZERO, 0.0),
+				PropKit.pt("e8282e", ShapeKit.cone(0.03, 0.1, 8), Vector3(0, -0.49, 0), Vector3(PI, 0, 0)),
+			])
+			lantern.position = Vector3(x, _sag(x), z)
+			lantern.scale = Vector3.ONE * 1.3
+			_actor(lantern, _tick_hanging, {"phase": i * 1.3 + row, "amount": 0.08})
+
+
+func _sag(x: float) -> float:
+	var u := x / (HALF_X + 0.6)
+	return 3.2 - 0.45 * (1.0 - u * u)
+
+
+func _tick_hanging(actor: Dictionary, t: float, _delta: float) -> void:
+	(actor["node"] as Node3D).rotation.z = sin(t * 1.4 + float(actor["phase"])) * float(actor["amount"])
+
+
+## Fiesta banderitas: strings of little triangle flags fluttering over your half.
+func _banderitas() -> void:
+	var colors := ["ff3d7f", "ffcf3f", "27c98f", "3d8bff", "ff8a1f", "b05cff", "ffffff"]
+	var flag := PackedVector2Array([Vector2(-0.13, 0.0), Vector2(0.13, 0.0), Vector2(0.0, -0.24)])
+	for row in (2 if reduced else 3):
+		var z := 0.7 + row * 1.3
+		var cord := []
+		for i in 10:
+			var x0 := lerpf(-HALF_X - 0.6, HALF_X + 0.6, i / 10.0)
+			var x1 := lerpf(-HALF_X - 0.6, HALF_X + 0.6, (i + 1) / 10.0)
+			var a := Vector3(x0, _sag(x0) - 0.4, z)
+			var b := Vector3(x1, _sag(x1) - 0.4, z)
+			cord.append(PropKit.pt("f6efe0", ShapeKit.cylinder(0.006, 0.006, (b - a).length(), 4), (a + b) * 0.5,
+				Vector3(0, 0, atan2(b.y - a.y, b.x - a.x) - PI / 2.0), 0.0))
+		add_child(PropKit.model("bunting_cord_%d" % row, cord))
+		var count := 16
+		for i in count:
+			var x := lerpf(-HALF_X - 0.3, HALF_X + 0.3, (i + 0.5) / count)
+			var color: String = colors[(i + row * 3) % colors.size()]
+			var pennant := PropKit.model("banderita_" + color, [PropKit.pt(color, ShapeKit.prism(flag, 0.01, 0.002), Vector3.ZERO, Vector3.ZERO, 0.01)])
+			pennant.position = Vector3(x, _sag(x) - 0.4, z)
+			pennant.scale = Vector3.ONE * 1.4
+			_actor(pennant, _tick_pennant, {"phase": i * 0.7 + row * 1.9})
+
+
+func _tick_pennant(actor: Dictionary, t: float, _delta: float) -> void:
+	var node: Node3D = actor["node"]
+	var ph: float = actor["phase"]
+	node.rotation = Vector3(sin(t * 3.0 + ph) * 0.35, 0.0, sin(t * 1.7 + ph) * 0.06)
+
+
+## Sun glints twinkling over the half (beach days).
+func _glints() -> void:
+	var p := FxTextures.particles("sparkle", false, _scaled(18), 1.2, 0.22)
+	p.local_coords = true
+	p.preprocess = 1.2
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.position = Vector3(0.0, 0.5, 2.0)
+	p.emission_box_extents = Vector3(HALF_X, 0.4, 2.0)
+	p.gravity = Vector3.ZERO
+	p.initial_velocity_max = 0.05
+	p.scale_amount_curve = FxTextures.curve([Vector2(0.0, 0.0), Vector2(0.5, 1.0), Vector2(1.0, 0.0)])
+	p.color_ramp = FxTextures.gradient([Color("ffffff"), Color("fff6c8"), Color("fff1b0")])
+	p.emitting = true
+	add_child(p)

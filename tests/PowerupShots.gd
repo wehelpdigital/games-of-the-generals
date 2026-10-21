@@ -32,7 +32,7 @@ func _ready() -> void:
 	var arbiter: LocalArbiter = GameSession._arbiter
 	arbiter.loadouts[W] = ["spy_card", "freeze", "fortify", "smoke_screen", "counterspell"]
 	_reload()
-	await _shot("02_hand", 1.0)
+	await _shot("02_hand", 1.8)  # After the opening deal turns every card up.
 
 	var bar := _bar(ui)
 	var card: PowerupCard = bar._cards["fortify"]

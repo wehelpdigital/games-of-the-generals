@@ -85,6 +85,21 @@ const STYLES := {
 		"glow": Color("7dff5a"), "shape": "flame", "colors": [Color("d8ff8a"), Color("7dff5a"), Color("8b5cf6")],
 		"additive": false, "amount": 8, "lifetime": 0.85, "size": 0.3, "rise": Vector2(0.3, 0.6), "gravity": 0.45,
 		"radius": 0.44, "height": 0.06},
+	"aura_love_hearts": {"name": "Lovestruck", "rarity": "rare", "season": "valentines", "desc": "Little hearts float up around every piece.",
+		"swatch": [Color("ffe3ec"), Color("ff7aa0"), Color("ff2f5f")],
+		"glow": Color("ff4f7b"), "shape": "heart", "colors": [Color("ffe3ec"), Color("ff7aa0"), Color("ff2f5f")],
+		"additive": false, "amount": 6, "lifetime": 1.6, "size": 0.22, "rise": Vector2(0.2, 0.4), "gravity": 0.0,
+		"radius": 0.42, "height": 0.2},
+	"aura_sunburst": {"name": "Sunburst", "rarity": "epic", "season": "kalayaan", "desc": "Golden little suns rise around your pieces.",
+		"swatch": [Color("fff6c8"), Color("fcd116"), Color("ffb020")],
+		"glow": Color("fcd116"), "shape": "sun", "colors": [Color("fff6c8"), Color("fcd116"), Color("ffb020")],
+		"additive": false, "amount": 5, "lifetime": 1.8, "size": 0.26, "rise": Vector2(0.15, 0.3), "gravity": 0.0,
+		"radius": 0.42, "height": 0.25, "spin": 60.0},
+	"aura_lucky_coins": {"name": "Lucky Coins", "rarity": "rare", "season": "lunar_new_year", "desc": "Gold coins spin up around your pieces for good fortune.",
+		"swatch": [Color("fff1b0"), Color("ffcf3f"), Color("d62828")],
+		"glow": Color("ffcf3f"), "shape": "coin", "colors": [Color("fff1b0"), Color("ffcf3f"), Color("d4a017")],
+		"additive": false, "amount": 6, "lifetime": 1.4, "size": 0.2, "rise": Vector2(0.3, 0.5), "gravity": -0.2,
+		"radius": 0.42, "height": 0.15, "spin": 220.0},
 }
 
 static var _ring_materials: Dictionary = {}

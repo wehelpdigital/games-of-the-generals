@@ -113,6 +113,55 @@ const BOARD_THEMES := {
 		"divider": Color("2f8f4e"), "glow": 0.0, "tile_pattern": "candy",
 		"sky_top": Color("6f9fe0"), "sky_horizon": Color("fff0f0"), "ambient": Color("f0e0e8"),
 	},
+	"board_midnight_gold": {
+		"name": "Midnight Gold", "rarity": "epic", "season": "new_year", "desc": "Midnight-blue tiles flecked with gold, ready for the countdown.",
+		"swatch": [Color("1d1736"), Color("2a2848"), Color("222040"), Color("ffcf3f")],
+		"frame": Color("1d1736"), "bed": Color("0d0a18"), "tile_a": Color("2c2a4c"), "tile_b": Color("232144"),
+		"divider": Color("ffcf3f"), "glow": 1.2, "tile_pattern": "specks", "pattern_glow": Color("ffd86a"),
+		"sky_top": Color("0d0a2a"), "sky_horizon": Color("4a3a8a"), "ambient": Color("c8c0f0"),
+	},
+	"board_sweetheart": {
+		"name": "Sweetheart", "rarity": "rare", "season": "valentines", "desc": "Blush-pink tiles stamped with little hearts.",
+		"swatch": [Color("ff4f7b"), Color("ffe3ec"), Color("ffc9da"), Color("ffffff")],
+		"frame": Color("ff4f7b"), "bed": Color("a8244f"), "tile_a": Color("ffe3ec"), "tile_b": Color("ffc9da"),
+		"divider": Color("ffffff"), "glow": 0.0, "tile_pattern": "hearts",
+		"sky_top": Color("ff9ec0"), "sky_horizon": Color("fff0f5"), "ambient": Color("f4dce8"),
+	},
+	"board_jade_dragon": {
+		"name": "Lucky Dragon", "rarity": "epic", "season": "lunar_new_year", "desc": "Lacquer red with gold dragon scales.",
+		"swatch": [Color("d62828"), Color("ffe6b8"), Color("f5cf8a"), Color("ffcf3f")],
+		"frame": Color("d62828"), "bed": Color("7a0f0f"), "tile_a": Color("ffe6b8"), "tile_b": Color("f5cf8a"),
+		"divider": Color("ffcf3f"), "glow": 0.6, "tile_pattern": "scales",
+		"sky_top": Color("ff7a5a"), "sky_horizon": Color("ffe8c8"), "ambient": Color("f4dcc8"),
+	},
+	"board_harvest": {
+		"name": "Harvest Table", "rarity": "rare", "season": "thanksgiving", "desc": "Woven straw tiles on a warm pumpkin frame.",
+		"swatch": [Color("c8641e"), Color("f5d89a"), Color("e8c078"), Color("8a4a1e")],
+		"frame": Color("c8641e"), "bed": Color("5a3218"), "tile_a": Color("f5d89a"), "tile_b": Color("e8c078"),
+		"divider": Color("8a4a1e"), "glow": 0.0, "tile_pattern": "weave",
+		"sky_top": Color("ff9a5a"), "sky_horizon": Color("ffe8c0"), "ambient": Color("eedcc4"),
+	},
+	"board_seaside": {
+		"name": "Seaside", "rarity": "rare", "season": "summer", "desc": "Sandy tiles, sea-blue frame and a coral centre line.",
+		"swatch": [Color("12b8c4"), Color("fff2d0"), Color("f5e2b0"), Color("ff8a5a")],
+		"frame": Color("12b8c4"), "bed": Color("0a6a78"), "tile_a": Color("fff2d0"), "tile_b": Color("f5e2b0"),
+		"divider": Color("ff8a5a"), "glow": 0.0, "tile_pattern": "waves",
+		"sky_top": Color("2fb8ff"), "sky_horizon": Color("e8fbff"), "ambient": Color("d6eef2"),
+	},
+	"board_kalayaan": {
+		"name": "Araw ng Kalayaan", "rarity": "epic", "season": "kalayaan", "desc": "Blue frame, red grid and a golden centre line for Independence Day.",
+		"swatch": [Color("0038a8"), Color("fffdf5"), Color("ce1126"), Color("fcd116")],
+		"frame": Color("0038a8"), "bed": Color("ce1126"), "tile_a": Color("fffdf5"), "tile_b": Color("f2efe4"),
+		"divider": Color("fcd116"), "glow": 0.4,
+		"sky_top": Color("3f8cff"), "sky_horizon": Color("fff6d8"), "ambient": Color("dcdcf0"),
+	},
+	"board_fiesta": {
+		"name": "Fiesta", "rarity": "rare", "season": "fiesta", "desc": "A woven banig mat with festive pink and green trim.",
+		"swatch": [Color("ff3d7f"), Color("fff1c9"), Color("ffe0a0"), Color("27c98f")],
+		"frame": Color("ff3d7f"), "bed": Color("6a1f8a"), "tile_a": Color("fff1c9"), "tile_b": Color("ffe0a0"),
+		"divider": Color("27c98f"), "glow": 0.0, "tile_pattern": "weave",
+		"sky_top": Color("4fb8ff"), "sky_horizon": Color("fff2d8"), "ambient": Color("eedcec"),
+	},
 }
 
 ## How one player's half of the board looks (rows 0–3 for white, 4–7 for black). Both players see
@@ -186,6 +235,41 @@ const TERRITORIES := {
 		"name": "Fresh Snow", "rarity": "common", "season": "christmas", "desc": "Soft, sparkly new snow on your half.",
 		"swatch": [Color("f7fbff"), Color("e2eef9"), Color("bfe3ff")],
 		"tile_a": Color("f7fbff"), "tile_b": Color("e2eef9"), "pattern": "dapple",
+	},
+	"territory_midnight": {
+		"name": "Countdown Night", "rarity": "rare", "season": "new_year", "desc": "Your half becomes a starry midnight sky.",
+		"swatch": [Color("1f1d3a"), Color("18162f"), Color("ffcf3f")],
+		"tile_a": Color("26244a"), "tile_b": Color("1e1c3c"), "pattern": "specks", "pattern_glow": Color("ffd86a"),
+	},
+	"territory_rose_petals": {
+		"name": "Love Letters", "rarity": "common", "season": "valentines", "desc": "Soft pink tiles covered in hearts.",
+		"swatch": [Color("ffd6e4"), Color("ffc0d4"), Color("ff4f7b")],
+		"tile_a": Color("ffd6e4"), "tile_b": Color("ffc0d4"), "pattern": "hearts",
+	},
+	"territory_red_scales": {
+		"name": "Dragon Scales", "rarity": "rare", "season": "lunar_new_year", "desc": "Your half wears lucky red dragon scales.",
+		"swatch": [Color("e8443a"), Color("d6302a"), Color("ffcf3f")],
+		"tile_a": Color("e8443a"), "tile_b": Color("d6302a"), "pattern": "scales",
+	},
+	"territory_wheat_field": {
+		"name": "Wheat Field", "rarity": "common", "season": "thanksgiving", "desc": "Golden wheat stubble after the harvest.",
+		"swatch": [Color("f2d27a"), Color("e6c05a"), Color("c8941e")],
+		"tile_a": Color("f2d27a"), "tile_b": Color("e6c05a"), "pattern": "dapple",
+	},
+	"territory_beach_sand": {
+		"name": "Beach Sand", "rarity": "common", "season": "summer", "desc": "Warm sand rippled by the tide.",
+		"swatch": [Color("fbe8b8"), Color("f2d79a"), Color("12b8c4")],
+		"tile_a": Color("fbe8b8"), "tile_b": Color("f2d79a"), "pattern": "waves",
+	},
+	"territory_sunrise": {
+		"name": "Golden Sunrise", "rarity": "rare", "season": "kalayaan", "desc": "Warm golden tiles, bright as the morning sun.",
+		"swatch": [Color("fff3c0"), Color("ffe68a"), Color("fcd116")],
+		"tile_a": Color("fff3c0"), "tile_b": Color("ffe68a"), "pattern": "dapple",
+	},
+	"territory_banig": {
+		"name": "Banig Mat", "rarity": "common", "season": "fiesta", "desc": "A hand-woven sleeping mat in fiesta colours.",
+		"swatch": [Color("f5d79e"), Color("e8b870"), Color("ff3d7f")],
+		"tile_a": Color("f5d79e"), "tile_b": Color("e8b870"), "pattern": "weave",
 	},
 }
 
@@ -289,6 +373,48 @@ const PIECE_SKINS := {
 		"swatch": [Color("c8803f"), Color("ffffff"), Color("7a4a26"), Color("2f8f4e")],
 		"white": {"body": Color("c8803f"), "base": Color("ffffff"), "ink": Color("e63946"), "label": Color("4a2a12"), "label_outline": Color("fff4e0"), "shine": 0.2},
 		"black": {"body": Color("7a4a26"), "base": Color("2f8f4e"), "ink": Color("ffffff"), "label": Color("ffffff"), "label_outline": Color("3a1f0a"), "shine": 0.2},
+	},
+	"pieces_champagne": {
+		"name": "Champagne Toast", "rarity": "epic", "season": "new_year", "desc": "Bubbly gold against midnight blue.",
+		"swatch": [Color("fff3c4"), Color("1d1736"), Color("ffcf3f"), Color("d4a017")],
+		"white": {"body": Color("fff3c4"), "base": Color("1d1736"), "ink": Color("d4a017"), "label": Color("3a2a00"), "label_outline": Color("ffffff"), "shine": 0.9},
+		"black": {"body": Color("1d1736"), "base": Color("ffcf3f"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("0d0a18"), "shine": 0.9},
+	},
+	"pieces_sweetheart": {
+		"name": "Sweethearts", "rarity": "rare", "season": "valentines", "desc": "Candy-heart pink and deep rose.",
+		"swatch": [Color("ffe3ec"), Color("ff4f7b"), Color("a8244f"), Color("ffc9da")],
+		"white": {"body": Color("ffe3ec"), "base": Color("ff4f7b"), "ink": Color("ff2f5f"), "label": Color("6b1030"), "label_outline": Color("ffffff"), "shine": 0.6},
+		"black": {"body": Color("a8244f"), "base": Color("ffc9da"), "ink": Color("ffe3ec"), "label": Color("ffffff"), "label_outline": Color("4a0a20"), "shine": 0.6},
+	},
+	"pieces_red_gold": {
+		"name": "Red & Gold", "rarity": "rare", "season": "lunar_new_year", "desc": "Lucky red lacquer with gold trim.",
+		"swatch": [Color("fff1d0"), Color("d62828"), Color("b81d1d"), Color("ffcf3f")],
+		"white": {"body": Color("fff1d0"), "base": Color("d62828"), "ink": Color("d62828"), "label": Color("6a0a0a"), "label_outline": Color("ffffff"), "shine": 0.7},
+		"black": {"body": Color("b81d1d"), "base": Color("ffcf3f"), "ink": Color("ffcf3f"), "label": Color("ffffff"), "label_outline": Color("4a0505"), "shine": 0.8},
+	},
+	"pieces_harvest": {
+		"name": "Harvest Basket", "rarity": "rare", "season": "thanksgiving", "desc": "Woven wicker and roasted chestnut.",
+		"swatch": [Color("f8e3b0"), Color("c8641e"), Color("7a4220"), Color("f2b84a")],
+		"white": {"body": Color("f8e3b0"), "base": Color("c8641e"), "ink": Color("8a4a1e"), "label": Color("4a2a10"), "label_outline": Color("fff6e0"), "shine": 0.25, "pattern": "weave"},
+		"black": {"body": Color("7a4220"), "base": Color("f2b84a"), "ink": Color("f2b84a"), "label": Color("ffffff"), "label_outline": Color("2a1408"), "shine": 0.25, "pattern": "weave"},
+	},
+	"pieces_pastel_easter": {
+		"name": "Painted Eggs", "rarity": "rare", "season": "summer", "desc": "Soft pastel shells with dappled paint.",
+		"swatch": [Color("fff7fb"), Color("8fd8ff"), Color("b8a6ff"), Color("ffe38a")],
+		"white": {"body": Color("fff7fb"), "base": Color("8fd8ff"), "ink": Color("ff8ec0"), "label": Color("4a3a6a"), "label_outline": Color("ffffff"), "shine": 0.5, "pattern": "dapple"},
+		"black": {"body": Color("b8a6ff"), "base": Color("ffe38a"), "ink": Color("fffbe6"), "label": Color("ffffff"), "label_outline": Color("3a2a7a"), "shine": 0.5, "pattern": "dapple"},
+	},
+	"pieces_kalayaan": {
+		"name": "Sun & Stars", "rarity": "epic", "season": "kalayaan", "desc": "White and blue with golden sun-and-star emblems.",
+		"swatch": [Color("fffdf5"), Color("0038a8"), Color("ce1126"), Color("fcd116")],
+		"white": {"body": Color("fffdf5"), "base": Color("0038a8"), "ink": Color("fcd116"), "label": Color("0038a8"), "label_outline": Color("ffffff"), "shine": 0.5},
+		"black": {"body": Color("0038a8"), "base": Color("ce1126"), "ink": Color("fcd116"), "label": Color("ffffff"), "label_outline": Color("001a5a"), "shine": 0.5},
+	},
+	"pieces_fiesta": {
+		"name": "Fiesta Pastillas", "rarity": "rare", "season": "fiesta", "desc": "Sweet as a town fiesta: cream, pink and violet.",
+		"swatch": [Color("fff1c9"), Color("ff3d7f"), Color("6a1f8a"), Color("27c98f")],
+		"white": {"body": Color("fff1c9"), "base": Color("ff3d7f"), "ink": Color("27c98f"), "label": Color("6a1f8a"), "label_outline": Color("ffffff"), "shine": 0.4},
+		"black": {"body": Color("6a1f8a"), "base": Color("ffcf3f"), "ink": Color("ff3d7f"), "label": Color("ffffff"), "label_outline": Color("2a0a3a"), "shine": 0.4},
 	},
 }
 

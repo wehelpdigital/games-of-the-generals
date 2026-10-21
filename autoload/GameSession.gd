@@ -22,6 +22,7 @@ signal powerup_used(event: Dictionary)         ## Either side used one: PowerupU
 ## Board moments for the rules visuals: {kind: "bounce"|"mine"|"saved"|"rally"|"hidden"|"auto"|"pass",
 ## side, cell?, from?, piece_ids?, chaos?, timeout?}.
 signal rule_event(event: Dictionary)
+signal tutorial_changed  ## A Boot Camp lesson started or ended: see `tutorial`.
 
 enum Kind { NONE, ONLINE, PRACTICE }
 
@@ -53,6 +54,8 @@ var _next_timeout_claim := 0.0
 var _arbiter: LocalArbiter  # Offline practice: full-information referee.
 var _ai: SalpakanAI         # Offline practice: the opponent.
 var _ai_arbiter: LocalArbiter  # The practice game whose AI turn is being played right now.
+## The Boot Camp lesson being played (an offline practice game with a coach), or null.
+var tutorial: TutorialRun
 
 
 func _ready() -> void:
@@ -75,8 +78,14 @@ func _ready() -> void:
 	_register_ui()
 
 
-## The powerup library screen, the dashboard card and the in-match clock and powerup bar.
+## The powerup library screen, the dashboard card and the in-match clock and powerup bar, plus
+## Boot Camp's screens, its coach and the in-match Rules button.
 func _register_ui() -> void:
+	ScreenRegistry.register("boot_camp", load("res://ui/screens/BootCampScreen.gd"))
+	ScreenRegistry.register("how_to_play", load("res://ui/screens/HowToPlayScreen.gd"))
+	HudRegistry.register(load("res://ui/hud/TutorialCoach.gd"), "left")  # Above the powerup hand.
+	HudRegistry.register(load("res://ui/hud/RulesHelp.gd"), "top_left")
+	DashboardRegistry.register(load("res://ui/widgets/BootCampCard.gd"), "banner", 50)
 	if ResourceLoader.exists("res://ui/screens/PowerupsScreen.gd"):
 		ScreenRegistry.register("powerups", load("res://ui/screens/PowerupsScreen.gd"))
 	if ResourceLoader.exists("res://ui/dashboard/PowerupLoadoutCard.gd"):
@@ -321,7 +330,13 @@ func _online_request(request_fn: Callable) -> Dictionary:
 func submit_setup(placements: Array) -> void:
 	if kind == Kind.PRACTICE:
 		if status() == "setup":
+			var problem := tutorial.formation_problem(placements) if tutorial else ""
+			if problem != "":
+				status_message.emit(problem)
+				return
 			_practice_start(placements)
+			if tutorial:
+				tutorial.on_ready()
 		return
 	if kind != Kind.ONLINE or _busy:
 		return
@@ -384,6 +399,9 @@ func use_powerup(id: String, target := {}) -> Dictionary:
 
 
 func resign() -> void:
+	if tutorial and tutorial.scripted:
+		tutorial.exit_requested.emit()  # Resigning a drill just leaves it.
+		return
 	if kind == Kind.PRACTICE:
 		_practice_resign()
 		return
@@ -427,6 +445,10 @@ func leave() -> void:
 	_arbiter = null
 	_ai = null
 	_finished_emitted = false
+	if tutorial:
+		tutorial.queue_free()
+		tutorial = null
+		tutorial_changed.emit()
 	timer_changed.emit()
 
 
@@ -649,6 +671,14 @@ func _emit_finished(data: Dictionary) -> void:
 		"rating": data.get("rating", {}),
 		"clashes": data.get("clashes", []),
 	}
+	if tutorial:
+		# Boot Camp shows its own endings; the graduation game still pays like a practice win.
+		tutorial.on_finished(info)
+		var economy := get_node_or_null("/root/Economy")
+		if not tutorial.scripted and economy and economy.has_method("_on_game_over"):
+			economy._on_game_over(info)
+		_announce_status()
+		return
 	game_over.emit(info)
 	_announce_status()
 
@@ -808,7 +838,7 @@ func _practice_view(practice_status: String, new_version: int) -> Dictionary:
 		"turn": _arbiter.turn if practice_status == "active" else null,
 		"move_number": _arbiter.move_number, "version": new_version,
 		"powerup_mode": _arbiter.powerup_mode,
-		"players": {"white": {"username": "You"}, "black": {"username": "AI (%s)" % SalpakanAI.label(_ai.difficulty), "loadout": ai_loadout}},
+		"players": {"white": {"username": "You"}, "black": {"username": tutorial.opponent_name() if tutorial else "AI (%s)" % SalpakanAI.label(_ai.difficulty), "loadout": ai_loadout}},
 		"setup_ready": {"white": practice_status != "setup", "black": true},
 		"pieces": _arbiter.view_pieces(Ranks.WHITE),
 		"winner": _arbiter.winner if _arbiter.is_over() else null,
@@ -845,6 +875,8 @@ func _practice_tick() -> void:
 
 func _practice_player_move(piece_id: String, from: Vector2i, to: Vector2i) -> void:
 	var error := _arbiter.validate(Ranks.WHITE, piece_id, from, to) if _ai_arbiter != _arbiter else "Not your turn."
+	if error == "" and tutorial:
+		error = tutorial.check_move(piece_id, from, to)
 	if error != "":
 		move_rejected.emit(piece_id, error)
 		status_message.emit(error)
@@ -860,9 +892,11 @@ func _practice_emit(full: Dictionary) -> void:
 	full["version"] = version + 1
 	if str(full.get("type", "")) in ["move", "clash"]:
 		_ai.observe(LocalArbiter.redact(full, Ranks.BLACK))
-		if _ai_won_clash(full) and randf() < 0.25 and not arbiter.jammed(Ranks.BLACK):
+		if tutorial == null and _ai_won_clash(full) and randf() < 0.25 and not arbiter.jammed(Ranks.BLACK):
 			_ai_taunt(1.4)
 	var resync := _present_result(LocalArbiter.redact(full, Ranks.WHITE))
+	if tutorial and arbiter == _arbiter:
+		tutorial.on_result(full)
 	if arbiter != _arbiter:
 		return
 	if arbiter.is_over():
@@ -895,6 +929,9 @@ func _practice_continue() -> void:
 
 
 func _ai_take_turn(arbiter: LocalArbiter) -> void:
+	if tutorial and tutorial.scripted:
+		await _drill_reply(arbiter)
+		return
 	var ai := _ai
 	var started := Time.get_ticks_msec()
 	var plan := PowerupBrain.choose(arbiter, Ranks.BLACK, ai)
@@ -983,6 +1020,72 @@ func _practice_resign() -> void:
 	_practice_load("finished", version + 1)
 
 
+# --- Boot Camp (core/tutorial): scripted offline drills and the graduation game -----------------
+
+## Plays a Boot Camp lesson (TutorialLessons) offline: each stage is a small battle set up for the
+## drill, with a coach (TutorialCoach) and a drill opponent that only paces. The graduation game is
+## a short real game against the Rookie AI.
+func start_lesson(lesson_id: String) -> void:
+	var lesson := TutorialLessons.get_lesson(lesson_id)
+	if lesson.is_empty():
+		return
+	leave()
+	kind = Kind.PRACTICE
+	practice_level = SalpakanAI.Difficulty.EASY
+	tutorial = TutorialRun.new(lesson)
+	tutorial.name = "Tutorial"
+	add_child(tutorial)
+	tutorial.stage_finished.connect(_begin_stage)
+	tutorial_changed.emit()
+	_begin_stage()
+
+
+## Builds the current stage's board: the drill's pieces (some enemy ranks shown), its cards and
+## clock, or an empty setup for the formation drill.
+func _begin_stage() -> void:
+	if tutorial == null:
+		return
+	var stage := tutorial.stage()
+	_finished_emitted = false
+	_ai_arbiter = null
+	ai_loadout = {}
+	_ai = SalpakanAI.new(Ranks.BLACK, SalpakanAI.Difficulty.EASY)
+	_arbiter = LocalArbiter.new()
+	_arbiter.turn_seconds = int(stage.get("turn_seconds", 0))
+	var cards: Array = stage.get("powerups", [])
+	_arbiter.powerup_mode = PowerupLibrary.MODE_OFF if cards.is_empty() else PowerupLibrary.MODE_SELECT
+	_arbiter.set_loadout(Ranks.WHITE, cards)
+	_arbiter.set_loadout(Ranks.BLACK, [])
+	if stage.get("setup", false):
+		tutorial.begin_stage(_arbiter)
+		_practice_load("setup", version + 1)
+		var game := get_tree().root.find_child("Game3D", true, false) as Game3D
+		if game:
+			game.board.load_formation(TutorialLessons.drill_formation())  # Flag not yet on the back row.
+		return
+	_arbiter.deploy(Ranks.WHITE, TutorialLessons.formation(stage["white"]))
+	_arbiter.deploy(Ranks.BLACK, TutorialLessons.formation(stage["black"]))
+	for entry: Array in stage["black"]:
+		if entry.size() > 3 and "r" in str(entry[3]):
+			_arbiter.reveal_to(Ranks.WHITE, str(_arbiter.piece_at(Vector2i(entry[1], entry[2])).get("id", "")))
+	_ai.begin(_arbiter.observation(Ranks.BLACK))
+	_arbiter.start()
+	tutorial.begin_stage(_arbiter)
+	_practice_load("active", version + 1)
+
+
+## The drill opponent's turn (TutorialRun.black_move), after a short beat.
+func _drill_reply(arbiter: LocalArbiter) -> void:
+	await get_tree().create_timer(0.8).timeout
+	if tutorial == null or arbiter != _arbiter or arbiter.is_over() or arbiter.turn != Ranks.BLACK:
+		return
+	var move := tutorial.black_move(arbiter)
+	if move.is_empty():
+		_practice_emit(arbiter.pass_turn(Ranks.BLACK))
+	else:
+		_practice_emit(arbiter.apply(move["id"], move["to"]))
+
+
 # --- Taunts (cosmetic, not game state) ----------------------------------------------------------
 
 ## Throws a taunt at the opponent's half. Returns "" when thrown, otherwise why not.
@@ -1000,7 +1103,7 @@ func send_taunt(slug: String) -> String:
 	if kind == Kind.ONLINE:
 		var res := await ApiManager.taunt(match_id(), slug)
 		return "" if res.ok else res.error
-	if kind == Kind.PRACTICE and randf() < 0.4 and not _arbiter.jammed(Ranks.BLACK):
+	if kind == Kind.PRACTICE and tutorial == null and randf() < 0.4 and not _arbiter.jammed(Ranks.BLACK):
 		_ai_taunt(randf_range(1.0, 2.0))  # The AI sometimes throws one back.
 	return ""
 

@@ -495,6 +495,14 @@ func known_rank(viewer: String, piece_id: String) -> String:
 	return rank
 
 
+## Boot Camp: lets `viewer` see an enemy piece's real rank (the drills before Fog of War show
+## their targets).
+func reveal_to(viewer: String, piece_id: String) -> void:
+	var piece: Dictionary = pieces.get(piece_id, {})
+	if not piece.is_empty() and piece["side"] != viewer:
+		_reveal(viewer, {"piece_id": piece_id, "rank": piece["rank"], "source": "tutorial"})
+
+
 ## Rule state for `viewer`, merged into its MatchView next to `pieces` (MatchPresenter::forSide).
 func rules_view(viewer: String) -> Dictionary:
 	var enemy := Ranks.opponent(viewer)

@@ -1,5 +1,6 @@
 extends Screen
-## Title: logo, the four ways to play, and the account chip. The 3D board orbits behind it.
+## Title: logo, the four ways to play, and the account chip. The 3D board orbits behind it. New
+## players get a nudge toward Boot Camp, and How to Play is always one tap away.
 
 const WIDE := 1140.0  # From this width the guest showcase floats bottom-left; below, it joins the column.
 
@@ -13,6 +14,7 @@ var _float_box: VBoxContainer  # Bottom-left home of the guest showcase on wide 
 var _top_gap: Control
 var _body: HBoxContainer  # [_brand, _column]; the brand column is only used on landscape phones.
 var _brand: VBoxContainer  # Landscape phones: logo and tags beside the buttons instead of above.
+var _nudge: PanelContainer  # "New here? Boot Camp" until they graduate or dismiss it.
 
 
 func _ready() -> void:
@@ -31,6 +33,8 @@ func _ready() -> void:
 	column.add_child(_logo)
 
 	column.add_child(_gap(10))
+	_nudge = _build_nudge()
+	column.add_child(_nudge)
 	column.add_child(AppTheme.button("Play vs AI", "Primary", func() -> void: ui.show_screen("ai_setup"), 64))
 	column.add_child(AppTheme.button("Play Online", "Secondary", func() -> void: ui.require_login("lobby"), 64))
 	var row := AppTheme.hbox(12)
@@ -41,6 +45,7 @@ func _ready() -> void:
 	row.add_child(ranks)
 	row.add_child(_second)
 	column.add_child(row)
+	column.add_child(AppTheme.button("How to play", "Ghost", func() -> void: ui.show_screen("how_to_play", {"back": "title"}), 50))
 	if not (OS.has_feature("web") or OS.has_feature("mobile")):
 		column.add_child(AppTheme.button("Quit", "Ghost", func() -> void: get_tree().quit(), 48))
 	_brand = AppTheme.vbox(14)
@@ -111,6 +116,7 @@ func _layout() -> void:
 		if not short:
 			_column.move_child(_logo, 1)  # After the top gap.
 	_brand.visible = short
+	_nudge.visible = TutorialProgress.should_nudge() and not short  # Landscape phones: no room.
 	_top_gap.custom_minimum_size.y = 56.0 if portrait else 0.0
 	# Landscape phones have no height for the showcase card (the 3D board still shows the looks),
 	# and the account chip moves under the logo so it can't sit on top of the buttons.
@@ -200,6 +206,39 @@ func _sign_up() -> void:
 func _logout() -> void:
 	await ApiManager.logout()
 	ui.toast("Logged out. See you soon!")
+
+
+## A slim card above the play buttons inviting new players to Boot Camp.
+func _build_nudge() -> PanelContainer:
+	var card := PanelContainer.new()
+	var style := ProfileUi.box(Color(AppTheme.PAPER, 0.97), 18, 3)
+	style.content_margin_left = 12
+	style.content_margin_right = 8
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	card.add_theme_stylebox_override("panel", style)
+	var row := AppTheme.hbox(8)
+	card.add_child(row)
+	var text := AppTheme.label("New here? Learn the game in 5 minutes.", "", 16)
+	text.add_theme_font_override("font", AppTheme.heading_font())
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	text.custom_minimum_size.x = 120
+	row.add_child(text)
+	var go := ProfileUi.colored_button("Boot Camp", AppTheme.PURPLE, Color.WHITE,
+		func() -> void: ui.show_screen("boot_camp", {"back": "title"}), 42)
+	go.add_theme_font_size_override("font_size", 17)
+	row.add_child(go)
+	var close := ProfileUi.small_button("x", "Ghost", _dismiss_nudge, 42)
+	close.tooltip_text = "Hide this"
+	row.add_child(close)
+	return card
+
+
+func _dismiss_nudge() -> void:
+	TutorialProgress.dismiss_nudge()
+	_nudge.visible = false
 
 
 func _gap(height: float) -> Control:

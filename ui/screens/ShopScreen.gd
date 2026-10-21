@@ -24,6 +24,7 @@ var _grid: GridContainer
 var _count: PanelContainer
 var _wallet: PanelContainer
 var _preview_button: Button
+var _shop_search: LineEdit
 var _selected_slot := -1
 var _editor: FlagEditor
 var _editing_slot := -1
@@ -72,6 +73,12 @@ func _ready() -> void:
 		_tabs[key] = tab
 		_tab_grid.add_child(tab)
 	box.add_child(_tab_grid)
+
+	_shop_search = AppTheme.field("Search the shop: orb, lava, kraken, snow...")
+	_shop_search.custom_minimum_size.y = 42
+	_shop_search.clear_button_enabled = true
+	_shop_search.text_changed.connect(func(_text: String) -> void: _refresh())
+	box.add_child(_shop_search)
 
 	_blurb = AppTheme.label("", "MutedLabel", 16)
 	_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -162,6 +169,8 @@ func _on_shop_updated() -> void:
 
 func _switch(category: String) -> void:
 	_close_editor()
+	if _shop_search != null and _shop_search.text != "":
+		_shop_search.text = ""  # Picking a tab ends the search.
 	ShopThumbs.clear()  # Only the category on screen keeps its pictures decoded.
 	_category = category
 	_selected_slot = -1
@@ -183,9 +192,16 @@ func _refresh() -> void:
 		return  # The flag editor owns the panel until Done.
 	for child in _content.get_children():
 		child.queue_free()
+	if _search_query() != "":
+		_blurb.visible = false
+		_build_search_results()
+		return
+	_blurb.visible = true
 	if _category == EXTRAS:
 		_build_extras()
 		return
+	if _category == "ambience":
+		_content.add_child(_ambience_toggle())
 	if _category == "topper":
 		_content.add_child(_topper_slots())
 	_grid = GridContainer.new()
@@ -202,11 +218,59 @@ func _refresh() -> void:
 		_grid.add_child(_card(slug, items[slug]))
 
 
+func _search_query() -> String:
+	return _shop_search.text.strip_edges().to_lower() if _shop_search != null else ""
+
+
+## Every item, in any category, whose name or category matches the search.
+func _build_search_results() -> void:
+	var query := _search_query()
+	_grid = GridContainer.new()
+	_grid.columns = 2
+	_grid.add_theme_constant_override("h_separation", 10)
+	_grid.add_theme_constant_override("v_separation", 10)
+	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var found := 0
+	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
+		var category: String = entry["key"]
+		var label := str(entry["label"]).to_lower()
+		var items := CosmeticCatalog.items(category)
+		for slug: String in CosmeticCatalog.slugs(category):
+			var name_text := str(items[slug].get("name", slug)).to_lower()
+			if name_text.contains(query) or label.contains(query) or str(items[slug].get("desc", "")).to_lower().contains(query):
+				_grid.add_child(_card(slug, items[slug], category))
+				found += 1
+				if found >= 40:
+					break
+		if found >= 40:
+			break
+	var heading := AppTheme.label("%d item%s match \"%s\"" % [found, "" if found == 1 else "s", _shop_search.text.strip_edges()], "", 16, AppTheme.MUTED)
+	_content.add_child(heading)
+	_content.add_child(_grid)
+
+
+## A device setting for the Ambience tab: lighter scenery on slower phones.
+func _ambience_toggle() -> Control:
+	var toggle := CheckButton.new()
+	toggle.text = "Reduce ambience on this device (lighter on phones)"
+	toggle.add_theme_color_override("font_color", AppTheme.INK)
+	toggle.add_theme_color_override("font_hover_color", AppTheme.INK)
+	toggle.add_theme_color_override("font_pressed_color", AppTheme.INK)
+	toggle.add_theme_font_size_override("font_size", 15)
+	toggle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	toggle.button_pressed = bool(ui.setting("reduce_ambience", false))
+	toggle.toggled.connect(func(on: bool) -> void:
+		ui.set_setting("reduce_ambience", on)
+		AmbienceFX.reduced = on
+		ui.game.board.rebuild_ambience())
+	return toggle
+
+
 # --- Item cards ----------------------------------------------------------------------------------
 
-func _card(slug: String, item: Dictionary) -> PanelContainer:
-	var owned := Loadout.owns(_category, slug)
-	var equipped := _category not in ["taunt", "topper"] and Loadout.get_item(_category) == slug
+func _card(slug: String, item: Dictionary, category := _category) -> PanelContainer:
+	var owned := Loadout.owns(category, slug)
+	var equipped := category not in ["taunt", "topper"] and Loadout.get_item(category) == slug
 	var card := AppTheme.card("Row")
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if equipped:
@@ -219,7 +283,7 @@ func _card(slug: String, item: Dictionary) -> PanelContainer:
 		card.add_theme_stylebox_override("panel", style)
 	var box := AppTheme.vbox(6)
 	card.add_child(box)
-	box.add_child(ThumbView.new(_category, slug, 104.0, item.get("swatch", [])))
+	box.add_child(ThumbView.new(category, slug, 104.0, item.get("swatch", [])))
 	var name_label := AppTheme.label(str(item.get("name", slug.capitalize())), "", 18)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(name_label)
@@ -228,7 +292,9 @@ func _card(slug: String, item: Dictionary) -> PanelContainer:
 	badges.add_theme_constant_override("v_separation", 4)
 	var rarity := str(item.get("rarity", "common"))
 	badges.add_child(AppTheme.pill(rarity.to_upper(), _rarity_color(rarity), Color.WHITE, 13))
-	var info := Loadout.shop_info(_category, slug)
+	if category != _category or _search_query() != "":
+		badges.add_child(AppTheme.pill(CosmeticCatalog.label(category).to_upper(), AppTheme.INK, Color.WHITE, 13))
+	var info := Loadout.shop_info(category, slug)
 	if info.get("featured", false):
 		badges.add_child(AppTheme.pill("FEATURED", AppTheme.PINK, Color.WHITE, 13))
 	var season := _season_badge(info)
@@ -239,23 +305,23 @@ func _card(slug: String, item: Dictionary) -> PanelContainer:
 		var desc := AppTheme.label(str(item["desc"]), "MutedLabel", 13)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		box.add_child(desc)
-	var preview := AppTheme.button("Preview", "Ghost", _open_preview.bind(_category, slug), 36)
+	var preview := AppTheme.button("Preview", "Ghost", _open_preview.bind(category, slug), 36)
 	preview.add_theme_font_size_override("font_size", 15)
 	box.add_child(preview)
-	var action := _action(slug, item, owned, equipped)
+	var action := _action(slug, item, owned, equipped, category)
 	action.add_theme_font_size_override("font_size", 17)
 	box.add_child(action)
 	return card
 
 
-func _action(slug: String, item: Dictionary, owned: bool, equipped: bool) -> Button:
+func _action(slug: String, item: Dictionary, owned: bool, equipped: bool, category := _category) -> Button:
 	if not owned:
 		if not ApiManager.is_logged_in():
 			return AppTheme.button("Log in to buy", "Secondary", func() -> void: ui.require_login("shop"), 42)
-		var buy := AppTheme.button("Buy · %s" % AppTheme.num(Loadout.price(_category, slug)), "Primary", _buy.bind(slug, item), 42)
+		var buy := AppTheme.button("Buy · %s" % AppTheme.num(Loadout.price(category, slug)), "Primary", _buy.bind(slug, item, category), 42)
 		buy.disabled = _buying
 		return buy
-	match _category:
+	match category:
 		"taunt":
 			# Taunts aren't equipped: every owned taunt is in the in-match Taunt menu. Preview instead.
 			return AppTheme.button("Throw!", "Accent", func() -> void: ui.game.throw_taunt(Ranks.BLACK, slug), 42)
@@ -264,17 +330,16 @@ func _action(slug: String, item: Dictionary, owned: bool, equipped: bool) -> But
 			if placed and ToppersLibrary.kind_of(slug) == "object":
 				return AppTheme.button("Remove", "Ghost", _remove_topper.bind(_topper_index(slug)), 42)
 			return AppTheme.button("Add flag" if ToppersLibrary.kind_of(slug) == "flag" else "Place", "Primary", _place_topper.bind(slug), 42)
-	var equip := AppTheme.button("Equipped" if equipped else "Equip", "Success" if equipped else "Primary", Loadout.equip.bind(_category, slug), 42)
+	var equip := AppTheme.button("Equipped" if equipped else "Equip", "Success" if equipped else "Primary", Loadout.equip.bind(category, slug), 42)
 	equip.disabled = equipped
 	return equip
 
 
-func _buy(slug: String, item: Dictionary) -> void:
+func _buy(slug: String, item: Dictionary, category := _category) -> void:
 	if _buying:
 		return
 	_buying = true
 	_refresh()
-	var category := _category
 	var res: Dictionary = await Loadout.buy(category, slug)
 	_buying = false
 	if res.ok:

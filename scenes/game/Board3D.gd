@@ -291,6 +291,14 @@ func set_ambience(side: String, slug: String) -> void:
 		_ambience_nodes[side] = fx
 
 
+## Rebuilds both sides' ambience (after the device's "reduce ambience" setting changes).
+func rebuild_ambience() -> void:
+	for side: String in [Ranks.WHITE, Ranks.BLACK]:
+		var slug: String = ambiences.get(side, AmbienceFX.NONE)
+		ambiences[side] = ""
+		set_ambience(side, slug)
+
+
 ## Shop preview: one of `side`'s pieces hops to a neighbouring free tile and back, showing its trail.
 func preview_trail(side: String) -> void:
 	if _busy:

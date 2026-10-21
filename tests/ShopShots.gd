@@ -31,6 +31,15 @@ func _ready() -> void:
 	shop.call("_switch", "shape")
 	Loadout.equip("shape", "shape_wish_orb")
 	await _shot("shop_shapes", 1.2)
+	shop.call("_switch", "ambience")
+	await _shot("shop_ambience", 1.2)
+	shop.call("_switch", "kill")
+	await _shot("shop_kills", 1.2)
+	var shop_search: LineEdit = shop.get("_shop_search")
+	shop_search.text = "snow"
+	shop_search.text_changed.emit("snow")
+	await _shot("shop_search", 1.0)
+	shop.call("_switch", "shape")
 
 	# Preview mode: one shot per kind of camera framing, a search, then a phone-sized screen.
 	for pair: Array in [["shape", "shape_dice", 1.4], ["kill", "kill_bazooka", 1.1], ["ambience", "ambience_aurora", 1.6],

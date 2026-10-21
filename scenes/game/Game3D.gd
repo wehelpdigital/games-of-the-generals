@@ -11,6 +11,7 @@ extends Node3D
 
 var _formation_match := -1  # Match the local setup formation belongs to.
 var _opponent_loadout: Dictionary = {}  # Cosmetics shown on the other side of the board.
+var _view_key := ""  # Which match the camera was last set up for (see _on_match_loaded).
 var _showcase: Dictionary = {}  # Guest title-screen showcase; replaces the player's own look.
 
 
@@ -43,6 +44,7 @@ func show_attract() -> void:
 	board.set_mode(Board3D.Mode.SPECTATE, Ranks.WHITE, false)
 	rig.set_side(Ranks.WHITE)
 	rig.attract = true
+	_view_key = ""
 	# A random "rival" so menus show combos. Not in the browser: every new look compiles shaders
 	# with the page frozen (see Graphics), so there the rival wears the default look.
 	_opponent_loadout = Loadout.random_loadout() if Graphics.live_showcase() else {}
@@ -183,8 +185,13 @@ func _on_match_loaded(view: Dictionary) -> void:
 	_showcase = {}  # A real match always shows the player's own look.
 	var side := GameSession.my_side()
 	board.set_mode(Board3D.Mode.SPECTATE, side, false)
-	rig.attract = false
-	rig.set_side(side)
+	# Every refresh reloads the match; only a new match (or side) resets the player's view.
+	var view_key := "%d:%d:%s" % [GameSession.kind, GameSession.match_id(), side]
+	if rig.attract or view_key != _view_key:
+		_view_key = view_key
+		rig.attract = false
+		rig.set_side(side)
+		rig.reset_view()
 	var players: Variant = view.get("players")
 	var rival: Variant = players.get(Ranks.opponent(side)) if players is Dictionary else null
 	_opponent_loadout = (rival["loadout"] as Dictionary).duplicate(true) if rival is Dictionary and rival.get("loadout") is Dictionary else {}
@@ -224,6 +231,7 @@ func _on_move_rejected(_piece_id: String, _message: String) -> void:
 
 func _on_game_over(info: Dictionary) -> void:
 	board.reveal_ranks(info.get("pieces", []))
+	rig.reset_view()  # The final board in the standard view.
 	rig.shake(0.35)
 	_refresh_mode()
 

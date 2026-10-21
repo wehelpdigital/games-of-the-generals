@@ -20,6 +20,7 @@ var _center: VBoxContainer
 var _portrait := false
 var _clips_button: Button
 var _menu_button: Button
+var _reset_view: Button  # Appears while the player has zoomed, panned or turned the board.
 var _taunt_button: Button
 var _taunt_menu: VBoxContainer
 var _last_info: Dictionary = {}  # The finished match's game-over info (result card and recap).
@@ -92,6 +93,11 @@ func _ready() -> void:
 	_bar_row = AppTheme.hbox(8)
 	_bar.add_child(_bar_row)
 
+	_reset_view = AppTheme.button("Reset view", "Ghost", func() -> void: ui.game.rig.reset_view(), 44)
+	_reset_view.add_theme_font_size_override("font_size", 17)
+	_reset_view.visible = false
+	add_child(_reset_view)
+
 	_build_slots(top, center, corner)
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -138,6 +144,9 @@ func _build_slots(top: HBoxContainer, center: VBoxContainer, corner: VBoxContain
 func open(_args: Dictionary) -> void:
 	if not ui.game.board.hover_changed.is_connected(_on_hover):
 		ui.game.board.hover_changed.connect(_on_hover)
+	if not ui.game.rig.view_moved.is_connected(_on_view_moved):
+		ui.game.rig.view_moved.connect(_on_view_moved)
+	_reset_view.visible = ui.game.rig.is_moved()
 	ui.game.board.clash_presenter = _present_clash
 	_clips_button.text = "Clips: ON" if ui.setting("clash_clips", true) else "Clips: OFF"
 	_last_info = {}
@@ -254,6 +263,12 @@ func _chat_buttons_width() -> float:
 	return 72.0
 
 
+func _on_view_moved(moved: bool) -> void:
+	_reset_view.visible = moved and visible
+	if moved:
+		AppTheme.pop_in(_reset_view)
+
+
 ## What sits above the bottom edge: in portrait the powerup icons and the hovered piece's name go
 ## above the action rows; in landscape the name pill hugs the bottom edge.
 func _stack_bottom() -> void:
@@ -268,7 +283,17 @@ func _stack_bottom() -> void:
 		left.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		var hint_gap := above + (left.get_combined_minimum_size().y + 10.0 if left.get_child_count() > 0 and left.get_child(0).visible else 0.0)
 		_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, hint_gap)
+		# Portrait: bottom-right, just above the chat button (beside the action rows).
+		_reset_view.text = "Reset"
+		_reset_view.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 12)
+		_reset_view.offset_bottom = -(12.0 + 50.0 + 10.0)
+		_reset_view.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		_reset_view.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	else:
+		# Landscape: bottom-left (the powerups own the top-left, the chat the bottom-right).
+		_reset_view.text = "Reset view"
+		_reset_view.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16)
+		_reset_view.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		left.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 16)
 		left.offset_top = 72.0 if get_viewport().get_visible_rect().size.y < 560.0 else 84.0
 		left.grow_horizontal = Control.GROW_DIRECTION_END

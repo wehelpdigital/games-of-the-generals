@@ -11,6 +11,7 @@ const SCREENS := {
 	"lobby": preload("res://ui/screens/LobbyScreen.gd"),
 	"leaderboard": preload("res://ui/screens/LeaderboardScreen.gd"),
 	"shop": preload("res://ui/screens/ShopScreen.gd"),
+	"settings": preload("res://ui/screens/SettingsScreen.gd"),
 	"hud": preload("res://ui/screens/GameHUD.gd"),
 }
 
@@ -60,6 +61,7 @@ func _ready() -> void:
 	_root.add_child(_cut_in)  # Last, so battle clips draw over dialogs too.
 
 	_settings.load(SETTINGS_FILE)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), bool(setting("sound_off", false)))
 	GameSession.match_loaded.connect(_on_match_loaded)
 
 
@@ -101,6 +103,21 @@ func require_login(next: String) -> void:
 		show_screen(next)
 	else:
 		show_screen("auth", {"next": next})
+
+
+## A round gear button that opens Settings (and comes back to `back` afterwards).
+func gear_button(back: String, height := 44.0) -> Button:
+	var b := AppTheme.button("", "Ghost", func() -> void: show_screen("settings", {"back": back}), height)
+	b.custom_minimum_size.x = height + 8.0
+	b.tooltip_text = "Settings"
+	var gear := TileIcon.new("gear", Vector2(26, 26))
+	gear.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	gear.offset_left = 10
+	gear.offset_right = -10
+	gear.offset_top = 7
+	gear.offset_bottom = -11  # Above the button's thicker bottom lip.
+	b.add_child(gear)
+	return b
 
 
 ## Coroutine: plays a battle clip (see ClashCutIn.play) and returns when it ends or is skipped.

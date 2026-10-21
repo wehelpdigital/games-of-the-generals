@@ -4,7 +4,7 @@ extends Control
 ## White shapes with a plum outline, drawn in a unit box scaled to the control.
 ##
 ## Names: cart, bolt, trophy, shield, person, ranks, share, logout, swords, users, robot, globe,
-## pin, camera, lock, check, crown, star.
+## pin, camera, lock, check, crown, star, gear.
 
 var icon := ""
 var fill := Color.WHITE
@@ -58,6 +58,14 @@ func _draw() -> void:
 			_dot(Vector2(0.72, 0.2), 0.15, origin, side, line)
 			_dot(Vector2(0.28, 0.5), 0.15, origin, side, line)
 			_dot(Vector2(0.72, 0.8), 0.15, origin, side, line)
+		"gear":
+			var teeth: Array = []
+			for i in 16:
+				var a := TAU * (i + 0.5) / 16.0 - PI / 2.0
+				var r := 0.46 if i % 2 == 0 else 0.34
+				teeth.append(Vector2(0.5, 0.5) + Vector2.from_angle(a) * r)
+			_shape(teeth, origin, side, line)
+			_dot(Vector2(0.5, 0.5), 0.13, origin, side, line, AppTheme.YELLOW)
 		"logout":
 			_shape([Vector2(0.12, 0.1), Vector2(0.56, 0.1), Vector2(0.56, 0.9), Vector2(0.12, 0.9)], origin, side, line)
 			_shape([Vector2(0.42, 0.42), Vector2(0.7, 0.42), Vector2(0.7, 0.28), Vector2(0.94, 0.5), Vector2(0.7, 0.72),

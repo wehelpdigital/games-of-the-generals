@@ -2,9 +2,14 @@ class_name CameraRig
 extends Node3D
 ## Tactical camera orbiting the board centre, with clamped yaw/pitch/zoom/pan and smoothing.
 ##
-## Mouse: drag (left on empty board, or right) to orbit, middle-drag to pan, wheel to zoom.
-## Touch: one finger on empty board orbits (via emulated mouse), two fingers pinch-zoom and pan.
-## Board3D sees input first and consumes it when the pointer grabs a piece.
+## Mouse: left-drag on empty board orbits, right- or middle-drag pans, the wheel zooms toward the
+## cursor, double-click on empty board resets the view.
+## Touch: one finger on empty board pans (small movements stay taps), two fingers pinch-zoom, pan
+## and twist (limited turn), double-tap empty board resets.
+## Board3D sees input first and consumes it when the pointer grabs a piece, so dragging your own
+## pieces during setup still moves them.
+
+signal view_moved(moved: bool)  ## The player moved the view away from (or back to) the standard shot.
 
 @export var camera: Camera3D
 @export_range(-85.0, -20.0) var pitch_deg := -58.0
@@ -18,6 +23,7 @@ extends Node3D
 @export var orbit_sensitivity := 0.25      ## Degrees per pixel.
 @export var smoothing := 12.0
 
+const DEAD_ZONE_PX := 12.0  ## A press must travel this far before it moves the camera.
 const PORTRAIT_DISTANCE := 1.32  ## How much further back the camera sits on portrait screens.
 const PORTRAIT_PITCH := -64.0
 
@@ -32,6 +38,10 @@ var _target_distance := 0.0
 var _target_pan := Vector2.ZERO
 var _orbiting := false
 var _panning := false
+var _touch_pan := false  # A one-finger (emulated mouse) drag that pans once it passes the dead zone.
+var _press_at := Vector2.ZERO
+var _drag_live := false
+var _moved := false
 var _touches: Dictionary = {}  # index -> position
 var _trauma := 0.0
 var _portrait := false
@@ -110,6 +120,7 @@ func shake(strength := 0.5) -> void:
 
 
 func _process(delta: float) -> void:
+	_update_moved()
 	if attract:
 		_target_yaw += delta * 7.0
 		_target_pitch = -40.0
@@ -163,6 +174,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_touches[event.index] = event.position
+			if event.double_tap and _touches.size() == 1:
+				reset_view()
 		else:
 			_touches.erase(event.index)
 		return
@@ -171,22 +184,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseButton:
+		var touch: bool = event.device == InputEvent.DEVICE_ID_EMULATION  # A finger, not a mouse.
 		match event.button_index:
-			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT:
-				_orbiting = event.pressed and _touches.size() < 2
-			MOUSE_BUTTON_MIDDLE:
+			MOUSE_BUTTON_LEFT:
+				_orbiting = event.pressed and _touches.size() < 2 and not touch
+				_touch_pan = event.pressed and touch
+				if event.pressed and event.double_click and not touch:
+					reset_view()
+			MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE:
 				_panning = event.pressed
 			MOUSE_BUTTON_WHEEL_UP:
-				_zoom(0.9)
+				_zoom_at(0.9, event.position)
 			MOUSE_BUTTON_WHEEL_DOWN:
-				_zoom(1.1)
+				_zoom_at(1.1, event.position)
+		if event.pressed:
+			_press_at = event.position
+			_drag_live = false
 	elif event is InputEventMouseMotion:
 		if _touches.size() >= 2:
 			return
+		if not _drag_live and event.position.distance_to(_press_at) < DEAD_ZONE_PX:
+			return  # Small movements stay taps (select, move) instead of nudging the camera.
+		_drag_live = true
 		if _orbiting:
 			_target_yaw = clampf(_target_yaw - event.relative.x * orbit_sensitivity, -yaw_limit_deg, yaw_limit_deg)
 			_target_pitch = clampf(_target_pitch - event.relative.y * orbit_sensitivity, min_pitch_deg, max_pitch_deg)
-		elif _panning:
+		elif _panning or _touch_pan:
 			_pan_by(event.relative)
 	elif event is InputEventMagnifyGesture:
 		_zoom(1.0 / event.factor)
@@ -202,17 +225,54 @@ func _on_touch_drag(event: InputEventScreenDrag) -> void:
 	if _touches.size() != 2:
 		return
 	_orbiting = false
+	_touch_pan = false
 	var other_index: int = _touches.keys().filter(func(i: int) -> bool: return i != event.index)[0]
 	var other: Vector2 = _touches[other_index]
 	var before := previous.distance_to(other)
 	var after := event.position.distance_to(other)
 	if before > 1.0 and after > 1.0:
-		_zoom(before / after)
+		_zoom_at(before / after, (event.position + other) * 0.5)
+		# Twist: turning two fingers turns the board a little (clamped like the mouse orbit).
+		var turn := rad_to_deg(wrapf((event.position - other).angle() - (previous - other).angle(), -PI, PI))
+		_target_yaw = clampf(_target_yaw - turn, -yaw_limit_deg, yaw_limit_deg)
 	_pan_by(event.relative * 0.5)
 
 
 func _zoom(factor: float) -> void:
 	_target_distance = clampf(_target_distance * factor, min_distance, max_distance)
+
+
+## Zooms toward the board point under `screen_pos`, so it stays under the cursor (or fingers).
+func _zoom_at(factor: float, screen_pos: Vector2) -> void:
+	var before := _target_distance
+	_zoom(factor)
+	var applied := _target_distance / before
+	if is_equal_approx(applied, 1.0):
+		return
+	var from := camera.project_ray_origin(screen_pos)
+	var dir := camera.project_ray_normal(screen_pos)
+	if absf(dir.y) < 0.001:
+		return
+	var hit := from + dir * (-from.y / dir.y)
+	var local := global_transform.affine_inverse() * hit
+	var yaw := deg_to_rad(_base_yaw + _yaw)
+	var pivot := Vector3(_target_pan.x, 0.0, _target_pan.y).rotated(Vector3.UP, yaw)
+	var shift := ((local - pivot) * (1.0 - applied)).rotated(Vector3.UP, -yaw)
+	_target_pan.x = clampf(_target_pan.x + shift.x, -pan_limit.x, pan_limit.x)
+	_target_pan.y = clampf(_target_pan.y + shift.z, -pan_limit.y, pan_limit.y)
+
+
+## Whether the view is away from the standard shot (for the HUD's Reset view button).
+func is_moved() -> bool:
+	return _moved
+
+
+func _update_moved() -> void:
+	var moved := not attract and (absf(_target_yaw) > 2.0 or absf(_target_pitch - _home_pitch()) > 2.0
+		or absf(_target_distance - _home_distance()) > 0.3 or _target_pan.length() > 0.2)
+	if moved != _moved:
+		_moved = moved
+		view_moved.emit(moved)
 
 
 func _pan_by(relative: Vector2) -> void:

@@ -178,6 +178,7 @@ func _refresh_account() -> void:
 		if ui and ui.game:
 			ui.game.set_showcase({})
 	_layout()
+	_account.add_child(ui.gear_button("title") if ui else Control.new())
 	if not guest:
 		var user := ApiManager.user
 		_account.add_child(AppTheme.pill(str(user.get("username", "General")), AppTheme.PURPLE))

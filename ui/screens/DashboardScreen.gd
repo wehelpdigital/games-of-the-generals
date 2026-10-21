@@ -29,6 +29,7 @@ var _xp_bar: XpBar
 var _guild_button: Button
 var _credits_button: Button
 var _logout_button: Button
+var _settings_button: Button
 var _logo_holder: Control
 var _logo: Control
 var _banners: VBoxContainer
@@ -159,6 +160,7 @@ func _build_header() -> void:
 	_credits_button = ProfileUi.colored_button("0", AppTheme.GOLD, AppTheme.INK, func() -> void: ui.show_screen("shop"), 44)
 	_credits_button.add_theme_font_size_override("font_size", 18)
 	_credits_button.tooltip_text = "Credits - visit the shop"
+	_settings_button = ui.gear_button("dashboard") if ui else Button.new()
 	_logout_button = ProfileUi.colored_button("", AppTheme.PAPER, AppTheme.INK, _confirm_logout, 44)
 	_logout_button.custom_minimum_size.x = 52
 	_logout_button.tooltip_text = "Log out"
@@ -409,7 +411,8 @@ func _arrange_header() -> void:
 	_names.custom_minimum_size.x = 96.0 if _portrait else 190.0
 	_xp_bar.custom_minimum_size.x = 96.0 if _portrait else 190.0
 	if _portrait:
-		# Phones: name and log-out on the first row; XP, credits and guild tag on the second.
+		# Phones: name, settings and log-out on the first row; XP, credits and guild on the second.
+		_put(_settings_button, _row1)
 		_put(_logout_button, _row1)
 		_xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_put(_xp_bar, _row2)
@@ -426,6 +429,7 @@ func _arrange_header() -> void:
 		_row1.add_child(_header_spacer())
 		_put(_guild_button, _row1)
 		_put(_credits_button, _row1)
+		_put(_settings_button, _row1)
 		_put(_logout_button, _row1)
 		_row2.visible = false
 		_logo_holder.custom_minimum_size = Vector2(110, 64)

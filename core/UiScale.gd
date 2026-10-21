@@ -23,6 +23,7 @@ const BASE := Vector2(1280, 720)  # display/window/size of the project.
 const PHONE_CSS_PER_UI := 0.92
 const TABLET_CSS_PER_UI := 1.1
 const DESKTOP_MIN_CSS_PER_UI := 0.75
+const MAX_FACTOR := 3.5  ## Never blow the UI up more than this (tiny windows).
 const TEST_DEVICES := {
 	"phone_portrait": Vector2(390, 844),
 	"phone_landscape": Vector2(844, 390),
@@ -58,7 +59,9 @@ static func apply(tree: SceneTree) -> void:
 			target = TABLET_CSS_PER_UI
 		_:
 			target = maxf(fit, DESKTOP_MIN_CSS_PER_UI)
-	var new_factor := maxf(1.0, target / maxf(fit, 0.01)) * text_size_multiplier()
+	var new_factor := clampf(target / maxf(fit, 0.01), 1.0, MAX_FACTOR) * text_size_multiplier()
+	if DisplayServer.get_name() == "headless" and _test_device == "-":
+		new_factor = 1.0  # Headless runs have no real screen (often a 64 px window): keep the design size.
 	if is_equal_approx(new_factor, window.content_scale_factor):
 		return
 	factor = new_factor

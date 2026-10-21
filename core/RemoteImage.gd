@@ -29,6 +29,7 @@ static func fetch(url: String, on_done: Callable) -> void:
 	_waiting[full] = [on_done]
 	var http := HTTPRequest.new()
 	http.timeout = 20.0
+	http.accept_gzip = not OS.has_feature("web")  # The browser un-gzips for us (see ApiManager).
 	ApiManager.add_child(http)
 	http.request_completed.connect(func(result: int, status: int, headers: PackedStringArray, body: PackedByteArray) -> void:
 		http.queue_free()

@@ -182,6 +182,8 @@ func resign(match_id: int) -> Dictionary:
 func request(method: int, path: String, body: Variant = null, authenticated := true) -> Dictionary:
 	var http := HTTPRequest.new()
 	http.timeout = REQUEST_TIMEOUT
+	# In the browser, fetch() already un-gzips responses; decompressing again fails the request.
+	http.accept_gzip = not OS.has_feature("web")
 	add_child(http)
 
 	var headers := PackedStringArray(["Accept: application/json"])

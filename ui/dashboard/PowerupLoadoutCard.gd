@@ -25,7 +25,7 @@ func refresh() -> void:
 	head.add_child(AppTheme.spacer())
 	head.add_child(ProfileUi.small_button("Change", "Ghost", _open_library, 36))
 	_box.add_child(head)
-	var row := AppTheme.hbox(10)
+	var row := AppTheme.hbox(6)
 	for id in GameSession.powerups.active_slots():
 		var slot := AppTheme.vbox(4)
 		slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -40,7 +40,8 @@ func refresh() -> void:
 		slot.add_child(icon)
 		var name := AppTheme.label(PowerupLibrary.display_name(id), "", 13)
 		name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name.autowrap_mode = TextServer.AUTOWRAP_WORD  # Break between words only ("Time / Extension").
+		name.add_theme_font_size_override("font_size", 12)
 		slot.add_child(name)
 		row.add_child(slot)
 	_box.add_child(row)

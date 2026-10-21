@@ -5,10 +5,10 @@ extends Screen
 ## Wide screens: play column left, cards and side panels right. Portrait: one scrolling column.
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
-const LEFT_WIDTH := 386.0
+const LEFT_WIDTH := 404.0
 const WIDE_MIN := 1100.0  ## Below this width the dashboard is one scrolling column.
 const COLUMN_MAX := 680.0
-const SIDE_WIDTH := 330.0
+const SIDE_WIDTH := 310.0
 
 var _theme: Dictionary = DashboardThemes.get_theme("classic")
 var _tint: TextureRect
@@ -32,6 +32,7 @@ var _guild_button: Button
 var _credits_button: Button
 var _logout_button: Button
 var _settings_button: Button
+var _play_row: BoxContainer  # Quick Match + Rooms.
 var _logo_holder: Control
 var _logo: Control
 var _banners: VBoxContainer
@@ -290,7 +291,9 @@ func _fill_play() -> void:
 	if ui.has_screen("ranked"):
 		_play_box.add_child(ProfileUi.play_button("Ranked Match", "Your rank only - win +60 XP",
 			_theme["accent"], func() -> void: ui.show_screen("ranked"), 74, "swords"))
-	var row := ProfileUi.flex(10)  # Side by side, or stacked on phone-width screens.
+	var row := ProfileUi.flex(10)  # Side by side, or stacked (phones, and the narrow left column).
+	_play_row = row
+	row.vertical = ProfileUi.narrow or not _portrait
 	var quick := ProfileUi.play_button("Quick Match", "Anyone online", _theme["accent2"],
 		func() -> void: ui.require_login("lobby"), 64, "globe")
 	quick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -320,7 +323,7 @@ func _add_registry_panels() -> void:
 
 func _build_layouts() -> void:
 	# Wide: header, banners, then [play + tiles | cards (bottom) | side panels].
-	_wide = _margin(14)
+	_wide = _margin(10)
 	_frame.add_child(_wide)
 	_wide_top = AppTheme.vbox(12)
 	_wide.add_child(_wide_top)
@@ -381,6 +384,8 @@ func _layout() -> void:
 	_tall.add_theme_constant_override("margin_right", int(side_margin))
 	_fit_tiles()
 	_arrange_header()
+	if _play_row:
+		_play_row.vertical = ProfileUi.narrow or not _portrait
 	if _portrait:
 		_logo_holder.visible = not short
 		_put(_logo_holder, _tall_top, 0)

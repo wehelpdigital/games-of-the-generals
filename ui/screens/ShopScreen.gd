@@ -802,7 +802,7 @@ func _build_extras() -> void:
 	var charter: Array = Loadout.server_items_of("guild_charter")
 	var charter_price := " · %s credits" % AppTheme.num(charter[0].get("price", 0)) if not charter.is_empty() and not Loadout.test_mode() else ""
 	var grid := GridContainer.new()
-	grid.columns = mini(_columns, 2)
+	grid.columns = 1 if ProfileUi.narrow else mini(_columns, 2)
 	grid.add_theme_constant_override("h_separation", 14)
 	grid.add_theme_constant_override("v_separation", 14)
 	grid.add_child(_extra_card("Shoutouts", "Put your message on everyone's screen as an animated marquee, in a theme of your choice.",
@@ -921,7 +921,8 @@ func _action(category: String, slug: String, height: float) -> Button:
 		b = AppTheme.button("Returns %s" % Loadout.returns_text(category, slug), "Ghost", Callable(), height)
 		b.disabled = true
 	else:
-		b = AppTheme.button("Buy · %s" % AppTheme.num(Loadout.price(category, slug)), "Primary", _buy.bind(category, slug), height)
+		var buy_text := "Buy" if ProfileUi.narrow and height < 50.0 else "Buy · %s" % AppTheme.num(Loadout.price(category, slug))
+		b = AppTheme.button(buy_text, "Primary", _buy.bind(category, slug), height)
 		b.disabled = _buying
 	b.add_theme_font_size_override("font_size", 17)
 	return b
@@ -1167,8 +1168,9 @@ func _show_preview_item() -> void:
 	if item.has("desc"):
 		_preview_title.tooltip_text = str(item["desc"])
 	_refresh_preview_actions()
-	var tag := Collections.theme_of(_preview_category, _preview_slug)
-	_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
+	if not ProfileUi.narrow:
+		var tag := Collections.theme_of(_preview_category, _preview_slug)
+		_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
 	ui.game.preview_item(_preview_category, _preview_slug)
 	if _preview_category in ["aura", "glow", "topper"]:
 		Audio.play_item(_preview_category, _preview_slug)
@@ -1183,7 +1185,8 @@ func _show_preview_look() -> void:
 	_preview_title.tooltip_text = FeaturedBoards.blurb(_preview_slug)
 	for child in _preview_badges.get_children():
 		child.queue_free()
-	_preview_badges.add_child(AppTheme.pill("FEATURED BOARD", AppTheme.PINK, Color.WHITE, 13))
+	if not ProfileUi.narrow:
+		_preview_badges.add_child(AppTheme.pill("FEATURED BOARD", AppTheme.PINK, Color.WHITE, 13))
 	_preview_badges.add_child(AppTheme.pill(Collections.name_of(tag).to_upper(), Collections.color_of(tag), Color.WHITE, 13))
 	_refresh_preview_actions()
 	ui.game.preview_look(FeaturedBoards.look(_preview_slug))

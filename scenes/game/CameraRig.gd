@@ -365,6 +365,11 @@ func _blocked() -> bool:
 	return touch_blocked.is_valid() and bool(touch_blocked.call())
 
 
+## Zooms the current shot in (factor < 1) or out, within the limits.
+func zoom_by(factor: float) -> void:
+	_zoom(factor)
+
+
 func _zoom(factor: float) -> void:
 	_target_distance = clampf(_target_distance * factor, min_distance, max_distance)
 

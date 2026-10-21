@@ -36,6 +36,7 @@ var _tab_buttons: Dictionary = {}
 var _category := FEATURED
 var _columns := 4
 var _card_width := 200.0
+var _thumb_height := 120.0
 var _wide := true
 var _buying := false
 var _sheet_key := ""  # "category/slug" of the open detail sheet, refreshed after a purchase.
@@ -193,18 +194,21 @@ func _layout() -> void:
 	_board_icon.visible = narrow
 	_rail_scroll.visible = _wide
 	_tab_scroll.visible = not _wide
-	if _wide and _shop_search.get_parent() != _header:
+	var search_up := view.x >= 700.0  # Room for the search in the header (landscape phones too).
+	if search_up and _shop_search.get_parent() != _header:
 		_shop_search.reparent(_header, false)
 		_header.move_child(_shop_search, 3)
-	elif not _wide and _shop_search.get_parent() != _search_slot:
+	elif not search_up and _shop_search.get_parent() != _search_slot:
 		_shop_search.reparent(_search_slot, false)
-	_search_slot.visible = not _wide
-	_shop_search.custom_minimum_size.x = 260.0 if _wide else 0.0
+	_search_slot.visible = not search_up
+	_shop_search.custom_minimum_size.x = 260.0 if search_up else 0.0
 	_update_wallet()
 	# Cards: as many ~210 px columns as fit (2 on phones, up to 5).
 	var content_width := view.x - pad * 2 - (214.0 + 18.0 if _wide else 0.0) - 16.0
 	_columns = clampi(int(content_width / 210.0), 2, 5)
 	_card_width = (content_width - (_columns - 1) * 14.0) / _columns
+	# Pictures follow the card width, but stay short on short screens (landscape phones).
+	_thumb_height = roundf(clampf(minf(_card_width * 0.6, view.y * 0.3), 90.0, 170.0))
 	_layout_preview()
 
 
@@ -555,7 +559,7 @@ func _card(category: String, slug: String) -> PanelContainer:
 	var box := AppTheme.vbox(8)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(box)
-	box.add_child(ThumbView.new(category, slug, roundf(clampf(_card_width * 0.6, 96.0, 170.0)), item.get("swatch", [])))
+	box.add_child(ThumbView.new(category, slug, _thumb_height, item.get("swatch", [])))
 	var name_label := AppTheme.label(str(item.get("name", slug.capitalize())), "", 18)
 	name_label.add_theme_font_override("font", AppTheme.heading_font())
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -681,7 +685,7 @@ func _open_sheet(category: String, slug: String) -> void:
 	close.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(close)
 	box.add_child(top)
-	box.add_child(ThumbView.new(category, slug, 230.0, item.get("swatch", [])))
+	box.add_child(ThumbView.new(category, slug, roundf(clampf(_frame.size.y * 0.3, 120.0, 230.0)), item.get("swatch", [])))
 	var badges := HFlowContainer.new()
 	badges.add_theme_constant_override("h_separation", 6)
 	badges.add_theme_constant_override("v_separation", 6)

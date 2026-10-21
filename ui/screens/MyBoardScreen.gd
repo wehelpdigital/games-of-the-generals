@@ -106,6 +106,7 @@ func _ready() -> void:
 	_items = AppTheme.vbox(10)
 	_items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_items_scroll.add_child(_items)
+	_items_scroll.resized.connect(_fit_tiles)
 	box.add_child(_items_scroll)
 
 	_footer = AppTheme.hbox(8)
@@ -174,9 +175,6 @@ func _layout() -> void:
 		_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 8)
 		_panel.offset_top = -sheet
 		_panel.offset_bottom = -8
-		var inner := view.x - 16.0 - 28.0
-		var columns := clampi(int(inner / 112.0), 3, 6)
-		_tile_width = floorf((inner - (columns - 1) * 8.0) / columns)
 		shift = Vector2(0.0, -(sheet / view.y) * 0.5 + (TOP_BAR / view.y) * 0.5)
 	else:
 		var width := minf(PANEL_WIDTH, view.x * 0.42)
@@ -185,14 +183,24 @@ func _layout() -> void:
 		_panel.offset_right = -14.0
 		_panel.offset_top = TOP_BAR + 6.0
 		_panel.offset_bottom = -14.0
-		var inner := width - 44.0
-		_tile_width = floorf((inner - 2 * 8.0) / 3.0)
 		shift = Vector2(-((width + 14.0) / view.x) * 0.5, (TOP_BAR / view.y) * 0.5)
 	_hint.visible = not (_portrait and _folded)
 	_items_scroll.visible = not (_portrait and _folded)
 	_footer.visible = not (_portrait and _folded)
 	ui.game.rig.screen_shift = shift
 	_place_try_bar()
+
+
+## Tiles fill the locker's width: three across in the side panel, more on a wide phone sheet.
+func _fit_tiles() -> void:
+	var inner := _items_scroll.size.x - 14.0  # Room for the scroll bar.
+	if inner <= 0.0:
+		return
+	var columns := clampi(int(inner / 104.0), 3, 6)
+	var width := floorf((inner - (columns - 1) * 8.0) / columns)
+	if absf(width - _tile_width) > 1.0:
+		_tile_width = width
+		_refresh_items.call_deferred()
 
 
 func _place_try_bar() -> void:
@@ -204,6 +212,14 @@ func _place_try_bar() -> void:
 	_try_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE)
 	var left := 14.0 if _portrait else maxf(14.0, (view.x - PANEL_WIDTH - 28.0 - width) / 2.0)
 	_try_bar.position = Vector2(roundf(left if not _portrait else (view.x - width) / 2.0), TOP_BAR + 4.0)
+
+
+## A camera shot for the category. Portrait shots come closer than the shop preview's: the board
+## only has the room above the locker sheet, and nothing else needs to fit.
+func _frame_shot(shot: String) -> void:
+	ui.game.rig.frame(shot)
+	if _portrait:
+		ui.game.rig.zoom_by(0.8)
 
 
 func _toggle_fold() -> void:
@@ -221,16 +237,20 @@ func _switch(category: String) -> void:
 		(_chips[key] as Button).theme_type_variation = "AccentButton" if key == category else "GhostButton"
 	_chip_scroll.ensure_control_visible.call_deferred(_chips[category])
 	_heading.text = CosmeticCatalog.label(category)
-	match category:
+	_set_hint()
+	if _trying.is_empty():
+		_frame_shot(Game3D.PREVIEW_SHOTS.get(category, "half"))
+	_refresh_items()
+
+
+func _set_hint() -> void:
+	match _category:
 		"taunt":
 			_hint.text = "All your taunts are in the Taunt menu during matches. Tap one to throw it."
 		"topper":
 			_hint.text = "Up to three beside your half. Tap a spot, then a topper to put it there."
 		_:
-			_hint.text = "Tap to wear it." + (" Your opponent sees it too." if category not in ["arena", "board"] else " Only you see it.")
-	if _trying.is_empty():
-		ui.game.rig.frame(Game3D.PREVIEW_SHOTS.get(category, "half"))
-	_refresh_items()
+			_hint.text = "Tap to wear it." + (" Your opponent sees it too." if _category not in ["arena", "board"] else " Only you see it.")
 
 
 func _refresh_items() -> void:
@@ -373,7 +393,7 @@ func _place_topper(slug: String) -> void:
 		slots[index] = slot
 	_selected_slot = -1
 	Loadout.set_toppers(config)
-	ui.game.rig.frame("toppers")
+	_frame_shot("toppers")
 	if slot["kind"] == "flag":
 		_edit_flag(index)
 
@@ -399,6 +419,7 @@ func _edit_flag(index: int) -> void:
 	_editor.changed.connect(_on_flag_changed)
 	_editor.done.connect(func() -> void:
 		_close_editor()
+		_set_hint()
 		_refresh_items())
 	_items.add_child(_editor)
 	_hint.text = "Your flag waves beside your half. Everyone sees it."
@@ -431,6 +452,8 @@ func _try_on(category: String, slug: String) -> void:
 	if category in ORDER and category != _category:
 		_switch(category)
 	ui.game.preview_item(category, slug)
+	if _portrait:
+		ui.game.rig.zoom_by(0.8)
 	_try_label.text = "Trying on: %s" % str(CosmeticCatalog.info(category, slug).get("name", slug))
 	_try_bar.visible = true
 	_show_try_actions()
@@ -461,7 +484,7 @@ func _show_try_actions() -> void:
 	_try_actions.add_child(action)
 	var stop := AppTheme.button("Stop", "Ghost", func() -> void:
 		_end_try()
-		ui.game.rig.frame(Game3D.PREVIEW_SHOTS.get(_category, "half")), 42)
+		_frame_shot(Game3D.PREVIEW_SHOTS.get(_category, "half")), 42)
 	stop.add_theme_font_size_override("font_size", 16)
 	_try_actions.add_child(stop)
 

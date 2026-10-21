@@ -1,7 +1,7 @@
 extends Node
 ## Renders every arena from the in-game camera, the menu's wide orbit and a low hero angle.
 ## Needs a real renderer (not --headless):
-##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/ArenaShots.tscn -- --out=<dir> [--only=<slug>]
+##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/ArenaShots.tscn -- --out=<dir> [--only=<slug>,<slug>...]
 
 var out_dir := ""
 var only := ""
@@ -30,7 +30,7 @@ func _ready() -> void:
 		old_floor.visible = false
 
 	for slug: String in ArenaLibrary.ARENAS:
-		if only != "" and slug != only:
+		if only != "" and not (slug in only.split(",")):
 			continue
 		arena.set_arena(slug)
 		rig.set_process(true)

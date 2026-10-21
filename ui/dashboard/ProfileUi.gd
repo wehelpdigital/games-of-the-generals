@@ -196,7 +196,7 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 	var row := AppTheme.card("Row")
 	if me:
 		row.add_theme_stylebox_override("panel", highlight_style())
-	var line := AppTheme.hbox(10)
+	var line := AppTheme.hbox(7 if narrow else 10)
 	row.add_child(line)
 	if position >= 0:
 		line.add_child(position_chip(position))
@@ -208,13 +208,14 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	var title_row := AppTheme.hbox(6)
-	if entry.get("rank_tier") != null:
+	if entry.get("rank_tier") != null and not narrow:  # Phones: the rank is in the line below.
 		var insignia := RankInsignia.new(entry["rank_tier"], 22)
 		insignia.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		title_row.add_child(insignia)
-	var name_label := AppTheme.label(str(entry.get("username", entry.get("name", "?"))), "", 20)
+	var name_label := AppTheme.label(str(entry.get("username", entry.get("name", "?"))), "", 17 if narrow else 20)
 	name_label.add_theme_font_override("font", AppTheme.heading_font())
 	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS  # "LakanDiwa..." not "LakanDiw".
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(name_label)
 	if entry.get("title") != null and str(entry["title"]) != "":
@@ -223,15 +224,16 @@ static func player_row(entry: Dictionary, position: int, sub: String, stats: Arr
 		title_row.add_child(worn)
 	names.add_child(title_row)
 	if sub != "":
-		var sub_label := AppTheme.label(sub, "MutedLabel", 15)
+		var sub_label := AppTheme.label(sub, "MutedLabel", 14 if narrow else 15)
 		sub_label.clip_text = true
+		sub_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		names.add_child(sub_label)
 	line.add_child(names)
 	for stat: Array in stats.slice(0, max_stats()):
 		var cell := AppTheme.vbox(0)
 		cell.alignment = BoxContainer.ALIGNMENT_CENTER
-		cell.custom_minimum_size.x = stat[1] * (0.8 if narrow else 1.0)
-		var value := AppTheme.label(str(stat[0]), "", 19)
+		cell.custom_minimum_size.x = stat[1] * (0.68 if narrow else 1.0)
+		var value := AppTheme.label(str(stat[0]), "", 17 if narrow else 19)
 		value.add_theme_font_override("font", AppTheme.heading_font())
 		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cell.add_child(value)

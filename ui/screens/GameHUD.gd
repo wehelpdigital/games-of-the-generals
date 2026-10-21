@@ -7,11 +7,17 @@ var _you: PanelContainer
 var _them: PanelContainer
 var _turn: PanelContainer
 var _status: Label
-var _setup_row: VBoxContainer
+var _setup_row: BoxContainer  # Shuffle and Ready: stacked in landscape, side by side in portrait.
 var _resign: Button
 var _hint: PanelContainer
 var _pulse: Tween
-var _actions: VBoxContainer
+var _actions: VBoxContainer  # Whichever holds the action buttons now: _column or _bar.
+var _column: VBoxContainer  # Landscape: a narrow column in the top-right corner.
+var _bar: VBoxContainer  # Portrait: rows of buttons along the bottom edge.
+var _bar_row: HBoxContainer
+var _top: HBoxContainer
+var _center: VBoxContainer
+var _portrait := false
 var _clips_button: Button
 var _taunt_button: Button
 var _taunt_menu: VBoxContainer
@@ -22,6 +28,7 @@ var _slots: Dictionary = {}  # HudRegistry slot name -> container
 
 func _ready() -> void:
 	var top := AppTheme.hbox(10)
+	_top = top
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 12)
 	top.offset_left = 12
 	top.offset_right = -12
@@ -36,6 +43,7 @@ func _ready() -> void:
 	top.add_child(_them)
 
 	var center := AppTheme.vbox(4)
+	_center = center
 	center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 12)
 	center.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	center.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -50,8 +58,11 @@ func _ready() -> void:
 
 	var corner := AppTheme.vbox(10)
 	_actions = corner
+	_column = corner
 	add_child(corner)
-	_setup_row = AppTheme.vbox(8)
+	_setup_row = BoxContainer.new()
+	_setup_row.vertical = true
+	_setup_row.add_theme_constant_override("separation", 8)
 	_setup_row.add_child(AppTheme.button("Shuffle", "Accent", func() -> void: ui.game.shuffle_formation(), 54))
 	_setup_row.add_child(AppTheme.button("Ready!", "Primary", _ready_up, 54))
 	corner.add_child(_setup_row)
@@ -71,6 +82,13 @@ func _ready() -> void:
 	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hint.visible = false
 	add_child(_hint)
+
+	_bar = AppTheme.vbox(8)
+	_bar.alignment = BoxContainer.ALIGNMENT_END
+	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_bar)
+	_bar_row = AppTheme.hbox(8)
+	_bar.add_child(_bar_row)
 
 	_build_slots(top, center, corner)
 	get_viewport().size_changed.connect(_layout)
@@ -146,6 +164,7 @@ func _refresh() -> void:
 	if not _taunt_button.visible:
 		_taunt_menu.visible = false
 	_resign.text = "Leave" if status in ["waiting", "setup"] else "Resign"
+	_stack_bottom.call_deferred()
 	match status:
 		"waiting":
 			_set_turn("WAITING FOR OPPONENT", AppTheme.YELLOW, AppTheme.INK, false)
@@ -163,24 +182,97 @@ func _refresh() -> void:
 			_set_turn("CANCELLED", AppTheme.MUTED, Color.WHITE, false)
 
 
-## Action buttons sit beside the board on landscape screens and below it on portrait phones, so
-## they never cover a tile.
+## Landscape: the action buttons form a narrow column in the top-right corner, beside the board's
+## far (narrower) rows. Portrait phones: they become rows along the bottom edge (leaving the corner
+## to the chat button), the powerup icons sit just above them, and the top bar drops Clips (it's
+## in Settings) so the player chips fit.
 func _layout() -> void:
 	var screen := get_viewport().get_visible_rect().size
-	var portrait := screen.x < screen.y
-	_actions.custom_minimum_size.x = 0.0 if portrait else 150.0
-	if portrait:
-		_actions.alignment = BoxContainer.ALIGNMENT_END
-		_actions.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 16)
-		_actions.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		_actions.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_portrait = screen.x < screen.y
+	var short := not _portrait and screen.y < 560.0  # Landscape phones: little height to spare.
+	_clips_button.visible = not _portrait and not short
+	for pill: PanelContainer in [_you, _them]:
+		var label := pill.get_child(0) as Label
+		label.clip_text = _portrait or short
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if _portrait or short else TextServer.OVERRUN_NO_TRIMMING
+		label.custom_minimum_size.x = 84.0 if _portrait else (120.0 if short else 0.0)
+		pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	for b: Control in [_taunt_button, _resign] + _setup_row.get_children():
+		b.custom_minimum_size.y = 44.0 if short else 0.0
+	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 74 if _portrait else 12)
+	_center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	if _portrait:
+		_setup_row.vertical = false
+		for node: Node in [_taunt_menu, _setup_row]:
+			node.reparent(_bar, false)
+		_bar.move_child(_taunt_menu, 0)
+		_bar.move_child(_setup_row, 1)
+		for node: Node in [_taunt_button, _resign]:
+			node.reparent(_bar_row, false)
+		_bar.move_child(_bar_row, _bar.get_child_count() - 1)
+		for b: Control in [_taunt_button, _resign] + _setup_row.get_children():
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 12)
+		_bar.offset_left = 12.0
+		_bar.offset_right = -(_chat_buttons_width() + 24.0)  # The chat buttons own the bottom-right corner.
+		_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		_bar.visible = true
+		_actions = _bar
+		_column.visible = _column.get_child(0).get_child_count() > 0
 	else:
-		# A narrow column in the top-right corner, beside the board's far (narrower) rows.
-		_actions.alignment = BoxContainer.ALIGNMENT_BEGIN
-		_actions.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
-		_actions.offset_top = 84.0
-		_actions.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		_actions.grow_vertical = Control.GROW_DIRECTION_END
+		_setup_row.vertical = true
+		var order: Array[Node] = [_taunt_button, _taunt_menu, _setup_row, _resign]
+		for i in order.size():
+			order[i].reparent(_column, false)
+			_column.move_child(order[i], i + 1)  # After the "right" widget slot.
+		for b: Control in [_taunt_button, _resign] + _setup_row.get_children():
+			b.size_flags_horizontal = Control.SIZE_FILL
+		_bar.visible = false
+		_column.visible = true
+		_actions = _column
+		_column.custom_minimum_size.x = 150.0
+		_column.alignment = BoxContainer.ALIGNMENT_BEGIN
+		_column.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+		_column.offset_top = 72.0 if short else 84.0
+		_column.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		_column.grow_vertical = Control.GROW_DIRECTION_END
+	_stack_bottom.call_deferred()
+
+
+## Width of the match chat's buttons in the bottom-right corner (MatchChat places itself there).
+func _chat_buttons_width() -> float:
+	var holder: Control = _slots.get("bottom_left")
+	if holder:
+		for child in holder.get_children():
+			var toggle: Variant = child.get("_toggle")
+			if toggle is Control:
+				var buttons := (toggle as Control).get_parent_control()
+				return maxf(buttons.size.x, buttons.get_combined_minimum_size().x)
+	return 72.0
+
+
+## What sits above the bottom edge: in portrait the powerup icons and the hovered piece's name go
+## above the action rows; in landscape the name pill hugs the bottom edge.
+func _stack_bottom() -> void:
+	var left: Control = _slots.get("left")
+	if left == null:
+		return
+	if _portrait:
+		_bar.offset_right = -(_chat_buttons_width() + 24.0)
+		var above := _bar.get_combined_minimum_size().y + 12.0 + 12.0
+		left.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, above)
+		left.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		left.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		var hint_gap := above + (left.get_combined_minimum_size().y + 10.0 if left.get_child_count() > 0 and left.get_child(0).visible else 0.0)
+		_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, hint_gap)
+	else:
+		left.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, 16)
+		left.offset_top = 72.0 if get_viewport().get_visible_rect().size.y < 560.0 else 84.0
+		left.grow_horizontal = Control.GROW_DIRECTION_END
+		left.grow_vertical = Control.GROW_DIRECTION_END
+		_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 18)
+	_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 
 func _player_label(player: Variant, fallback: String) -> String:
@@ -335,8 +427,10 @@ func _show_recap() -> void:
 
 func _recap_row(clash: Dictionary, viewer: String) -> PanelContainer:
 	var row := AppTheme.card("Row")
+	var stack := AppTheme.vbox(6)
+	row.add_child(stack)
 	var line := AppTheme.hbox(10)
-	row.add_child(line)
+	stack.add_child(line)
 	line.add_child(_mini_badge(str(clash["attacker"].get("rank", ""))))
 	var text := AppTheme.vbox(0)
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -346,7 +440,14 @@ func _recap_row(clash: Dictionary, viewer: String) -> PanelContainer:
 	text.add_child(AppTheme.label("Move %s" % AppTheme.num(clash.get("move_number", 0)), "MutedLabel", 15))
 	line.add_child(text)
 	line.add_child(_mini_badge(str(clash["defender"].get("rank", ""))))
-	line.add_child(AppTheme.button("Watch", "Secondary", _watch.bind(clash), 44))
+	var watch := AppTheme.button("Watch", "Secondary", _watch.bind(clash), 44)
+	watch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if get_viewport().get_visible_rect().size.x < 600.0:
+		watch.size_flags_horizontal = Control.SIZE_SHRINK_END  # Narrow: under the text, so it keeps the width.
+		watch.custom_minimum_size.x = 120.0
+		stack.add_child(watch)
+	else:
+		line.add_child(watch)
 	return row
 
 

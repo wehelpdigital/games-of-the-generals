@@ -32,6 +32,7 @@ var _toggle: Button
 var _badge: UnreadBadge  # Unread messages from the opponent while the chat is closed.
 var _mute: Button
 var _jam_pill: PanelContainer
+var _header: HBoxContainer  # Holds the mute button on phones, where the corner keeps just the chat button.
 var _quick: Array[Control] = []
 var _match_key := ""
 var _unread := 0
@@ -64,6 +65,7 @@ func _init() -> void:
 	var box := AppTheme.vbox(6)
 	_panel.add_child(box)
 	var header := AppTheme.hbox(6)
+	_header = header
 	header.add_child(AppTheme.label("Match Chat", "", 18, AppTheme.INK))
 	(header.get_child(0) as Label).add_theme_font_override("font", AppTheme.heading_font())
 	header.add_child(AppTheme.spacer())
@@ -203,7 +205,15 @@ func _place() -> void:
 	var top_limit := 84.0  # Below the HUD's top bar.
 	var panel_bottom := screen.y - MARGIN - _toggle.get_combined_minimum_size().y - 8.0
 	var actions: Variant = hud.get("_actions") if hud else null
-	if actions is Control and (actions as Control).is_visible_in_tree():
+	var portrait := screen.x < screen.y
+	# Phones keep only the chat button in the corner (room for the action rows); mute moves into
+	# the chat panel's header.
+	var mute_home: Control = _header if portrait else _toggle.get_parent_control()
+	if _mute.get_parent() != mute_home:
+		_mute.reparent(mute_home, false)
+	if portrait:
+		width = screen.x - 2.0 * MARGIN  # Phones: the open chat spans the width, over the action rows.
+	elif actions is Control and (actions as Control).is_visible_in_tree():
 		var rect := (actions as Control).get_global_rect()
 		if rect.end.x > screen.x - MARGIN - width and rect.position.y < panel_bottom:
 			if rect.position.y > screen.y * 0.5:

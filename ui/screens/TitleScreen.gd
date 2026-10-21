@@ -11,6 +11,8 @@ var _second: Button  # "Shop" for players, "Sign up free" for guests.
 var _showcase: FeatureShowcase
 var _frame: Control  # Everything but the backdrop; scaled up on phones (ProfileUi.fit).
 var _float_box: VBoxContainer  # Bottom-left home of the guest showcase on wide screens.
+var _body: HBoxContainer  # [_brand, _column]; the brand column is only used on landscape phones.
+var _brand: VBoxContainer  # Landscape phones: logo and tags beside the buttons instead of above.
 
 
 func _ready() -> void:
@@ -44,7 +46,15 @@ func _ready() -> void:
 	column.add_child(row)
 	if not (OS.has_feature("web") or OS.has_feature("mobile")):
 		column.add_child(AppTheme.button("Quit", "Ghost", func() -> void: get_tree().quit(), 48))
-	_frame.add_child(AppTheme.centered(column, 420))
+	_brand = AppTheme.vbox(14)
+	_brand.alignment = BoxContainer.ALIGNMENT_CENTER
+	_brand.visible = false
+	_body = AppTheme.hbox(36)
+	_body.alignment = BoxContainer.ALIGNMENT_CENTER
+	_body.add_child(_brand)
+	_body.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_frame.add_child(_scrolling_center(_body))
 
 	# Guests don't get the shop; they see what an account unlocks, on the card and on the board.
 	_showcase = FeatureShowcase.new()
@@ -94,14 +104,51 @@ func close() -> void:
 func _layout() -> void:
 	var portrait := ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)
 	var view := _frame.size
-	var wide := not portrait and view.x >= WIDE
+	var short := not portrait and view.y < 560.0  # Landscape phones: logo beside the buttons.
+	var wide := not portrait and not short and view.x >= WIDE
 	var home: Control = _float_box if wide else _column
 	if _showcase.get_parent() != home:
 		_showcase.reparent(home, false)
+	var brand_home: Control = _brand if short else _column
+	if _logo.get_parent() != brand_home:
+		_logo.reparent(brand_home, false)
+		_tags.reparent(brand_home, false)
+		if not short:
+			_column.move_child(_logo, 0)
+			_column.move_child(_tags, 1)
+	_brand.visible = short
+	# Landscape phones have no height for the showcase card (the 3D board still shows the looks),
+	# and the account chip moves under the logo so it can't sit on top of the buttons.
+	_showcase.visible = not ApiManager.is_logged_in() and not short
+	var account_home: Control = _brand if short else _frame
+	if _account.get_parent() != account_home:
+		_account.reparent(account_home, false)
+		if not short:
+			_account.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+			_account.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_account.alignment = BoxContainer.ALIGNMENT_CENTER if short else BoxContainer.ALIGNMENT_BEGIN
 	var guest_in_column := not wide and _showcase.visible
 	var height := clampf(view.y * (0.24 if guest_in_column else 0.38), 120.0, 300.0)
 	height = minf(height, minf(view.x - 32.0, 420.0) * GameLogo.VIEW.y / GameLogo.VIEW.x)
+	if short:
+		height = clampf(view.y * 0.52, 120.0, 260.0)
 	_logo.set_height(height)
+	_column.custom_minimum_size.x = minf(420.0, (view.x - 80.0) * 0.5 if short else view.x - 32.0)
+
+
+## Like AppTheme.centered, but the title sizes its own content (one or two columns).
+func _scrolling_center(child: Control) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(center)
+	center.add_child(child)
+	return scroll
 
 
 ## Tells the web loader (web/shell.html) that the game is on screen, so it fades into the canvas.

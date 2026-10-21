@@ -18,6 +18,9 @@ extends Node3D
 @export var orbit_sensitivity := 0.25      ## Degrees per pixel.
 @export var smoothing := 12.0
 
+const PORTRAIT_DISTANCE := 1.32  ## How much further back the camera sits on portrait screens.
+const PORTRAIT_PITCH := -64.0
+
 var _base_yaw := 0.0
 var _yaw := 0.0
 var _pitch := 0.0
@@ -31,6 +34,7 @@ var _orbiting := false
 var _panning := false
 var _touches: Dictionary = {}  # index -> position
 var _trauma := 0.0
+var _portrait := false
 
 ## Menu backdrop: a slow cinematic orbit that ignores player input.
 var attract := false:
@@ -63,8 +67,8 @@ func set_side(side: String) -> void:
 
 func reset_view() -> void:
 	_target_yaw = 0.0
-	_target_pitch = pitch_deg
-	_target_distance = distance
+	_target_pitch = _home_pitch()
+	_target_distance = _home_distance()
 	_target_pan = Vector2.ZERO
 
 
@@ -95,8 +99,7 @@ func frame(shot: String) -> void:
 			_target_distance = 12.0
 			_target_pan = Vector2(0.0, 1.8)
 	# Portrait screens fit the board's width, so step back for the same framing.
-	var view := get_viewport().get_visible_rect().size
-	if view.y > view.x:
+	if _portrait:
 		_target_distance *= 1.45
 		_target_pitch = minf(_target_pitch, -40.0)
 
@@ -110,7 +113,7 @@ func _process(delta: float) -> void:
 	if attract:
 		_target_yaw += delta * 7.0
 		_target_pitch = -40.0
-		_target_distance = distance * 1.12
+		_target_distance = distance * 1.12 * (PORTRAIT_DISTANCE if _portrait else 1.0)
 		_target_pan = Vector2.ZERO
 	_apply(delta)
 
@@ -135,10 +138,23 @@ func _apply(delta: float) -> void:
 	camera.v_offset = randf_range(-1.0, 1.0) * 0.18 * amount
 
 
-## Portrait screens (phones) fit the board's width instead of its height.
+## Portrait screens (phones) fit the board's width instead of its height, from further back and
+## a little more overhead so the whole board fits between the HUD's top and bottom bars.
 func _fit_aspect() -> void:
 	var size := get_viewport().get_visible_rect().size
-	camera.keep_aspect = Camera3D.KEEP_WIDTH if size.x < size.y else Camera3D.KEEP_HEIGHT
+	var was_portrait := _portrait
+	_portrait = size.x < size.y
+	camera.keep_aspect = Camera3D.KEEP_WIDTH if _portrait else Camera3D.KEEP_HEIGHT
+	if _portrait != was_portrait and not attract:
+		reset_view()
+
+
+func _home_distance() -> float:
+	return distance * (PORTRAIT_DISTANCE if _portrait else 1.0)
+
+
+func _home_pitch() -> float:
+	return PORTRAIT_PITCH if _portrait else pitch_deg
 
 
 func _unhandled_input(event: InputEvent) -> void:

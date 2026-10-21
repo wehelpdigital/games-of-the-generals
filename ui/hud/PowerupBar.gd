@@ -78,8 +78,9 @@ func _attach_fx() -> void:
 
 func _layout() -> void:
 	var screen := get_viewport().get_visible_rect().size
-	_compact = screen.x < screen.y
-	_cards.columns = PowerupLibrary.MAX_SLOTS if _compact else 1
+	var portrait := screen.x < screen.y
+	_compact = portrait or screen.y < 560.0  # Phones: icon cards (a row in portrait, a column in landscape).
+	_cards.columns = PowerupLibrary.MAX_SLOTS if portrait else 1
 	custom_minimum_size.x = 0.0 if _compact else 176.0
 	_title.visible = not _compact
 	_refresh()

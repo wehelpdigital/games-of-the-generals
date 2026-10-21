@@ -228,7 +228,14 @@ func _resolve(outcome: String, attacker: Dictionary, defender: Dictionary, viewe
 		wins.position = Vector2(BADGE * 0.5 - 62.0, BADGE - 46.0)
 		wins.rotation = deg_to_rad(-8.0)
 		AppTheme.pop_in(wins)
-	_caption.position = Vector2(center.x - _caption.size.x * 0.5, minf(view.y - 80.0, center.y + BADGE * 1.02))
+	# Long captions wrap on narrow (phone) screens instead of running off both edges.
+	var caption_label := _caption.get_child(0) as Label
+	var max_width := view.x - 40.0
+	if caption_label.get_combined_minimum_size().x + 28.0 > max_width:
+		caption_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		caption_label.custom_minimum_size.x = max_width - 28.0
+		_caption.reset_size()
+	_caption.position = Vector2(center.x - _caption.size.x * 0.5, minf(view.y - 80.0 - (_caption.size.y - 40.0), center.y + BADGE * 1.02))
 	var c := _tween()
 	c.tween_property(_caption, "modulate:a", 1.0, 0.18)
 	c.parallel().tween_property(_caption, "position:y", _caption.position.y - 16.0, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

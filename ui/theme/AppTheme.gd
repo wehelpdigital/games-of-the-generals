@@ -139,19 +139,27 @@ static func field(placeholder: String, secret := false) -> LineEdit:
 	return f
 
 
-## Centres `child` on screen, capped at `max_width` so wide monitors don't stretch it.
-static func centered(child: Control, max_width := 520.0) -> CenterContainer:
+## Centres `child` on screen, capped at `max_width` so wide monitors don't stretch it. When it is
+## taller than the screen (short landscape phones, large text) it scrolls instead of running off
+## the top and bottom.
+static func centered(child: Control, max_width := 520.0) -> Control:
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL  # At least the scroll's size, so the
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL  # child sits centred while it fits.
+	scroll.add_child(center)
 	child.custom_minimum_size.x = max_width
 	center.add_child(child)
-	center.resized.connect(_fit_width.bind(center, child, max_width))
-	return center
+	scroll.resized.connect(_fit_width.bind(scroll, child, max_width))
+	return scroll
 
 
-static func _fit_width(center: Control, child: Control, max_width: float) -> void:
-	child.custom_minimum_size.x = minf(max_width, center.size.x - 32.0)
+static func _fit_width(scroll: Control, child: Control, max_width: float) -> void:
+	child.custom_minimum_size.x = minf(max_width, scroll.size.x - 32.0)
 
 
 ## Soft cream glow behind menu content so text stays readable over the busy 3D board.

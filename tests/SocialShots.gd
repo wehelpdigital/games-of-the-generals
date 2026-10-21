@@ -98,6 +98,11 @@ func _ready() -> void:
 	# Powerups and effect banners down the left, chat bottom-right: both stay readable.
 	await _effects_on()
 	await _shot("07b_hud_effects", 0.8)
+	# Closed chat with unread messages from the opponent: the red badge on the chat button.
+	for i in 3:
+		chat.call("_set_unread", i + 1)
+	await _shot("07c_chat_unread_badge", 0.8)
+	chat.call("_set_unread", 0)
 	chat.call("_toggle_panel")
 	await _shot("07c_hud_effects_chat_open", 0.8)
 	chat.call("_toggle_panel")
@@ -171,7 +176,7 @@ func _effects_on() -> void:
 	GameSession.submit_setup(board.get_setup_placements())
 	await wait_until(func() -> bool: return GameSession.status() == "active" and not board.is_animating())
 	var arbiter: LocalArbiter = GameSession._arbiter
-	arbiter.loadouts[Ranks.WHITE] = ["spy_card", "freeze", "fortify"]
+	arbiter.loadouts[Ranks.WHITE] = ["spy_card", "freeze", "fortify", "smoke_screen", "insight"]
 	GameSession._practice_load("active", GameSession.version)
 	await GameSession.use_powerup("spy_card")
 	GameSession.powerup_used.emit({"side": Ranks.BLACK, "id": "chaos_order", "name": "Chaos Order", "public": {}, "mine": false})

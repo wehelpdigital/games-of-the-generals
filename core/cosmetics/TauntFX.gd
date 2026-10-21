@@ -50,6 +50,23 @@ const STYLES := {
 		"swatch": [Color("ff3b3b"), Color("ffc93c"), Color("1d1736")]},
 	"glitter_bomb": {"name": "Glitter Bomb", "rarity": "legendary", "desc": "A gift box that explodes into glitter. BLING!",
 		"swatch": [Color("ff8ec0"), Color("ffd23f"), Color("b05cff"), Color("6fe3ff")]},
+	# Holidays.
+	"candy_corn": {"name": "Candy Corn", "rarity": "common", "season": "halloween", "desc": "A handful of candy corn rains on their side. CRUNCH!",
+		"swatch": [Color("ffffff"), Color("ff8a1f"), Color("ffd23f")]},
+	"fruitcake": {"name": "Fruitcake", "rarity": "rare", "season": "christmas", "desc": "Nobody wants it. Now they have it. THUD.",
+		"swatch": [Color("8a4a1e"), Color("e8344e"), Color("2f8f4e"), Color("fff6e8")]},
+	"torotot": {"name": "Torotot", "rarity": "common", "season": "new_year", "desc": "A New Year party horn that won't stop tooting.",
+		"swatch": [Color("ff3d7f"), Color("ffcf3f"), Color("3d8bff")]},
+	"love_letter": {"name": "Love Letter", "rarity": "common", "season": "valentines", "desc": "A pink envelope sealed with a heart. XOXO!",
+		"swatch": [Color("fff6f8"), Color("ff7aa0"), Color("ff2f5f")]},
+	"red_envelope": {"name": "Red Envelope", "rarity": "rare", "season": "lunar_new_year", "desc": "A lucky red envelope that bursts into gold coins.",
+		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("7a0f0f")]},
+	"pumpkin_pie": {"name": "Pumpkin Pie", "rarity": "common", "season": "thanksgiving", "desc": "A spiced pumpkin pie with a dollop of cream, straight to the face.",
+		"swatch": [Color("e8892a"), Color("d9a25f"), Color("fff8ec")]},
+	"beach_ball": {"name": "Beach Ball", "rarity": "common", "season": "summer", "desc": "BOING! A big striped beach ball bounces onto their side.",
+		"swatch": [Color("ff4f5a"), Color("ffcf3f"), Color("3d8bff"), Color("ffffff")]},
+	"palayok": {"name": "Palayok", "rarity": "rare", "season": "fiesta", "desc": "The fiesta clay pot breaks open and sweets spill everywhere.",
+		"swatch": [Color("c8643a"), Color("8a3a1e"), Color("ff8ec0"), Color("ffcf3f")]},
 }
 
 ## What each taunt shouts when it lands: [word, fill colour].
@@ -62,6 +79,10 @@ const WORDS := {
 	"paint_bomb": ["KA-SPLASH!", Color("ff4f8b")], "stink_cloud": ["PEE-YEW!", Color("b6f06a")],
 	"kiss": ["MWAH!", Color("ff6f9f")], "confetti_cannon": ["TA-DA!", Color("ffd23f")],
 	"honk": ["HONK!", Color("ffc93c")], "glitter_bomb": ["BLING!", Color("ffe066")],
+	"candy_corn": ["CRUNCH!", Color("ff8a1f")], "fruitcake": ["THUD!", Color("c8803f")],
+	"torotot": ["TOOOT!", Color("ff3d7f")], "love_letter": ["XOXO!", Color("ff7aa0")],
+	"red_envelope": ["LUCKY!", Color("ffcf3f")], "pumpkin_pie": ["SPLAT!", Color("e8892a")],
+	"beach_ball": ["BOING!", Color("3d8bff")], "palayok": ["CRASH!", Color("e07a4a")],
 }
 
 const PARTY := [Color("ff4f8b"), Color("ffd23f"), Color("3d8bff"), Color("27c98f"), Color("b05cff"), Color("ff9f1c")]
@@ -178,6 +199,14 @@ func _land() -> void:
 		"confetti_cannon": _splat_confetti()
 		"honk": _splat_honk()
 		"glitter_bomb": _splat_glitter()
+		"candy_corn": _splat_candy_corn()
+		"fruitcake": _splat_fruitcake()
+		"torotot": _splat_torotot()
+		"love_letter": _splat_love_letter()
+		"red_envelope": _splat_red_envelope()
+		"pumpkin_pie": _splat_pumpkin_pie()
+		"beach_ball": _splat_beach_ball()
+		"palayok": _splat_palayok()
 	var t := create_tween()
 	t.tween_interval(LINGER)
 	t.tween_callback(_fade_out)
@@ -511,6 +540,46 @@ func _build_projectile(slug: String) -> Node3D:
 			_part(root, _box(Vector3(0.07, 0.295, 0.295)), Color("ffd23f"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 0.0, 0.7)
 			for s in [-1.0, 1.0]:
 				_part(root, _sphere(0.065), Color("ffd23f"), Vector3(0.06 * s, 0.17, 0.0), Vector3(0.0, 0.0, -0.5 * s), Vector3(1.3, 0.75, 0.8), 1.12, 0.7)
+		"candy_corn":
+			_part(root, _cyl(0.0, 0.07, 0.08), Color("ffffff"), Vector3(0.0, 0.1, 0.0), Vector3.ZERO, Vector3.ONE, 1.1, 0.4)
+			_part(root, _cyl(0.07, 0.11, 0.08), Color("ff8a1f"), Vector3(0.0, 0.02, 0.0), Vector3.ZERO, Vector3.ONE, 1.08, 0.4)
+			_part(root, _cyl(0.11, 0.13, 0.07), Color("ffd23f"), Vector3(0.0, -0.06, 0.0), Vector3.ZERO, Vector3.ONE, 1.07, 0.4)
+		"fruitcake":
+			_part(root, _box(Vector3(0.36, 0.17, 0.2)), Color("8a4a1e"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.06, 0.3)
+			_part(root, _box(Vector3(0.37, 0.04, 0.21)), Color("fff6e8"), Vector3(0.0, 0.1, 0.0), Vector3.ZERO, Vector3.ONE, 0.0, 0.3)
+			for bit in [[Vector3(-0.1, 0.02, 0.105), Color("e8344e")], [Vector3(0.06, -0.04, 0.105), Color("2f8f4e")], [Vector3(0.13, 0.03, 0.105), Color("e8344e")],
+					[Vector3(-0.04, -0.05, -0.105), Color("2f8f4e")], [Vector3(0.0, 0.13, 0.03), Color("e8344e")]]:
+				_part(root, _sphere(0.025), bit[1], bit[0], Vector3.ZERO, Vector3.ONE, 0.0, 0.6)
+		"torotot":
+			var bands := [Color("ff3d7f"), Color("ffcf3f"), Color("3d8bff"), Color("27c98f")]
+			for i in 4:
+				var r0 := 0.025 + i * 0.03
+				_part(root, _cyl(r0 + 0.03, r0, 0.09), bands[i], Vector3(0.0, -0.13 + i * 0.09, 0.0), Vector3.ZERO, Vector3.ONE, 1.07, 0.5)
+			_part(root, _cyl(0.025, 0.025, 0.08), Color("ffffff"), Vector3(0.0, -0.21, 0.0), Vector3.ZERO, Vector3.ONE, 1.12, 0.3)
+		"love_letter":
+			_part(root, _box(Vector3(0.36, 0.03, 0.24)), Color("fff6f8"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.08, 0.3)
+			_part(root, _box(Vector3(0.25, 0.012, 0.25)), Color("ffd6e4"), Vector3(0.0, 0.02, -0.03), Vector3(0.0, PI / 4.0, 0.0), Vector3(1.0, 1.0, 0.6), 0.0, 0.3)
+			_part(root, _heart_mesh(0.06), Color("ff2f5f"), Vector3(0.0, 0.03, 0.0), Vector3(-PI / 2.0, 0.0, 0.0), Vector3.ONE, 0.0, 0.6)
+		"red_envelope":
+			_part(root, _box(Vector3(0.22, 0.03, 0.34)), Color("e8282e"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.08, 0.5)
+			_part(root, _box(Vector3(0.23, 0.035, 0.03)), Color("ffcf3f"), Vector3(0.0, 0.0, 0.1), Vector3.ZERO, Vector3.ONE, 0.0, 0.8)
+			_part(root, _cyl(0.05, 0.05, 0.02), Color("ffcf3f"), Vector3(0.0, 0.02, -0.03), Vector3.ZERO, Vector3.ONE, 0.0, 0.8)
+		"pumpkin_pie":
+			_part(root, _cyl(0.27, 0.21, 0.12), Color("d9a25f"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.07)
+			_part(root, _cyl(0.24, 0.24, 0.04), Color("e8892a"), Vector3(0.0, 0.05, 0.0), Vector3.ZERO, Vector3.ONE, 0.0, 0.5)
+			_part(root, _sphere(0.08), Color("fff8ec"), Vector3(0.0, 0.11, 0.0), Vector3.ZERO, Vector3(1.0, 0.7, 1.0), 1.12, 0.3)
+		"beach_ball":
+			_part(root, _sphere(0.22), Color("ffffff"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.06, 0.6)
+			var stripes := [Color("ff4f5a"), Color("ffcf3f"), Color("3d8bff")]
+			for i in 3:
+				_part(root, _sphere(0.222), stripes[i], Vector3.ZERO, Vector3(0.0, TAU * i / 3.0, 0.0), Vector3(0.35, 1.0, 1.0), 0.0, 0.6)
+			_part(root, _sphere(0.05), Color("ffffff"), Vector3(0.0, 0.2, 0.0), Vector3.ZERO, Vector3(1.0, 0.5, 1.0), 0.0, 0.6)
+		"palayok":
+			_part(root, _sphere(0.2), Color("c8643a"), Vector3.ZERO, Vector3.ZERO, Vector3(1.0, 0.85, 1.0), 1.06, 0.3)
+			_part(root, _torus(0.08, 0.12), Color("8a3a1e"), Vector3(0.0, 0.16, 0.0), Vector3.ZERO, Vector3.ONE, 1.1, 0.3)
+			for i in 6:
+				var a := TAU * i / 6.0
+				_part(root, _box(Vector3(0.05, 0.02, 0.02)), Color("ffffff"), Vector3(cos(a) * 0.2, 0.0, sin(a) * 0.2), Vector3(0.0, -a, 0.0), Vector3.ONE, 0.0, 0.2)
 	return root
 
 
@@ -943,3 +1012,92 @@ static func _disc_mesh() -> ArrayMesh:
 				st.add_vertex(Vector3(p.x, 0.0, p.y))
 		_meshes["disc"] = st.commit()
 	return _meshes["disc"]
+
+
+# --- Holiday splats -------------------------------------------------------------------------------
+
+func _splat_candy_corn() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf() * TAU) * Basis(Vector3.FORWARD, PI * 0.5), 0.1, 1.3)
+	for i in 6:
+		var corn := Node3D.new()
+		_part(corn, _cyl(0.0, 0.035, 0.04), Color("ffffff"), Vector3(0.0, 0.045, 0.0), Vector3.ZERO, Vector3.ONE, 1.12, 0.4)
+		_part(corn, _cyl(0.035, 0.055, 0.045), Color("ff8a1f"), Vector3.ZERO, Vector3.ZERO, Vector3.ONE, 1.1, 0.4)
+		_part(corn, _cyl(0.055, 0.065, 0.035), Color("ffd23f"), Vector3(0.0, -0.04, 0.0), Vector3.ZERO, Vector3.ONE, 1.1, 0.4)
+		var a := TAU * i / 6.0 + _rng.randf() * 0.5
+		corn.position = target_local + Vector3(cos(a), 0.0, sin(a)) * _rng.randf_range(0.18, 0.36) + Vector3(0.0, 0.04, 0.0)
+		corn.rotation = Vector3(PI * 0.5, _rng.randf() * TAU, 0.0)
+		add_child(corn)
+		_keep.append(corn)
+	_particles(target_local, 16, _cyl(0.0, 0.03, 0.05), [Color("ffffff"), Color("ff8a1f"), Color("ffd23f")], Vector2(1.6, 3.0), {"spin": 360.0})
+
+
+func _splat_fruitcake() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf() * TAU), 0.09, 1.25)
+	_decal(Color(0.55, 0.36, 0.2, 0.35), 0.34, 6, 0, 0.1, Vector3.ZERO, false, false)
+	_dots(Color("8a4a1e"), 8, 0.36, Vector2(0.02, 0.035))
+	_dots(Color("e8344e"), 3, 0.3, Vector2(0.015, 0.025))
+	_particles(target_local, 14, _circle_mesh(0.035), [Color("8a4a1e"), Color("a8642a")], Vector2(1.0, 2.2))
+
+
+func _splat_torotot() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf() * TAU) * Basis(Vector3.FORWARD, PI * 0.5), 0.13, 1.5)
+	_word("TOOOT!", WORDS["torotot"][1], 0.7, target_local + Vector3(0.35, 0.15, 0.0))
+	for delay in [0.0, 0.7]:
+		var ring := _mesh_node(_torus(0.2, 0.24), _flat(Color(1.0, 0.4, 0.6, 0.9), 3))
+		ring.position = target_local + Vector3(0.0, 0.12, 0.0)
+		ring.scale = Vector3.ONE * 0.3
+		add_child(ring)
+		var mat: StandardMaterial3D = ring.material_override
+		var t := create_tween()
+		t.tween_interval(delay)
+		t.tween_property(ring, "scale", Vector3(2.4, 1.0, 2.4), 0.45).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.45)
+		t.tween_callback(ring.queue_free)
+	_particles(target_local + Vector3(0.0, 0.2, 0.0), 24, _confetti_mesh(), PARTY, Vector2(1.6, 3.2),
+		{"gravity": Vector3(0.0, -2.5, 0.0), "lifetime": 1.6, "spin": 540.0, "spread": 45.0, "damping": 1.2})
+
+
+func _splat_love_letter() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf_range(-0.4, 0.4)), 0.03, 1.4)
+	_particles(target_local + Vector3(0.0, 0.15, 0.0), 14, _heart_mesh(0.09), [Color("ff2f5f"), Color("ff9ec7"), Color("ff6f9f")], Vector2(0.6, 1.3),
+		{"gravity": Vector3(0.0, 0.7, 0.0), "lifetime": 1.8, "explosiveness": 0.5})
+
+
+func _splat_red_envelope() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf() * TAU), 0.03, 1.4)
+	for c in [Color("ffcf3f"), Color("ffe680")]:
+		_dots(c, 6, 0.38, Vector2(0.025, 0.04))
+	_particles(target_local + Vector3(0.0, 0.1, 0.0), 22, _circle_mesh(0.05), [Color("ffcf3f"), Color("ffe680"), Color("d4a017")], Vector2(1.8, 3.4),
+		{"spin": 360.0, "lifetime": 1.2})
+
+
+func _splat_pumpkin_pie() -> void:
+	_drop_projectile()
+	_decal(Color("e8892a"), 0.44, 9, 6, 0.18)
+	_decal(Color("fff8ec"), 0.14, 6, 0, 0.06, Vector3(0.04, 0.004, -0.03), true, true)
+	_dots(Color("d9a25f"), 7, 0.36, Vector2(0.025, 0.045))
+	_particles(target_local, 18, _circle_mesh(0.05), [Color("e8892a"), Color("f0a050"), Color("fff8ec")], Vector2(1.8, 3.4))
+
+
+func _splat_beach_ball() -> void:
+	_rest_projectile(Basis(Vector3.UP, _rng.randf() * TAU), 0.22, 1.5)
+	var bounce := create_tween()
+	for h in [0.55, 0.3, 0.12]:
+		bounce.tween_property(_proj, "position:y", 0.22 + h, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		bounce.tween_property(_proj, "position:y", 0.22, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_decal(Color(0.95, 0.85, 0.6, 0.4), 0.3, 6, 0, 0.1, Vector3.ZERO, false, false)
+	_particles(target_local, 12, _circle_mesh(0.035), [Color("f2d79a"), Color("e6c27f")], Vector2(1.0, 2.0))
+
+
+func _splat_palayok() -> void:
+	_drop_projectile()
+	_decal(Color(0.78, 0.39, 0.23, 0.45), 0.36, 7, 3, 0.18, Vector3.ZERO, false, false)
+	_particles(target_local, 16, _shard_mesh(), [Color("c8643a"), Color("8a3a1e"), Color("e07a4a")], Vector2(1.6, 3.4), {"spin": 360.0})
+	var sweets := [Color("ff8ec0"), Color("ffcf3f"), Color("27c98f"), Color("3d8bff"), Color("ffffff")]
+	for i in 9:
+		var candy := _mesh_node(_sphere(0.035 + _rng.randf() * 0.015), _toon(sweets[i % sweets.size()], 0.6))
+		var a := TAU * i / 9.0 + _rng.randf() * 0.4
+		candy.position = target_local + Vector3(cos(a), 0.0, sin(a)) * _rng.randf_range(0.08, 0.32) + Vector3(0.0, 0.04, 0.0)
+		add_child(candy)
+		_keep.append(candy)
+	_particles(target_local + Vector3(0.0, 0.1, 0.0), 14, _circle_mesh(0.035), sweets, Vector2(1.5, 3.0))

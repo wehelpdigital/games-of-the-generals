@@ -74,6 +74,8 @@ func add_system(text: String) -> void:
 
 
 func scroll_to_end() -> void:
+	if not is_inside_tree():
+		return
 	await get_tree().process_frame
 	if is_inside_tree():
 		scroll_vertical = int(get_v_scroll_bar().max_value)

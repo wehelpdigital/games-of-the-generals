@@ -80,6 +80,58 @@ const STYLES := {
 		"swatch": [Color("c8641e"), Color("e8344e"), Color("5fbf5a")]},
 	"topper_jeepney": {"name": "Jeepney", "rarity": "legendary", "kind": "object", "season": "fiesta", "desc": "A chrome-horsed, rainbow-striped jeepney idling by your side.",
 		"swatch": [Color("ff3d7f"), Color("ffd23f"), Color("27c98f"), Color("c7d0db")]},
+	"topper_koi_bowl": {"name": "Koi Bowl", "rarity": "rare", "kind": "object", "collection": "great_wave", "desc": "A porcelain bowl where two koi chase each other round and round.",
+		"swatch": [Color("f4f8ff"), Color("ff8a3a"), Color("2a4a8a")]},
+	"topper_paper_lantern": {"name": "Paper Lantern", "rarity": "rare", "kind": "object", "collection": "great_wave", "desc": "A round paper lantern glowing warm under its little roof.",
+		"swatch": [Color("fff4dc"), Color("e8341c"), Color("1d1736")]},
+	"topper_parrot": {"name": "Ship's Parrot", "rarity": "epic", "kind": "object", "collection": "treasure_seas", "desc": "A loud red parrot on its perch, nodding at every bold move.",
+		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("3d8bff")]},
+	"topper_treasure_chest": {"name": "Treasure Chest", "rarity": "epic", "kind": "object", "collection": "treasure_seas", "desc": "An open chest spilling gold coins and one fat ruby.",
+		"swatch": [Color("8a5a2a"), Color("ffcf3f"), Color("e8282e")]},
+	"topper_stone_lantern": {"name": "Stone Lantern", "rarity": "rare", "kind": "object", "collection": "samurai_ronin", "desc": "A mossy garden lantern with a candle glowing inside.",
+		"swatch": [Color("a8a8a0"), Color("ffd58a"), Color("5a5a52")]},
+	"topper_training_dummy": {"name": "Training Dummy", "rarity": "common", "kind": "object", "collection": "ninja_clan", "desc": "A wooden practice post that wobbles after every hit.",
+		"swatch": [Color("b77a45"), Color("d8c48a"), Color("2a2350")]},
+	"topper_holo_cat": {"name": "Holo Cat", "rarity": "epic", "kind": "object", "collection": "cyber_neon", "desc": "A see-through hologram cat hovering over its projector.",
+		"swatch": [Color("6ff6ff"), Color("ff2bd6"), Color("1b2447")]},
+	"topper_mini_mecha": {"name": "Mini Mecha", "rarity": "epic", "kind": "object", "collection": "giant_robots", "desc": "A pocket-sized battle robot that scans the board, left and right.",
+		"swatch": [Color("e8eef8"), Color("2f6bd8"), Color("ff3d4a")]},
+	"topper_kaiju_plush": {"name": "Kaiju Plush", "rarity": "rare", "kind": "object", "collection": "kaiju_attack", "desc": "A soft purple monster with tiny horns. It rocks when it's happy.",
+		"swatch": [Color("8a5cff"), Color("ffd1ea"), Color("fff4dc")]},
+	"topper_ringed_planet": {"name": "Ringed Planet", "rarity": "rare", "kind": "object", "collection": "space_opera", "desc": "A desk model of a far-off world, turning on its stand.",
+		"swatch": [Color("ffb04a"), Color("c8d8ff"), Color("e8541c")]},
+	"topper_boombox": {"name": "Boombox", "rarity": "rare", "kind": "object", "collection": "synthwave", "desc": "Twin speakers thumping to a beat only the board can hear.",
+		"swatch": [Color("2a1048"), Color("ff4fa8"), Color("3ad6ff")]},
+	"topper_arcade_cabinet": {"name": "Arcade Cabinet", "rarity": "epic", "kind": "object", "collection": "arcade_8bit", "desc": "A tiny upright cabinet with a glowing screen and a stick.",
+		"swatch": [Color("2f3fbf"), Color("4dffb0"), Color("ffd23f")]},
+	"topper_cowboy_hat": {"name": "Cowboy Hat", "rarity": "common", "kind": "object", "collection": "wild_west", "desc": "A wide-brim hat with a star on the band, hung on a post.",
+		"swatch": [Color("a8643a"), Color("4a2410"), Color("ffcf3f")]},
+	"topper_mini_airship": {"name": "Mini Airship", "rarity": "epic", "kind": "object", "collection": "steampunk", "desc": "A brass-banded airship rocking gently at its mooring.",
+		"swatch": [Color("c8a070"), Color("d8a03a"), Color("6b3e22")]},
+	"topper_rune_stone": {"name": "Rune Stone", "rarity": "rare", "kind": "object", "collection": "norse_vikings", "desc": "An old standing stone with runes that glow and fade.",
+		"swatch": [Color("8a909a"), Color("7fd6ff"), Color("6a7488")]},
+	"topper_cat_statue": {"name": "Cat Statue", "rarity": "epic", "kind": "object", "collection": "ancient_egypt", "desc": "A sleek black cat with a gold collar, sitting very still.",
+		"swatch": [Color("2a2d40"), Color("ffcf3f"), Color("1f6bd6")]},
+	"topper_amphora": {"name": "Amphora", "rarity": "rare", "kind": "object", "collection": "greek_gods", "desc": "A painted clay jar with two handles and a laurel ring.",
+		"swatch": [Color("d8743a"), Color("1d1736"), Color("6aa84a")]},
+	"topper_kapre_tree": {"name": "Kapre Tree", "rarity": "epic", "kind": "object", "collection": "philippine_myths", "desc": "A big old tree. Something lives inside, and its eyes are open.",
+		"swatch": [Color("2f6a3a"), Color("6b5a3a"), Color("ffd23f")]},
+	"topper_tikbalang": {"name": "Tikbalang", "rarity": "legendary", "kind": "object", "collection": "philippine_myths", "desc": "The tall horse-headed trickster of the forest, nodding at you.",
+		"swatch": [Color("6b4a2a"), Color("1d1736"), Color("ffd23f")]},
+	"topper_comic_burst": {"name": "Comic Burst", "rarity": "rare", "kind": "object", "collection": "comic_hero", "desc": "A spiky POW! panel that pulses like a sound effect.",
+		"swatch": [Color("ff5a3a"), Color("fff36b"), Color("3d8bff")]},
+	"topper_zombie_hand": {"name": "Grave Hand", "rarity": "rare", "kind": "object", "collection": "zombie_outbreak", "desc": "A green hand pokes out of the dirt and waves hello.",
+		"swatch": [Color("7aa83a"), Color("5a4a2e"), Color("6a4a3a")]},
+	"topper_magic_wand": {"name": "Magic Wand", "rarity": "rare", "kind": "object", "collection": "magical_sparkle", "desc": "A star-tipped wand spinning slowly over a glowing pad.",
+		"swatch": [Color("ff8ec0"), Color("ffffff"), Color("b84dff")]},
+	"topper_light_stick": {"name": "Light Stick", "rarity": "rare", "kind": "object", "collection": "concert_stage", "desc": "A glowing fan light stick waving to the beat.",
+		"swatch": [Color("b84dff"), Color("1d1736"), Color("ffffff")]},
+	"topper_spray_can": {"name": "Spray Can", "rarity": "common", "kind": "object", "collection": "street_graffiti", "desc": "A pink paint can with a fresh drip at its feet.",
+		"swatch": [Color("ff3bd6"), Color("4dffb0"), Color("c9d2de")]},
+	"topper_skateboard": {"name": "Skateboard", "rarity": "rare", "kind": "object", "collection": "street_graffiti", "desc": "A board on a stand, popping an endless ollie.",
+		"swatch": [Color("ff6a1a"), Color("3ad6ff"), Color("f4f4f4")]},
+	"topper_castle_tower": {"name": "Castle Tower", "rarity": "epic", "kind": "object", "collection": "fantasy_kingdom", "desc": "A round stone tower with a blue spire and a red pennant.",
+		"swatch": [Color("c4c9d6"), Color("2f4fae"), Color("c8342d")]},
 }
 
 const MAX_SLOTS := 3
@@ -304,6 +356,58 @@ static func _spec(slug: String) -> Dictionary:
 			return _lechon()
 		"topper_jeepney":
 			return _jeepney()
+		"topper_koi_bowl":
+			return _koi_bowl()
+		"topper_paper_lantern":
+			return _paper_lantern()
+		"topper_parrot":
+			return _parrot()
+		"topper_treasure_chest":
+			return _treasure_chest()
+		"topper_stone_lantern":
+			return _stone_lantern()
+		"topper_training_dummy":
+			return _training_dummy()
+		"topper_holo_cat":
+			return _holo_cat()
+		"topper_mini_mecha":
+			return _mini_mecha()
+		"topper_kaiju_plush":
+			return _kaiju_plush()
+		"topper_ringed_planet":
+			return _ringed_planet()
+		"topper_boombox":
+			return _boombox()
+		"topper_arcade_cabinet":
+			return _arcade_cabinet()
+		"topper_cowboy_hat":
+			return _cowboy_hat()
+		"topper_mini_airship":
+			return _mini_airship()
+		"topper_rune_stone":
+			return _rune_stone()
+		"topper_cat_statue":
+			return _cat_statue()
+		"topper_amphora":
+			return _amphora()
+		"topper_kapre_tree":
+			return _kapre_tree()
+		"topper_tikbalang":
+			return _tikbalang()
+		"topper_comic_burst":
+			return _speech_bubble()
+		"topper_zombie_hand":
+			return _zombie_hand()
+		"topper_magic_wand":
+			return _magic_wand()
+		"topper_light_stick":
+			return _light_stick()
+		"topper_spray_can":
+			return _spray_can()
+		"topper_skateboard":
+			return _skateboard_stand()
+		"topper_castle_tower":
+			return _castle_tower()
 	return _cactus()
 
 
@@ -980,3 +1084,409 @@ static func _sun_standard() -> Dictionary:
 		{"at": Vector3(0, 1.08, 0), "parts": sun, "anim": {"kind": "spin_z", "speed": 0.4}},
 		{"at": Vector3(0, 0.98, 0.03), "parts": ribbons, "anim": {"kind": "sway", "amount": 0.12, "speed": 1.6}},
 	]}
+
+# --- Themed collections ------------------------------------------------------------------------
+
+static func _paper_lantern() -> Dictionary:
+	var lantern := [
+		_p("c8c0b0", ShapeKit.cylinder(0.005, 0.005, 0.1, 4), Vector3(0, -0.05, 0), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.cylinder(0.08, 0.08, 0.035, 14), Vector3(0, -0.12, 0)),
+		_p(_c("fff4dc", 0.2, 0.9), ShapeKit.cylinder(0.13, 0.13, 0.3, 18), Vector3(0, -0.29, 0)),
+		_p(_c("e8341c", 0.2, 0.5), ShapeKit.cylinder(0.132, 0.132, 0.04, 18), Vector3(0, -0.23, 0), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.cylinder(0.08, 0.08, 0.035, 14), Vector3(0, -0.46, 0)),
+	]
+	return {"parts": _hanging_stand("2a2350", "6b3e22", 0.3), "anims": [{"at": Vector3(0.28, 1.03, 0), "parts": lantern, "anim": {"kind": "sway", "amount": 0.08, "speed": 1.1}}]}
+
+
+static func _koi_bowl() -> Dictionary:
+	var profile := PackedVector2Array([Vector2(0.1, 0.0), Vector2(0.26, 0.1), Vector2(0.3, 0.22), Vector2(0.3, 0.22), Vector2(0.27, 0.22)])
+	var bowl := [
+		_p(_c("f4f8ff", 0.5), ShapeKit.lathe(profile, 28), Vector3.ZERO),
+		_p(_c("2a4a8a", 0.4), ShapeKit.torus(0.27, 0.305, 28, 4), Vector3(0, 0.15, 0), Basis.IDENTITY, 0.0),
+		_p(_c("3f8ad6", 0.6), ShapeKit.cylinder(0.272, 0.272, 0.012, 24), Vector3(0, 0.222, 0), Basis.IDENTITY, 0.0),
+	]
+	var fish := [
+		_p(_c("ff8a3a", 0.5), ShapeKit.capsule(0.03, 0.14, 8), Vector3(0.12, 0.0, 0), _tilt(Vector3.BACK, PI / 2.0), 0.008),
+		_p(_c("ffffff", 0.5), ShapeKit.capsule(0.03, 0.14, 8), Vector3(-0.12, 0.0, 0), _tilt(Vector3.BACK, PI / 2.0), 0.008),
+		_p(_c("ff8a3a", 0.5), ShapeKit.cone(0.03, 0.05, 6), Vector3(0.12, 0.0, 0.08), _tilt(Vector3.RIGHT, -PI / 2.0), 0.0),
+		_p(_c("ffffff", 0.5), ShapeKit.cone(0.03, 0.05, 6), Vector3(-0.12, 0.0, -0.08), _tilt(Vector3.RIGHT, PI / 2.0), 0.0),
+	]
+	return {"parts": bowl, "anims": [{"at": Vector3(0, 0.245, 0), "parts": fish, "anim": {"kind": "spin", "speed": 0.9}}]}
+
+
+static func _parrot() -> Dictionary:
+	var stand := [
+		_p("6b3e22", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p("8a5a2a", ShapeKit.cylinder(0.02, 0.025, 0.6, 8), Vector3(0, 0.33, 0)),
+		_p("8a5a2a", ShapeKit.cylinder(0.018, 0.018, 0.34, 8), Vector3(0, 0.63, 0), _tilt(Vector3.BACK, PI / 2.0)),
+	]
+	var bird := [
+		_p(_c("e8282e", 0.4), ShapeKit.sphere(0.09, 0.2, 16), Vector3(0, 0.1, 0)),
+		_p(_c("e8282e", 0.4), ShapeKit.sphere(0.07, -1.0, 14), Vector3(0, 0.23, 0.02)),
+		_p(_c("ffcf3f", 0.4), ShapeKit.sphere(0.05, 0.15, 10), Vector3(0.08, 0.1, -0.01), _tilt(Vector3.BACK, 0.3)),
+		_p(_c("ffcf3f", 0.4), ShapeKit.sphere(0.05, 0.15, 10), Vector3(-0.08, 0.1, -0.01), _tilt(Vector3.BACK, -0.3)),
+		_p(_c("3d8bff", 0.4), ShapeKit.box(Vector3(0.06, 0.18, 0.02), 0.01, 0.004), Vector3(0, -0.05, -0.07), _tilt(Vector3.RIGHT, 0.4)),
+		_p("2a2d40", ShapeKit.cone(0.025, 0.06, 8), Vector3(0, 0.22, 0.09), _tilt(Vector3.RIGHT, PI / 2.0 + 0.4)),
+		_p("ffffff", ShapeKit.sphere(0.018, -1.0, 8), Vector3(0.04, 0.26, 0.05), Basis.IDENTITY, 0.0),
+		_p("ffffff", ShapeKit.sphere(0.018, -1.0, 8), Vector3(-0.04, 0.26, 0.05), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.sphere(0.01, -1.0, 6), Vector3(0.045, 0.26, 0.065), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.sphere(0.01, -1.0, 6), Vector3(-0.045, 0.26, 0.065), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0.1, 0.65, 0), "parts": bird, "anim": {"kind": "nod", "amount": 0.18, "speed": 2.2}}]}
+
+
+static func _treasure_chest() -> Dictionary:
+	var wood := _c("8a5a2a", 0.3)
+	var gold := _c("ffcf3f", 0.9)
+	var chest := [
+		_p(wood, ShapeKit.box(Vector3(0.42, 0.24, 0.28), 0.03, 0.01), Vector3(0, 0.12, 0)),
+		_p(gold, ShapeKit.box(Vector3(0.44, 0.04, 0.3), 0.01, 0.005), Vector3(0, 0.06, 0)),
+		_p(gold, ShapeKit.box(Vector3(0.04, 0.25, 0.3), 0.01, 0.005), Vector3(0.14, 0.12, 0)),
+		_p(gold, ShapeKit.box(Vector3(0.04, 0.25, 0.3), 0.01, 0.005), Vector3(-0.14, 0.12, 0)),
+		_p(gold, ShapeKit.box(Vector3(0.06, 0.07, 0.03), 0.01, 0.005), Vector3(0, 0.2, 0.15)),
+		_p(wood, ShapeKit.box(Vector3(0.42, 0.26, 0.05), 0.03, 0.01), Vector3(0, 0.36, -0.17), _tilt(Vector3.RIGHT, -0.35)),
+	]
+	var hoard := []
+	for i in 9:
+		var a := TAU * i / 9.0
+		hoard.append(_p(_c("ffd54a", 0.9, 0.6), ShapeKit.cylinder(0.045, 0.045, 0.012, 12), Vector3(cos(a) * 0.1, 0.0 + (i % 3) * 0.02, sin(a) * 0.06), _tilt(Vector3.RIGHT, 0.4 * sin(a)), 0.006))
+	hoard.append(_p(_c("e8282e", 0.9, 0.8), ShapeKit.sphere(0.04, -1.0, 10), Vector3(0.05, 0.04, 0.0), Basis.IDENTITY, 0.008))
+	return {"parts": chest, "anims": [{"at": Vector3(0, 0.25, 0), "parts": hoard, "anim": {"kind": "pulse", "amount": 0.05, "speed": 3.0}}]}
+
+
+static func _stone_lantern() -> Dictionary:
+	var stone := _c("a8a8a0", 0.1)
+	var parts := [
+		_p(stone, ShapeKit.cylinder(0.16, 0.18, 0.06, 6), Vector3(0, 0.03, 0)),
+		_p(stone, ShapeKit.cylinder(0.05, 0.06, 0.34, 8), Vector3(0, 0.23, 0)),
+		_p(stone, ShapeKit.box(Vector3(0.24, 0.05, 0.24), 0.02, 0.008), Vector3(0, 0.42, 0)),
+		_p(_c("ffd58a", 0.2, 1.8), ShapeKit.box(Vector3(0.14, 0.14, 0.14), 0.02, 0.006), Vector3(0, 0.52, 0), Basis.IDENTITY, 0.01),
+		_p(stone, ShapeKit.frustum(6, 0.24, 0.02, 0.14), Vector3(0, 0.66, 0)),
+		_p(stone, ShapeKit.sphere(0.035, -1.0, 8), Vector3(0, 0.75, 0)),
+	]
+	return {"parts": parts}
+
+
+static func _training_dummy() -> Dictionary:
+	var wood := _c("b77a45", 0.2)
+	var dummy := [
+		_p(wood, ShapeKit.cylinder(0.07, 0.08, 0.7, 12), Vector3(0, 0.35, 0)),
+		_p(wood, ShapeKit.cylinder(0.025, 0.025, 0.26, 8), Vector3(0.12, 0.5, 0.0), _tilt(Vector3.BACK, PI / 2.0 - 0.3)),
+		_p(wood, ShapeKit.cylinder(0.025, 0.025, 0.26, 8), Vector3(-0.12, 0.42, 0.0), _tilt(Vector3.BACK, -PI / 2.0 + 0.3)),
+		_p(wood, ShapeKit.cylinder(0.025, 0.025, 0.2, 8), Vector3(0.0, 0.3, 0.1), _tilt(Vector3.RIGHT, PI / 2.0)),
+		_p(_c("d8c48a", 0.1), ShapeKit.torus(0.07, 0.1, 14, 5), Vector3(0, 0.62, 0)),
+		_p(_c("2a2350", 0.2), ShapeKit.torus(0.075, 0.09, 14, 4), Vector3(0, 0.66, 0), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": [_p("4a4570", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0))],
+		"anims": [{"at": Vector3(0, 0.06, 0), "parts": dummy, "anim": {"kind": "rock", "amount": 0.07, "speed": 2.0}}]}
+
+
+static func _holo_cat() -> Dictionary:
+	var holo := _c("6ff6ff", 0.2, 1.4, 0.6)
+	var base := [
+		_p("1b2447", ShapeKit.cylinder(0.14, 0.16, 0.06, 20), Vector3(0, 0.03, 0)),
+		_p(_c("2ef6ff", 0.2, 2.0), ShapeKit.torus(0.1, 0.12, 20, 4), Vector3(0, 0.065, 0), Basis.IDENTITY, 0.0),
+	]
+	var cat := [
+		_p(holo, ShapeKit.sphere(0.1, 0.16, 14), Vector3(0, 0.08, 0), Basis.IDENTITY, 0.0),
+		_p(holo, ShapeKit.sphere(0.08, -1.0, 14), Vector3(0, 0.22, 0.02), Basis.IDENTITY, 0.0),
+		_p(holo, ShapeKit.cone(0.03, 0.06, 6), Vector3(0.05, 0.3, 0.02), Basis.IDENTITY, 0.0),
+		_p(holo, ShapeKit.cone(0.03, 0.06, 6), Vector3(-0.05, 0.3, 0.02), Basis.IDENTITY, 0.0),
+		_p(holo, ShapeKit.capsule(0.018, 0.16, 6), Vector3(0, 0.12, -0.11), _tilt(Vector3.RIGHT, 0.7), 0.0),
+		_p(_c("ff2bd6", 0.2, 2.0), ShapeKit.sphere(0.014, -1.0, 6), Vector3(0.03, 0.23, 0.09), Basis.IDENTITY, 0.0),
+		_p(_c("ff2bd6", 0.2, 2.0), ShapeKit.sphere(0.014, -1.0, 6), Vector3(-0.03, 0.23, 0.09), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": base, "anims": [{"at": Vector3(0, 0.12, 0), "parts": cat, "anim": {"kind": "float", "amount": 0.03, "speed": 2.0}}]}
+
+
+static func _mini_mecha() -> Dictionary:
+	var white := _c("e8eef8", 0.6)
+	var blue := _c("2f6bd8", 0.5)
+	var body := [
+		_p(blue, ShapeKit.box(Vector3(0.08, 0.18, 0.1), 0.02, 0.008), Vector3(0.06, 0.09, 0)),
+		_p(blue, ShapeKit.box(Vector3(0.08, 0.18, 0.1), 0.02, 0.008), Vector3(-0.06, 0.09, 0)),
+		_p(white, ShapeKit.box(Vector3(0.26, 0.2, 0.16), 0.03, 0.01), Vector3(0, 0.28, 0)),
+		_p(_c("ff3d4a", 0.4), ShapeKit.box(Vector3(0.1, 0.06, 0.02), 0.01, 0.004), Vector3(0, 0.28, 0.085), Basis.IDENTITY, 0.0),
+		_p(white, ShapeKit.box(Vector3(0.1, 0.1, 0.12), 0.02, 0.008), Vector3(0.18, 0.34, 0)),
+		_p(white, ShapeKit.box(Vector3(0.1, 0.1, 0.12), 0.02, 0.008), Vector3(-0.18, 0.34, 0)),
+		_p(blue, ShapeKit.box(Vector3(0.06, 0.16, 0.06), 0.02, 0.008), Vector3(0.18, 0.22, 0)),
+		_p(blue, ShapeKit.box(Vector3(0.06, 0.16, 0.06), 0.02, 0.008), Vector3(-0.18, 0.22, 0)),
+	]
+	var head := [
+		_p(white, ShapeKit.box(Vector3(0.12, 0.1, 0.12), 0.02, 0.008), Vector3(0, 0.05, 0)),
+		_p(_c("3ad6ff", 0.3, 2.0), ShapeKit.box(Vector3(0.09, 0.025, 0.02), 0.005, 0.002), Vector3(0, 0.06, 0.06), Basis.IDENTITY, 0.0),
+		_p(_c("ffb020", 0.4), ShapeKit.box(Vector3(0.02, 0.06, 0.02), 0.005, 0.002), Vector3(0, 0.12, 0.0)),
+	]
+	return {"parts": body, "anims": [{"at": Vector3(0, 0.38, 0), "parts": head, "anim": {"kind": "turn", "amount": 0.6, "speed": 0.8}}]}
+
+
+static func _kaiju_plush() -> Dictionary:
+	var purple := _c("8a5cff", 0.2)
+	var body := [
+		_p(purple, ShapeKit.sphere(0.17, 0.3, 18), Vector3(0, 0.16, 0)),
+		_p(_c("ffd1ea", 0.2), ShapeKit.sphere(0.11, 0.2, 14), Vector3(0, 0.15, 0.08)),
+		_p(purple, ShapeKit.sphere(0.12, -1.0, 16), Vector3(0, 0.36, 0.02)),
+		_p(_c("fff4dc", 0.3), ShapeKit.cone(0.03, 0.09, 8), Vector3(0.07, 0.47, 0.0), _tilt(Vector3.BACK, -0.4)),
+		_p(_c("fff4dc", 0.3), ShapeKit.cone(0.03, 0.09, 8), Vector3(-0.07, 0.47, 0.0), _tilt(Vector3.BACK, 0.4)),
+		_p("1d1736", ShapeKit.sphere(0.02, -1.0, 8), Vector3(0.04, 0.38, 0.11), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.sphere(0.02, -1.0, 8), Vector3(-0.04, 0.38, 0.11), Basis.IDENTITY, 0.0),
+		_p(purple, ShapeKit.capsule(0.035, 0.1, 8), Vector3(0.15, 0.22, 0.04), _tilt(Vector3.BACK, -0.9)),
+		_p(purple, ShapeKit.capsule(0.035, 0.1, 8), Vector3(-0.15, 0.22, 0.04), _tilt(Vector3.BACK, 0.9)),
+		_p(purple, ShapeKit.cone(0.06, 0.16, 8), Vector3(0, 0.1, -0.18), _tilt(Vector3.RIGHT, -1.2)),
+	]
+	return {"parts": [], "anims": [{"parts": body, "anim": {"kind": "rock", "amount": 0.09, "speed": 1.6}}]}
+
+
+static func _ringed_planet() -> Dictionary:
+	var stand := [
+		_p("2a2d40", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p("8a94a6", ShapeKit.cylinder(0.015, 0.015, 0.3, 8), Vector3(0, 0.2, 0)),
+	]
+	var planet := [
+		_p(_c("ffb04a", 0.5), ShapeKit.sphere(0.13, -1.0, 20), Vector3.ZERO),
+		_p(_c("e8541c", 0.4), ShapeKit.torus(0.128, 0.134, 20, 3), Vector3(0, 0.04, 0), Basis.IDENTITY, 0.0),
+		_p(_c("c8d8ff", 0.6), ShapeKit.torus(0.17, 0.24, 28, 6), Vector3.ZERO, _tilt(Vector3.BACK, 0.4) * Basis().scaled(Vector3(1, 0.3, 1)), 0.006),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0, 0.46, 0), "parts": planet, "anim": {"kind": "spin", "speed": 0.7}}]}
+
+
+static func _boombox() -> Dictionary:
+	var parts := [
+		_p(_c("2a1048", 0.5), ShapeKit.box(Vector3(0.44, 0.24, 0.14), 0.03, 0.01), Vector3(0, 0.12, 0)),
+		_p(_c("c9d2de", 0.8), ShapeKit.cylinder(0.008, 0.008, 0.3, 6), Vector3(0, 0.3, 0), _tilt(Vector3.BACK, PI / 2.0)),
+		_p(_c("c9d2de", 0.8), ShapeKit.cylinder(0.008, 0.008, 0.06, 6), Vector3(0.15, 0.27, 0)),
+		_p(_c("c9d2de", 0.8), ShapeKit.cylinder(0.008, 0.008, 0.06, 6), Vector3(-0.15, 0.27, 0)),
+		_p(_c("3ad6ff", 0.4, 1.2), ShapeKit.box(Vector3(0.1, 0.05, 0.02), 0.01, 0.004), Vector3(0, 0.18, 0.07), Basis.IDENTITY, 0.0),
+	]
+	var speakers := []
+	for side: float in [-1.0, 1.0]:
+		speakers.append(_p(_c("1d1736", 0.3), ShapeKit.cylinder(0.075, 0.075, 0.02, 18), Vector3(side * 0.13, 0.0, 0.0), _tilt(Vector3.RIGHT, PI / 2.0)))
+		speakers.append(_p(_c("ff4fa8", 0.4, 1.6), ShapeKit.torus(0.06, 0.075, 18, 4), Vector3(side * 0.13, 0.0, 0.01), _tilt(Vector3.RIGHT, PI / 2.0), 0.0))
+	return {"parts": parts, "anims": [{"at": Vector3(0, 0.1, 0.07), "parts": speakers, "anim": {"kind": "pulse", "amount": 0.06, "speed": 8.0}}]}
+
+
+static func _arcade_cabinet() -> Dictionary:
+	var shell := _c("2f3fbf", 0.4)
+	var parts := [
+		_p(shell, ShapeKit.box(Vector3(0.26, 0.6, 0.24), 0.02, 0.008), Vector3(0, 0.3, 0)),
+		_p(_c("1d1736", 0.3), ShapeKit.box(Vector3(0.2, 0.16, 0.02), 0.01, 0.004), Vector3(0, 0.44, 0.12)),
+		_p(_c("4dffb0", 0.3, 1.6), ShapeKit.box(Vector3(0.16, 0.12, 0.02), 0.01, 0.004), Vector3(0, 0.44, 0.125), Basis.IDENTITY, 0.0),
+		_p(shell, ShapeKit.box(Vector3(0.26, 0.04, 0.12), 0.01, 0.005), Vector3(0, 0.3, 0.16), _tilt(Vector3.RIGHT, 0.3)),
+		_p(_c("ff4d6d", 0.5), ShapeKit.sphere(0.022, -1.0, 8), Vector3(-0.06, 0.34, 0.18), Basis.IDENTITY, 0.006),
+		_p("1d1736", ShapeKit.cylinder(0.006, 0.006, 0.05, 6), Vector3(-0.06, 0.32, 0.18), Basis.IDENTITY, 0.0),
+		_p(_c("ffd23f", 0.5), ShapeKit.cylinder(0.018, 0.018, 0.012, 10), Vector3(0.04, 0.33, 0.18), Basis.IDENTITY, 0.0),
+		_p(_c("4dffb0", 0.5), ShapeKit.cylinder(0.018, 0.018, 0.012, 10), Vector3(0.09, 0.33, 0.17), Basis.IDENTITY, 0.0),
+		_p(_c("ffd23f", 0.4, 1.0), ShapeKit.box(Vector3(0.26, 0.06, 0.04), 0.01, 0.004), Vector3(0, 0.62, 0.1)),
+	]
+	return {"parts": parts}
+
+
+static func _cowboy_hat() -> Dictionary:
+	var post := [
+		_p("6b3e22", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p("8a5a2a", ShapeKit.cylinder(0.02, 0.025, 0.5, 8), Vector3(0, 0.28, 0)),
+	]
+	var brown := _c("a8643a", 0.3)
+	var hat := [
+		_p(brown, ShapeKit.cylinder(0.2, 0.2, 0.02, 24), Vector3.ZERO, _tilt(Vector3.BACK, 0.12)),
+		_p(brown, ShapeKit.cylinder(0.09, 0.11, 0.12, 18), Vector3(0, 0.07, 0)),
+		_p(_c("4a2410", 0.3), ShapeKit.cylinder(0.112, 0.112, 0.025, 18), Vector3(0, 0.025, 0), Basis.IDENTITY, 0.0),
+		_p(_c("ffcf3f", 0.9), ShapeKit.prism(InsigniaFactory.star_polygon(5, 0.035, 0.015), 0.01, 0.002), Vector3(0, 0.04, 0.113), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": post, "anims": [{"at": Vector3(0, 0.55, 0), "parts": hat, "anim": {"kind": "sway", "amount": 0.05, "speed": 1.3}}]}
+
+
+static func _mini_airship() -> Dictionary:
+	var stand := [
+		_p("4a4048", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p(_c("d8a03a", 0.8), ShapeKit.cylinder(0.012, 0.012, 0.46, 8), Vector3(0, 0.26, 0)),
+	]
+	var brass := _c("d8a03a", 0.8)
+	var ship := [
+		_p(_c("c8a070", 0.3), ShapeKit.sphere(0.1, 0.38, 18), Vector3.ZERO, _tilt(Vector3.BACK, PI / 2.0)),
+		_p(brass, ShapeKit.torus(0.088, 0.1, 18, 4), Vector3(0.08, 0, 0), _tilt(Vector3.BACK, PI / 2.0), 0.0),
+		_p(brass, ShapeKit.torus(0.088, 0.1, 18, 4), Vector3(-0.08, 0, 0), _tilt(Vector3.BACK, PI / 2.0), 0.0),
+		_p(_c("6b3e22", 0.3), ShapeKit.box(Vector3(0.14, 0.05, 0.07), 0.015, 0.006), Vector3(0, -0.12, 0)),
+		_p(_c("c8743a", 0.5), ShapeKit.prism(PackedVector2Array([Vector2(0, 0), Vector2(-0.08, 0.07), Vector2(-0.08, -0.07)]), 0.012, 0.003), Vector3(-0.17, 0, 0)),
+		_p(brass, ShapeKit.cylinder(0.008, 0.008, 0.05, 6), Vector3(0, 0.12, 0), Basis.IDENTITY, 0.0),
+		_p(brass, ShapeKit.box(Vector3(0.16, 0.012, 0.03), 0.005, 0.002), Vector3(0, 0.15, 0), _tilt(Vector3.UP, 0.6), 0.008),
+		_p(brass, ShapeKit.box(Vector3(0.16, 0.012, 0.03), 0.005, 0.002), Vector3(0, 0.15, 0), _tilt(Vector3.UP, -0.9), 0.008),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0, 0.6, 0), "parts": ship, "anim": {"kind": "rock", "amount": 0.06, "speed": 1.2}}]}
+
+
+static func _rune_stone() -> Dictionary:
+	var stone := _c("8a909a", 0.1)
+	var parts := [
+		_p("6a7488", ShapeKit.sphere(0.2, 0.08, 16), Vector3(0, 0.02, 0)),
+		_p(stone, ShapeKit.box(Vector3(0.22, 0.5, 0.1), 0.06, 0.02), Vector3(0, 0.27, 0)),
+	]
+	var glow := _c("7fd6ff", 0.2, 2.0)
+	var runes := [
+		_p(glow, ShapeKit.box(Vector3(0.015, 0.22, 0.01), 0.004, 0.001), Vector3(-0.02, 0.0, 0), Basis.IDENTITY, 0.0),
+		_p(glow, ShapeKit.box(Vector3(0.015, 0.1, 0.01), 0.004, 0.001), Vector3(0.025, 0.05, 0), _tilt(Vector3.BACK, -0.7), 0.0),
+		_p(glow, ShapeKit.box(Vector3(0.015, 0.1, 0.01), 0.004, 0.001), Vector3(0.025, -0.04, 0), _tilt(Vector3.BACK, -0.7), 0.0),
+	]
+	return {"parts": parts, "anims": [{"at": Vector3(0, 0.3, 0.052), "parts": runes, "anim": {"kind": "pulse", "amount": 0.08, "speed": 2.0}}]}
+
+
+static func _cat_statue() -> Dictionary:
+	var black := _c("2a2d40", 0.7)
+	var gold := _c("ffcf3f", 0.9)
+	var parts := [
+		_p(gold, ShapeKit.box(Vector3(0.24, 0.06, 0.24), 0.02, 0.008), Vector3(0, 0.03, 0)),
+		_p(black, ShapeKit.sphere(0.1, 0.26, 16), Vector3(0, 0.18, 0)),
+		_p(black, ShapeKit.sphere(0.07, -1.0, 14), Vector3(0, 0.36, 0.02)),
+		_p(black, ShapeKit.cone(0.03, 0.09, 6), Vector3(0.04, 0.45, 0.01)),
+		_p(black, ShapeKit.cone(0.03, 0.09, 6), Vector3(-0.04, 0.45, 0.01)),
+		_p(gold, ShapeKit.torus(0.06, 0.08, 16, 4), Vector3(0, 0.29, 0.01)),
+		_p(_c("1f6bd6", 0.6), ShapeKit.sphere(0.018, -1.0, 8), Vector3(0, 0.28, 0.08), Basis.IDENTITY, 0.0),
+		_p(black, ShapeKit.capsule(0.02, 0.18, 6), Vector3(0.09, 0.1, -0.06), _tilt(Vector3.RIGHT, 1.3), 0.008),
+		_p(_c("ffcf3f", 0.5, 1.2), ShapeKit.sphere(0.012, -1.0, 6), Vector3(0.025, 0.37, 0.085), Basis.IDENTITY, 0.0),
+		_p(_c("ffcf3f", 0.5, 1.2), ShapeKit.sphere(0.012, -1.0, 6), Vector3(-0.025, 0.37, 0.085), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": parts}
+
+
+static func _amphora() -> Dictionary:
+	var profile := PackedVector2Array([Vector2(0.05, 0.0), Vector2(0.06, 0.04), Vector2(0.14, 0.14), Vector2(0.16, 0.24),
+		Vector2(0.12, 0.36), Vector2(0.06, 0.42), Vector2(0.05, 0.5), Vector2(0.07, 0.53)])
+	var clay := _c("d8743a", 0.3)
+	var parts := [
+		_p(clay, ShapeKit.lathe(profile, 24), Vector3.ZERO),
+		_p("1d1736", ShapeKit.torus(0.15, 0.162, 24, 3), Vector3(0, 0.2, 0), Basis.IDENTITY, 0.0),
+		_p("1d1736", ShapeKit.torus(0.14, 0.152, 24, 3), Vector3(0, 0.28, 0), Basis.IDENTITY, 0.0),
+		_p(clay, ShapeKit.torus(0.03, 0.045, 10, 4), Vector3(0.09, 0.43, 0), _tilt(Vector3.RIGHT, PI / 2.0)),
+		_p(clay, ShapeKit.torus(0.03, 0.045, 10, 4), Vector3(-0.09, 0.43, 0), _tilt(Vector3.RIGHT, PI / 2.0)),
+		_p(_c("6aa84a", 0.3), ShapeKit.torus(0.06, 0.075, 14, 4), Vector3(0, 0.52, 0), Basis.IDENTITY, 0.006),
+	]
+	return {"parts": parts}
+
+
+static func _kapre_tree() -> Dictionary:
+	var bark := _c("6b5a3a", 0.1)
+	var parts := [
+		_p(bark, ShapeKit.cylinder(0.08, 0.14, 0.5, 10), Vector3(0, 0.25, 0)),
+		_p(bark, ShapeKit.cylinder(0.02, 0.05, 0.22, 6), Vector3(0.1, 0.06, 0.05), _tilt(Vector3.BACK, -1.1)),
+		_p(bark, ShapeKit.cylinder(0.02, 0.05, 0.22, 6), Vector3(-0.1, 0.06, -0.04), _tilt(Vector3.BACK, 1.1)),
+		_p("1d1736", ShapeKit.sphere(0.06, 0.1, 12), Vector3(0, 0.28, 0.07), Basis.IDENTITY, 0.0),
+		_p(_c("2f6a3a", 0.1), ShapeKit.sphere(0.26, 0.3, 18), Vector3(0, 0.62, 0)),
+		_p(_c("3f8a4a", 0.1), ShapeKit.sphere(0.16, 0.2, 14), Vector3(0.14, 0.72, 0.05)),
+	]
+	var eyes := [
+		_p(_c("ffd23f", 0.2, 2.4), ShapeKit.sphere(0.016, -1.0, 8), Vector3(0.025, 0.0, 0), Basis.IDENTITY, 0.0),
+		_p(_c("ffd23f", 0.2, 2.4), ShapeKit.sphere(0.016, -1.0, 8), Vector3(-0.025, 0.0, 0), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": parts, "anims": [{"at": Vector3(0, 0.29, 0.12), "parts": eyes, "anim": {"kind": "flicker", "amount": 0.4, "speed": 3.0}}]}
+
+
+static func _tikbalang() -> Dictionary:
+	var hide := _c("6b4a2a", 0.2)
+	var body := [
+		_p(hide, ShapeKit.capsule(0.06, 0.34, 10), Vector3(0, 0.2, 0)),
+		_p(hide, ShapeKit.capsule(0.025, 0.2, 6), Vector3(0.08, 0.24, 0.02), _tilt(Vector3.BACK, -0.5)),
+		_p(hide, ShapeKit.capsule(0.025, 0.2, 6), Vector3(-0.08, 0.24, 0.02), _tilt(Vector3.BACK, 0.5)),
+		_p(_c("1d1736", 0.2), ShapeKit.capsule(0.02, 0.06, 6), Vector3(0, 0.38, -0.03), Basis.IDENTITY, 0.0),
+	]
+	var head := [
+		_p(hide, ShapeKit.capsule(0.05, 0.18, 10), Vector3(0, 0.02, 0.05), _tilt(Vector3.RIGHT, 1.2)),
+		_p(hide, ShapeKit.cone(0.02, 0.06, 6), Vector3(0.03, 0.09, -0.01)),
+		_p(hide, ShapeKit.cone(0.02, 0.06, 6), Vector3(-0.03, 0.09, -0.01)),
+		_p(_c("1d1736", 0.2), ShapeKit.box(Vector3(0.02, 0.1, 0.1), 0.005, 0.002), Vector3(0, 0.07, -0.04), _tilt(Vector3.RIGHT, 0.3)),
+		_p(_c("ffd23f", 0.2, 1.8), ShapeKit.sphere(0.012, -1.0, 6), Vector3(0.035, 0.04, 0.07), Basis.IDENTITY, 0.0),
+		_p(_c("ffd23f", 0.2, 1.8), ShapeKit.sphere(0.012, -1.0, 6), Vector3(-0.035, 0.04, 0.07), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": [_p("3a6a32", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0))] + body,
+		"anims": [{"at": Vector3(0, 0.42, 0.0), "parts": head, "anim": {"kind": "nod", "amount": 0.15, "speed": 1.6}}]}
+
+
+static func _speech_bubble() -> Dictionary:
+	var stand := [
+		_p("1d1736", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p("1d1736", ShapeKit.cylinder(0.015, 0.015, 0.3, 8), Vector3(0, 0.2, 0)),
+	]
+	var burst := [
+		_p(_c("ff5a3a", 0.3), ShapeKit.prism(InsigniaFactory.star_polygon(12, 0.24, 0.16), 0.04, 0.01), Vector3.ZERO),
+		_p(_c("fff36b", 0.3), ShapeKit.prism(InsigniaFactory.star_polygon(12, 0.17, 0.12), 0.05, 0.01), Vector3(0, 0, 0.005), Basis.IDENTITY, 0.0),
+		_p(_c("3d8bff", 0.3), ShapeKit.prism(InsigniaFactory.star_polygon(5, 0.08, 0.035), 0.06, 0.008), Vector3(0, 0, 0.01), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0, 0.55, 0), "parts": burst, "anim": {"kind": "pulse", "amount": 0.08, "speed": 4.0}}]}
+
+
+static func _zombie_hand() -> Dictionary:
+	var green := _c("7aa83a", 0.2)
+	var mound := [_p("5a4a2e", ShapeKit.sphere(0.2, 0.12, 16), Vector3(0, 0.02, 0)), _p("3a3a2a", ShapeKit.box(Vector3(0.06, 0.04, 0.04), 0.01, 0.005), Vector3(0.12, 0.05, 0.06))]
+	var hand := [
+		_p(green, ShapeKit.cylinder(0.04, 0.05, 0.2, 8), Vector3(0, 0.1, 0)),
+		_p(_c("6a4a3a", 0.2), ShapeKit.cylinder(0.055, 0.055, 0.05, 8), Vector3(0, 0.04, 0)),
+		_p(green, ShapeKit.box(Vector3(0.12, 0.12, 0.05), 0.02, 0.008), Vector3(0, 0.25, 0)),
+		_p(green, ShapeKit.capsule(0.018, 0.09, 6), Vector3(-0.04, 0.35, 0)),
+		_p(green, ShapeKit.capsule(0.018, 0.1, 6), Vector3(0.0, 0.36, 0)),
+		_p(green, ShapeKit.capsule(0.018, 0.09, 6), Vector3(0.04, 0.35, 0)),
+		_p(green, ShapeKit.capsule(0.018, 0.08, 6), Vector3(0.075, 0.28, 0), _tilt(Vector3.BACK, -0.8)),
+	]
+	return {"parts": mound, "anims": [{"at": Vector3(0, 0.05, 0), "parts": hand, "anim": {"kind": "sway", "amount": 0.25, "speed": 2.6}}]}
+
+
+static func _magic_wand() -> Dictionary:
+	var stand := [
+		_p(_c("c9a8ff", 0.4), ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p(_c("ffffff", 0.3, 0.6, 0.5), ShapeKit.cylinder(0.1, 0.1, 0.01, 18), Vector3(0, 0.07, 0), Basis.IDENTITY, 0.0),
+	]
+	var wand := [
+		_p(_c("ffffff", 0.6), ShapeKit.cylinder(0.012, 0.016, 0.34, 8), Vector3(0, 0.0, 0)),
+		_p(_c("ff8ec0", 0.4, 1.6), ShapeKit.prism(InsigniaFactory.star_polygon(5, 0.08, 0.035), 0.03, 0.006), Vector3(0, 0.2, 0)),
+		_p(_c("b84dff", 0.4), ShapeKit.torus(0.014, 0.026, 10, 4), Vector3(0, -0.1, 0)),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0, 0.36, 0), "parts": wand, "anim": {"kind": "spin", "speed": 1.2}}]}
+
+
+static func _light_stick() -> Dictionary:
+	var stick := [
+		_p("1d1736", ShapeKit.cylinder(0.03, 0.035, 0.2, 10), Vector3(0, 0.1, 0)),
+		_p(_c("c9d2de", 0.8), ShapeKit.torus(0.03, 0.045, 12, 4), Vector3(0, 0.21, 0)),
+		_p(_c("b84dff", 0.2, 2.2, 0.85), ShapeKit.sphere(0.08, 0.16, 16), Vector3(0, 0.29, 0), Basis.IDENTITY, 0.0),
+		_p(_c("ffffff", 0.2, 2.4), ShapeKit.prism(InsigniaFactory.star_polygon(5, 0.035, 0.015), 0.02, 0.004), Vector3(0, 0.29, 0.0), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": [_p("2a2350", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0))],
+		"anims": [{"at": Vector3(0, 0.06, 0), "parts": stick, "anim": {"kind": "sway", "amount": 0.28, "speed": 3.0}}]}
+
+
+static func _spray_can() -> Dictionary:
+	var parts := [
+		_p(_c("ff3bd6", 0.6), ShapeKit.cylinder(0.08, 0.08, 0.3, 18), Vector3(0, 0.15, 0)),
+		_p(_c("c9d2de", 0.8), ShapeKit.cylinder(0.05, 0.08, 0.06, 18), Vector3(0, 0.33, 0)),
+		_p(_c("1d1736", 0.4), ShapeKit.cylinder(0.02, 0.02, 0.04, 10), Vector3(0, 0.38, 0)),
+		_p(_c("4dffb0", 0.4), ShapeKit.cylinder(0.083, 0.083, 0.06, 18), Vector3(0, 0.16, 0), Basis.IDENTITY, 0.0),
+		_p(_c("ff3bd6", 0.6), ShapeKit.sphere(0.06, 0.03, 12), Vector3(0.14, 0.01, 0.05), Basis.IDENTITY, 0.0),
+	]
+	return {"parts": parts}
+
+
+static func _skateboard_stand() -> Dictionary:
+	var board := [
+		_p(_c("ff6a1a", 0.4), ShapeKit.box(Vector3(0.12, 0.02, 0.44), 0.05, 0.008), Vector3(0, 0.0, 0)),
+		_p(_c("3ad6ff", 0.4), ShapeKit.box(Vector3(0.08, 0.022, 0.18), 0.03, 0.004), Vector3(0, 0.0, 0), Basis.IDENTITY, 0.0),
+		_p("f4f4f4", ShapeKit.cylinder(0.025, 0.025, 0.03, 10), Vector3(0.05, -0.03, 0.15), _tilt(Vector3.BACK, PI / 2.0)),
+		_p("f4f4f4", ShapeKit.cylinder(0.025, 0.025, 0.03, 10), Vector3(-0.05, -0.03, 0.15), _tilt(Vector3.BACK, PI / 2.0)),
+		_p("f4f4f4", ShapeKit.cylinder(0.025, 0.025, 0.03, 10), Vector3(0.05, -0.03, -0.15), _tilt(Vector3.BACK, PI / 2.0)),
+		_p("f4f4f4", ShapeKit.cylinder(0.025, 0.025, 0.03, 10), Vector3(-0.05, -0.03, -0.15), _tilt(Vector3.BACK, PI / 2.0)),
+	]
+	var stand := [
+		_p("8a8f9a", ShapeKit.cylinder(0.12, 0.15, 0.06, 18), Vector3(0, 0.03, 0)),
+		_p("8a8f9a", ShapeKit.cylinder(0.015, 0.015, 0.22, 8), Vector3(0, 0.16, 0)),
+	]
+	return {"parts": stand, "anims": [{"at": Vector3(0, 0.3, 0), "parts": board, "anim": {"kind": "nod", "amount": 0.3, "speed": 1.8}}]}
+
+
+static func _castle_tower() -> Dictionary:
+	var stone := _c("c4c9d6", 0.1)
+	var parts := [
+		_p(stone, ShapeKit.cylinder(0.12, 0.14, 0.42, 16), Vector3(0, 0.21, 0)),
+		_p("5a6070", ShapeKit.box(Vector3(0.06, 0.1, 0.02), 0.01, 0.004), Vector3(0, 0.08, 0.135), Basis.IDENTITY, 0.0),
+		_p(_c("ffd58a", 0.2, 1.6), ShapeKit.box(Vector3(0.04, 0.06, 0.02), 0.01, 0.004), Vector3(0, 0.3, 0.125), Basis.IDENTITY, 0.0),
+		_p(_c("2f4fae", 0.3), ShapeKit.cone(0.16, 0.24, 16), Vector3(0, 0.54, 0)),
+		_p("8a5a2a", ShapeKit.cylinder(0.008, 0.008, 0.18, 6), Vector3(0, 0.74, 0), Basis.IDENTITY, 0.0),
+	]
+	var pennant := [_p(_c("c8342d", 0.2), ShapeKit.prism(PackedVector2Array([Vector2(0, 0.04), Vector2(0.14, 0.0), Vector2(0, -0.04)]), 0.01, 0.002), Vector3(0, 0, 0))]
+	return {"parts": parts, "anims": [{"at": Vector3(0.005, 0.8, 0), "parts": pennant, "anim": {"kind": "sway", "amount": 0.2, "speed": 3.0}}]}

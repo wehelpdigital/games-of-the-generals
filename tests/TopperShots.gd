@@ -3,14 +3,18 @@ extends SmokeTestBase
 ## uploaded-picture cloths, an overview with the opponent's toppers, and the flag texture sheet.
 ## Real renderer:
 ##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/TopperShots.tscn -- --out=<dir>
+## `--only=slug,slug` renders just those objects and stops.
 
 var _out := "user://toppers"
+var _only: Array = []
 
 
 func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--out="):
 			_out = arg.trim_prefix("--out=")
+		elif arg.begins_with("--only="):
+			_only = arg.trim_prefix("--only=").split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
 	seed(5)
 	await boot()
@@ -31,6 +35,8 @@ func _ready() -> void:
 	left.look_at_from_position(Vector3(-3.4, 1.9, 5.6), Vector3(-5.6, 0.4, 2.8))
 
 	var objects: Array = ToppersLibrary.object_slugs()
+	if not _only.is_empty():
+		objects = objects.filter(func(s: String) -> bool: return s in _only)
 	var group := 0
 	while group * 3 < objects.size():
 		var slots: Array = []
@@ -43,6 +49,10 @@ func _ready() -> void:
 		left.make_current()
 		await _shot("objects_%d_left" % group, 0.2)
 		group += 1
+	if not _only.is_empty():
+		Loadout.reset()
+		get_tree().quit()
+		return
 
 	var photo := _sample_photo()
 	var path := Loadout.save_local_flag_image(photo)

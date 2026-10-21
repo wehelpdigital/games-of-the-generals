@@ -5,7 +5,7 @@ extends Screen
 ## Wide screens: play column left, cards and side panels right. Portrait: one scrolling column.
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
-const LEFT_WIDTH := 410.0
+const LEFT_WIDTH := 396.0
 const WIDE_MIN := 1100.0  ## Below this width the dashboard is one scrolling column.
 const COLUMN_MAX := 680.0
 const SIDE_WIDTH := 330.0

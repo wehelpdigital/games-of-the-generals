@@ -150,6 +150,7 @@ func _toggle_panel() -> void:
 
 
 func _place_panel() -> void:
+	_panel.reset_size()  # Top-level: shrink back to the content after a state change.
 	var screen := get_viewport().get_visible_rect().size
 	var pos := _main.global_position + Vector2(0, _main.size.y + 8)
 	pos.x = clampf(pos.x, 8.0, maxf(8.0, screen.x - _panel.size.x - 8.0))

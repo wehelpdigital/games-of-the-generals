@@ -56,7 +56,7 @@ func _ready() -> void:
 	box.add_child(list_header)
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size.y = 236
+	scroll.custom_minimum_size.y = 216
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list = AppTheme.vbox(8)
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL

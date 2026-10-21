@@ -95,6 +95,13 @@ func _ready() -> void:
 	await _shot("07_match_chat", 1.2)
 	chat.call("_toggle_panel")
 
+	# Powerups and effect banners down the left, chat bottom-right: both stay readable.
+	await _effects_on()
+	await _shot("07b_hud_effects", 0.8)
+	chat.call("_toggle_panel")
+	await _shot("07c_hud_effects_chat_open", 0.8)
+	chat.call("_toggle_panel")
+
 	# Voice widget in an online match (faked state; no server).
 	GameSession.leave()
 	GameSession.kind = GameSession.Kind.ONLINE
@@ -108,7 +115,9 @@ func _ready() -> void:
 	var widget: Control = _widget(hud, "res://ui/hud/VoiceWidget.gd")
 	widget.call("_refresh")
 	widget.call("_on_levels", 0.2, 0.0)
-	await _shot("08_voice_live", 0.4)
+	widget.call("_toggle_panel")
+	await _shot("08_voice_live", 0.6)
+	widget.call("_toggle_panel")
 	voice.state = "idle"
 	voice.match_id = 0
 	widget.call("_refresh")
@@ -142,9 +151,31 @@ func _ready() -> void:
 	Social.marquee.enqueue({"id": 9001, "user": {"username": "maria_clara", "rank_tier": 6}, "theme": "gold_royal",
 		"message": "The Royal Guild is recruiting! Majors and up, DM me 👑", "duration": 12})
 	await _shot("10_marquee_live", 1.6)
+
+	# Portrait phone: chat beside the bottom action buttons (last: window resizes can stall drivers).
+	GameSession.start_practice(SalpakanAI.Difficulty.EASY)
+	await frames(10)
+	await _effects_on()
+	chat = _widget(ui.screen("hud"), "res://ui/hud/MatchChat.gd")
+	get_window().size = Vector2i(720, 1280)
+	await frames(5)
+	chat.call("_toggle_panel")
+	await _shot("11_portrait_chat_open", 1.2)
 	ApiManager.token = ""
 	ApiManager.user = {}
 	get_tree().quit()
+
+
+## An active practice match with three powerups (one used) and an opponent's powerup banner.
+func _effects_on() -> void:
+	GameSession.submit_setup(board.get_setup_placements())
+	await wait_until(func() -> bool: return GameSession.status() == "active" and not board.is_animating())
+	var arbiter: LocalArbiter = GameSession._arbiter
+	arbiter.loadouts[Ranks.WHITE] = ["spy_card", "freeze", "fortify"]
+	GameSession._practice_load("active", GameSession.version)
+	await GameSession.use_powerup("spy_card")
+	GameSession.powerup_used.emit({"side": Ranks.BLACK, "id": "chaos_order", "name": "Chaos Order", "public": {}, "mine": false})
+	await frames(5)
 
 
 func _fake_global() -> Array:

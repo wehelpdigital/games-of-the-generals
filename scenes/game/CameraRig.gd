@@ -68,6 +68,39 @@ func reset_view() -> void:
 	_target_pan = Vector2.ZERO
 
 
+## Shop preview shots, so each kind of item is seen where it matters: "close" (your pieces up
+## close), "toppers" (the spots beside your half), "half" (your half of the board), "sky" (your
+## half and the air above it) and "wide" (the whole arena). Ends attract mode; input still works.
+func frame(shot: String) -> void:
+	attract = false
+	match shot:
+		"close":
+			_target_pitch = -34.0
+			_target_distance = 7.6
+			_target_pan = Vector2(0.0, 2.7)
+		"toppers":
+			_target_pitch = -32.0
+			_target_distance = 12.5
+			_target_pan = Vector2(0.0, 2.4)
+		"sky":
+			_target_pitch = -30.0
+			_target_distance = 14.5
+			_target_pan = Vector2(0.0, 0.8)
+		"wide":
+			_target_pitch = -27.0
+			_target_distance = 17.5
+			_target_pan = Vector2.ZERO
+		_:
+			_target_pitch = -50.0
+			_target_distance = 12.0
+			_target_pan = Vector2(0.0, 1.8)
+	# Portrait screens fit the board's width, so step back for the same framing.
+	var view := get_viewport().get_visible_rect().size
+	if view.y > view.x:
+		_target_distance *= 1.45
+		_target_pitch = minf(_target_pitch, -40.0)
+
+
 ## Trauma-based shake; stacks up to 1.0 and decays.
 func shake(strength := 0.5) -> void:
 	_trauma = minf(1.0, _trauma + strength)

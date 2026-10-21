@@ -1,6 +1,7 @@
 extends SmokeTestBase
-## Shop screenshots: the new categories in test mode, the toppers spots and flag editor, the extras
-## tab, then a simulated paid shop (prices, featured and seasonal badges, Buy and Log in to buy).
+## Shop screenshots: the new categories in test mode, preview mode (several shots, search, phone),
+## the toppers spots and flag editor, the extras tab, then a simulated paid shop (prices, featured
+## and seasonal badges, Buy and Log in to buy).
 ## Also exports the catalog for the server when given --catalog=<path>. Real renderer:
 ##   godot --path . --rendering-driver opengl3 --resolution 1280x720 res://tests/ShopShots.tscn -- --out=<dir> [--catalog=<file>]
 
@@ -22,12 +23,36 @@ func _ready() -> void:
 		_export_catalog()
 	var ui: UIRoot = main.get_node("UI")
 	var shop: Screen = ui.screen("shop")
+	ApiManager.token = "offline-test"  # The shop is for players; requests still fail fast.
+	ApiManager.user = {"username": "tester", "credits": 1200}
 	ui.show_screen("shop")
 	await frames(5)
 
 	shop.call("_switch", "shape")
 	Loadout.equip("shape", "shape_wish_orb")
 	await _shot("shop_shapes", 1.2)
+
+	# Preview mode: one shot per kind of camera framing, a search, then a phone-sized screen.
+	for pair: Array in [["shape", "shape_dice", 1.4], ["kill", "kill_bazooka", 1.1], ["ambience", "ambience_aurora", 1.6],
+			["arena", "lava_pit", 1.6], ["topper", "topper_dino", 1.4], ["aura", "aura_flame", 1.2]]:
+		shop.call("_open_preview", pair[0], pair[1])
+		await _shot("preview_%s" % pair[1], pair[2])
+	var search: LineEdit = shop.get("_search")
+	search.text = "dragon"
+	search.text_changed.emit("dragon")
+	await _shot("preview_search", 0.6)
+	search.text = ""
+	search.text_changed.emit("")
+	DisplayServer.window_set_size(Vector2i(390, 844))
+	await _shot("preview_phone_resized", 0.6)
+	shop.call("_open_preview", "shape", "shape_wish_orb")
+	await _shot("preview_phone", 1.4)
+	DisplayServer.window_set_size(Vector2i(1280, 720))
+	shop.call("_close_preview")
+	await frames(5)
+	shop.call("_switch", "shape")
+	ApiManager.token = ""
+	ApiManager.token = "offline-test"
 
 	Loadout.set_toppers({"slots": [{"kind": "object", "slug": "topper_rubber_duck"}, {"kind": "flag", "slug": "topper_flag_gold", "flag": {"shape": "swallowtail", "emblem": "crown"}}]})
 	shop.call("_switch", "topper")

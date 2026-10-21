@@ -129,6 +129,36 @@ func preview_effect(category: String) -> void:
 			return
 
 
+## Shop preview: the camera shot that suits each category (CameraRig.frame).
+const PREVIEW_SHOTS := {
+	"arena": "wide", "board": "wide", "ambience": "sky", "territory": "half", "glow": "half",
+	"chip": "close", "shape": "close", "icons": "close", "aura": "close", "topper": "toppers",
+	"trail": "half", "kill": "half", "taunt": "half",
+}
+
+
+## Shop preview: the player's look with one item swapped in (nothing is equipped or saved) and a
+## camera shot that suits it. end_preview() puts everything back.
+func preview_item(category: String, slug: String) -> void:
+	var look := Loadout.complete(Loadout.items)
+	if category == "topper":
+		var slots: Array = (look["toppers"]["slots"] as Array).filter(func(s: Dictionary) -> bool: return s["slug"] != slug)
+		var slot := {"kind": ToppersLibrary.kind_of(slug), "slug": slug}
+		if slot["kind"] == "flag":
+			slot["flag"] = FlagFactory.DEFAULT_DESIGN.duplicate()
+		slots.push_front(slot)
+		look["toppers"] = {"slots": slots.slice(0, ToppersLibrary.MAX_SLOTS)}
+	elif look.has(category):
+		look[category] = slug
+	set_showcase(look)
+	rig.frame(PREVIEW_SHOTS.get(category, "half"))
+
+
+func end_preview() -> void:
+	set_showcase({})
+	rig.attract = true
+
+
 ## Throws a taunt from `from_side` at the other half of the board (shop preview or in-match).
 func throw_taunt(from_side: String, slug: String) -> void:
 	TauntFX.throw(board, from_side, slug)

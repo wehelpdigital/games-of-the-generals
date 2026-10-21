@@ -6,9 +6,14 @@ extends Screen
 ##
 ## Toppers get a slot bar (three spots beside your half of the board) and flags open FlagEditor.
 ## "More" links to things sold elsewhere: shoutouts and guild charters.
+##
+## Every card has Preview: the panel steps aside and the board shows that item on your side (not
+## equipped) with a camera shot that suits it, under a floating bar to page through the category,
+## search every item, buy or equip, and go back to the same spot in the shop.
 
 const EXTRAS := "extras"
 
+var _frame: Control  # Holds the panel and the preview bar; scaled up on phones (ProfileUi.fit).
 var _panel: PanelContainer
 var _category := "arena"
 var _tabs: Dictionary = {}
@@ -23,11 +28,24 @@ var _selected_slot := -1
 var _editor: FlagEditor
 var _editing_slot := -1
 var _buying := false
+# Preview mode.
+var _preview_bar: PanelContainer
+var _preview_slug := ""
+var _preview_from := ""  # The category the shop was showing when Preview was pressed.
+var _bar_head: BoxContainer
+var _preview_title: Label
+var _preview_badges: HBoxContainer
+var _preview_actions: HBoxContainer
+var _search: LineEdit
+var _results: HFlowContainer
 
 
 func _ready() -> void:
+	_frame = Control.new()
+	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_frame)
 	_panel = AppTheme.card()
-	add_child(_panel)
+	_frame.add_child(_panel)
 	var box := AppTheme.vbox(10)
 	_panel.add_child(box)
 
@@ -76,8 +94,11 @@ func _ready() -> void:
 	footer.add_child(AppTheme.button("Back", "Ghost", func() -> void: ui.home(), 48))
 	box.add_child(footer)
 
+	_build_preview_bar()
 	get_viewport().size_changed.connect(_layout)
-	Loadout.changed.connect(func(_category: String, _slug: String) -> void: _refresh())
+	Loadout.changed.connect(func(_category: String, _slug: String) -> void:
+		_refresh()
+		_update_preview_actions())
 	Loadout.shop_updated.connect(_on_shop_updated)
 	ApiManager.user_updated.connect(func(_user: Dictionary) -> void: _update_header())
 
@@ -96,12 +117,18 @@ func open(_args: Dictionary) -> void:
 
 func close() -> void:
 	_close_editor()
+	if _preview_bar.visible:
+		_preview_bar.visible = false
+		_panel.visible = true
+		ui.game.set_showcase({})
 	ui.game.show_attract()
 
 
-## Landscape: a column on the left, board visible on the right. Portrait: the lower half.
+## Landscape: a column on the left, board visible on the right. Portrait: the lower half, with
+## the whole shop scaled up so it reads on a phone.
 func _layout() -> void:
-	var view := get_viewport().get_visible_rect().size
+	ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)
+	var view := _frame.size
 	if view.x >= view.y:
 		_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE, Control.PRESET_MODE_MINSIZE, 14)
 		_panel.offset_right = _panel.offset_left + minf(560.0, view.x * 0.46)
@@ -110,6 +137,7 @@ func _layout() -> void:
 		_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 10)
 		_panel.offset_top = -view.y * 0.58
 		_tab_grid.columns = 3 if view.x < 520.0 else 4
+	_layout_preview()
 
 
 func _update_header() -> void:
@@ -128,6 +156,7 @@ func _update_header() -> void:
 func _on_shop_updated() -> void:
 	_update_header()
 	_refresh()
+	_update_preview_actions()
 
 
 func _switch(category: String) -> void:
@@ -208,6 +237,9 @@ func _card(slug: String, item: Dictionary) -> PanelContainer:
 		var desc := AppTheme.label(str(item["desc"]), "MutedLabel", 13)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		box.add_child(desc)
+	var preview := AppTheme.button("Preview", "Ghost", _open_preview.bind(_category, slug), 36)
+	preview.add_theme_font_size_override("font_size", 15)
+	box.add_child(preview)
 	var action := _action(slug, item, owned, equipped)
 	action.add_theme_font_size_override("font_size", 17)
 	box.add_child(action)
@@ -439,6 +471,194 @@ func _open_extra(screen_name: String) -> void:
 		ui.require_login(screen_name)
 	else:
 		ui.toast("Coming soon!", AppTheme.PURPLE)
+
+
+# --- Preview mode --------------------------------------------------------------------------------
+
+func _build_preview_bar() -> void:
+	_preview_bar = AppTheme.card()
+	_preview_bar.visible = false
+	_frame.add_child(_preview_bar)
+	var box := AppTheme.vbox(8)
+	_preview_bar.add_child(box)
+
+	_bar_head = BoxContainer.new()
+	_bar_head.add_theme_constant_override("separation", 8)
+	box.add_child(_bar_head)
+	var nav := AppTheme.hbox(8)
+	nav.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nav.add_child(AppTheme.button("<", "Ghost", _step_preview.bind(-1), 44))
+	var info := AppTheme.vbox(2)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_preview_title = AppTheme.label("", "", 22)
+	_preview_title.add_theme_font_override("font", AppTheme.heading_font())
+	_preview_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	info.add_child(_preview_title)
+	_preview_badges = AppTheme.hbox(4)
+	info.add_child(_preview_badges)
+	nav.add_child(info)
+	nav.add_child(AppTheme.button(">", "Ghost", _step_preview.bind(1), 44))
+	_bar_head.add_child(nav)
+	_preview_actions = AppTheme.hbox(6)
+	_bar_head.add_child(_preview_actions)
+
+	_search = AppTheme.field("Search every item: orbs, lava, dragon, snow...")
+	_search.custom_minimum_size.y = 42
+	_search.clear_button_enabled = true
+	_search.text_changed.connect(func(_text: String) -> void: _fill_results())
+	box.add_child(_search)
+	var scroll := ScrollContainer.new()
+	scroll.name = "Results"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_results = HFlowContainer.new()
+	_results.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_results.add_theme_constant_override("h_separation", 6)
+	_results.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(_results)
+	box.add_child(scroll)
+
+
+## Landscape: a bar across the top, the board fills the rest. Portrait: the lower part.
+func _layout_preview() -> void:
+	if _preview_bar == null:
+		return
+	var view := _frame.size
+	var portrait := view.y > view.x
+	_bar_head.vertical = portrait or view.x < 900.0
+	if portrait:
+		_preview_bar.custom_minimum_size.x = 0.0
+		_preview_bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 10)
+		_preview_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	else:
+		_preview_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 12)
+		_preview_bar.custom_minimum_size.x = minf(view.x - 24.0, 1040.0)
+		_preview_bar.offset_left = -_preview_bar.custom_minimum_size.x / 2.0
+		_preview_bar.offset_right = _preview_bar.custom_minimum_size.x / 2.0
+		_preview_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+
+
+func _open_preview(category: String, slug: String) -> void:
+	_close_editor()
+	if _preview_from == "":
+		_preview_from = _category
+	_category = category
+	_preview_slug = slug
+	_panel.visible = false
+	_preview_bar.visible = true
+	_layout_preview()
+	_show_preview_item()
+	_fill_results()
+	AppTheme.pop_in(_preview_bar)
+
+
+func _close_preview() -> void:
+	if not _preview_bar.visible:
+		return
+	_preview_bar.visible = false
+	_panel.visible = true
+	ui.game.end_preview()
+	var back_to := _category
+	_preview_from = ""
+	_preview_slug = ""
+	# Same category: the shop is untouched, scroll position and all. Another one: open its tab.
+	if _tabs.has(back_to) and not (_tabs[back_to] as Button).theme_type_variation == "AccentButton":
+		_switch(back_to)
+
+
+func _show_preview_item() -> void:
+	var item := CosmeticCatalog.info(_category, _preview_slug)
+	_preview_title.text = str(item.get("name", _preview_slug.capitalize()))
+	for child in _preview_badges.get_children():
+		child.queue_free()
+	var rarity := str(item.get("rarity", "common"))
+	_preview_badges.add_child(AppTheme.pill(CosmeticCatalog.label(_category).to_upper(), AppTheme.INK, Color.WHITE, 13))
+	_preview_badges.add_child(AppTheme.pill(rarity.to_upper(), _rarity_color(rarity), Color.WHITE, 13))
+	if item.has("desc"):
+		_preview_title.tooltip_text = str(item["desc"])
+	_update_preview_actions()
+	ui.game.preview_item(_category, _preview_slug)
+	_play_preview_effect()
+	_mark_results()
+
+
+func _update_preview_actions() -> void:
+	if _preview_bar == null or not _preview_bar.visible or _preview_slug == "":
+		return
+	for child in _preview_actions.get_children():
+		child.queue_free()
+	var item := CosmeticCatalog.info(_category, _preview_slug)
+	var owned := Loadout.owns(_category, _preview_slug)
+	var equipped := _category not in ["taunt", "topper"] and Loadout.get_item(_category) == _preview_slug
+	var action := _action(_preview_slug, item, owned, equipped)
+	action.add_theme_font_size_override("font_size", 17)
+	_preview_actions.add_child(action)
+	if _category in ["trail", "kill", "taunt"]:
+		_preview_actions.add_child(AppTheme.button("Replay", "Accent", _play_preview_effect, 42))
+	_preview_actions.add_child(AppTheme.button("Back to shop", "Ghost", _close_preview, 42))
+
+
+## Effects that only show during play get a demo: a move (trail), a knockout (kill), a throw (taunt).
+func _play_preview_effect() -> void:
+	var slug := _preview_slug
+	match _category:
+		"trail", "kill":
+			await get_tree().create_timer(0.35).timeout
+			if _preview_bar.visible and _preview_slug == slug:
+				ui.game.preview_effect(_category)
+		"taunt":
+			ui.game.throw_taunt(Ranks.BLACK, slug)
+
+
+func _step_preview(direction: int) -> void:
+	var all := CosmeticCatalog.slugs(_category)
+	if all.is_empty():
+		return
+	var index := all.find(_preview_slug)
+	_preview_slug = all[posmod(index + direction, all.size())]
+	_show_preview_item()
+
+
+## Search results: every item whose name or category matches; with no search, this category.
+func _fill_results() -> void:
+	for child in _results.get_children():
+		child.queue_free()
+	var query := _search.text.strip_edges().to_lower()
+	# One row of this category's items while browsing; more room once you search.
+	(_results.get_parent() as Control).custom_minimum_size.y = 80.0 if query != "" else 40.0
+	var found := 0
+	for entry: Dictionary in CosmeticCatalog.CATEGORIES:
+		var category: String = entry["key"]
+		if query == "" and category != _category:
+			continue
+		var label := str(entry["label"])
+		for slug: String in CosmeticCatalog.slugs(category):
+			var name_text := str(CosmeticCatalog.info(category, slug).get("name", slug))
+			if query != "" and not (name_text.to_lower().contains(query) or label.to_lower().contains(query)):
+				continue
+			var text := name_text if query == "" else "%s · %s" % [name_text, label]
+			var b := AppTheme.button(text, "Ghost", _open_preview.bind(category, slug), 34)
+			b.add_theme_font_size_override("font_size", 14)
+			b.set_meta("item", "%s/%s" % [category, slug])
+			_results.add_child(b)
+			found += 1
+			if found >= 60:
+				return
+	if found == 0:
+		_results.add_child(AppTheme.label("Nothing matches \"%s\"." % _search.text.strip_edges(), "MutedLabel", 15))
+	_mark_results()
+
+
+func _mark_results() -> void:
+	var current := "%s/%s" % [_category, _preview_slug]
+	for child in _results.get_children():
+		if child is Button:
+			(child as Button).theme_type_variation = "AccentButton" if child.get_meta("item", "") == current else "GhostButton"
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _preview_bar != null and _preview_bar.visible and event.is_action_pressed("ui_cancel"):
+		_close_preview()
+		get_viewport().set_input_as_handled()
 
 
 # --- Footer --------------------------------------------------------------------------------------

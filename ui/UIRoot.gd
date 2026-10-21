@@ -28,6 +28,8 @@ var _settings := ConfigFile.new()
 
 
 func _ready() -> void:
+	UiScale.apply(get_tree())  # Before building screens, so they lay out at the final UI size.
+	get_tree().root.size_changed.connect(func() -> void: UiScale.apply(get_tree()))
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE

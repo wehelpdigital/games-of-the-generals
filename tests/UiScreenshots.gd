@@ -74,6 +74,10 @@ func _lobby_shot(ui: UIRoot) -> void:
 
 func _shot(file: String, wait := 0.6) -> void:
 	await get_tree().create_timer(wait).timeout
+	if "--audit" in OS.get_cmdline_user_args():
+		LayoutAudit.report(get_tree().root, file)
+	wait = 0.0
+	await get_tree().create_timer(wait).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("%s/%s.png" % [_out, file])
 	print("saved ", file)

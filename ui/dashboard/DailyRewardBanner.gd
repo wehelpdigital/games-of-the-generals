@@ -33,6 +33,9 @@ func _init() -> void:
 	_text = AppTheme.label("", "", 17)
 	_text.add_theme_font_override("font", AppTheme.heading_font())
 	_text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # Wraps on phones instead of widening the card.
+	_text.custom_minimum_size.x = 140
 	_row.add_child(_text)
 	_button = ProfileUi.colored_button("Claim", AppTheme.PINK, Color.WHITE, _open_popup, 40)
 	_button.add_theme_font_size_override("font_size", 17)
@@ -45,6 +48,8 @@ func _init() -> void:
 
 func setup(dashboard: Screen) -> void:
 	_ui = dashboard.ui
+	if UiScale.narrow(dashboard):
+		size_flags_horizontal = Control.SIZE_FILL  # Phones: full width, the text wraps.
 	Economy.daily_changed.connect(_render)
 
 

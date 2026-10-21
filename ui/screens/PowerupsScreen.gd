@@ -42,7 +42,7 @@ func open(_args: Dictionary) -> void:
 func _layout() -> void:
 	_portrait = ProfileUi.fit_page(_page, get_viewport().get_visible_rect().size)
 	if _grid:
-		_grid.columns = 2 if _portrait else 3
+		_grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
 	if _slots_row:
 		_slots_row.columns = 2 if _portrait else PowerupLibrary.MAX_SLOTS
 
@@ -77,7 +77,7 @@ func _render() -> void:
 	_fill_slots()
 
 	_grid = GridContainer.new()
-	_grid.columns = 2 if _portrait else 3
+	_grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
 	_grid.add_theme_constant_override("h_separation", 10)
 	_grid.add_theme_constant_override("v_separation", 10)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -158,6 +158,36 @@ static func centered(child: Control, max_width := 520.0) -> Control:
 	return scroll
 
 
+## A card centred on a scrolling page with a margin. Phones get a slimmer margin and padding so
+## the card can use nearly the full width.
+static func page_scroll(owner: Control, card: Control, max_width: float) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var center := CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var margin := MarginContainer.new()
+	margin.add_child(card)
+	center.add_child(margin)
+	scroll.add_child(center)
+	var fit := func() -> void:
+		var narrow := UiScale.narrow(owner)
+		var gap := 8 if narrow else 16
+		for side: String in ["left", "right", "top", "bottom"]:
+			margin.add_theme_constant_override("margin_" + side, gap)
+		if narrow and not card.has_meta("compact"):
+			var style := card.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+			if style:
+				style.set_content_margin_all(14)
+				card.add_theme_stylebox_override("panel", style)
+			card.set_meta("compact", true)
+		card.custom_minimum_size.x = minf(max_width, owner.get_viewport_rect().size.x - gap * 2.0)
+	owner.resized.connect(fit)
+	fit.call_deferred()
+	return scroll
+
+
 static func _fit_width(scroll: Control, child: Control, max_width: float) -> void:
 	child.custom_minimum_size.x = minf(max_width, scroll.size.x - 32.0)
 

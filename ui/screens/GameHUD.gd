@@ -19,6 +19,7 @@ var _top: HBoxContainer
 var _center: VBoxContainer
 var _portrait := false
 var _clips_button: Button
+var _menu_button: Button
 var _taunt_button: Button
 var _taunt_menu: VBoxContainer
 var _last_info: Dictionary = {}  # The finished match's game-over info (result card and recap).
@@ -33,7 +34,8 @@ func _ready() -> void:
 	top.offset_left = 12
 	top.offset_right = -12
 	add_child(top)
-	top.add_child(AppTheme.button("Menu", "Ghost", _ask_leave, 46))
+	_menu_button = AppTheme.button("Menu", "Ghost", _ask_leave, 46)
+	top.add_child(_menu_button)
 	_clips_button = AppTheme.button("Clips: ON", "Ghost", _toggle_clips, 46)
 	top.add_child(_clips_button)
 	_you = AppTheme.pill("You", AppTheme.BLUE)
@@ -195,8 +197,9 @@ func _layout() -> void:
 		var label := pill.get_child(0) as Label
 		label.clip_text = _portrait or short
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if _portrait or short else TextServer.OVERRUN_NO_TRIMMING
-		label.custom_minimum_size.x = 84.0 if _portrait else (120.0 if short else 0.0)
-		pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		label.custom_minimum_size.x = 64.0 if _portrait else (120.0 if short else 0.0)
+		pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _portrait else Control.SIZE_SHRINK_BEGIN
+	_menu_button.add_theme_font_size_override("font_size", 20 if _portrait else 24)
 	for b: Control in [_taunt_button, _resign] + _setup_row.get_children():
 		b.custom_minimum_size.y = 44.0 if short else 0.0
 	_center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 74 if _portrait else 12)

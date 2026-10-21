@@ -107,6 +107,12 @@ static func text_size_multiplier() -> float:
 	return TEXT_SIZES[text_size()]
 
 
+## True when `node`'s screen is phone-narrow (in UI pixels): rows should stack, wrap or drop
+## secondary columns.
+static func narrow(node: Node) -> bool:
+	return node.is_inside_tree() and node.get_viewport().get_visible_rect().size.x < 520.0
+
+
 static func is_phone() -> bool:
 	return kind == "phone"
 

@@ -145,6 +145,9 @@ func _build_header() -> void:
 	_insignia.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	rank_row.add_child(_insignia)
 	_rank_label = AppTheme.label("", "MutedLabel", 16)
+	_rank_label.clip_text = true  # Rank and title can be long; the header must fit a phone.
+	_rank_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_rank_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rank_row.add_child(_rank_label)
 	_names.add_child(rank_row)
 

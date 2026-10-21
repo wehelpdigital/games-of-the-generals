@@ -32,6 +32,11 @@ func _init() -> void:
 
 
 func setup(dashboard: Screen) -> void:
+	if UiScale.narrow(dashboard):  # Phones: slimmer padding so the rows keep their text.
+		var style := get_theme_stylebox("panel", "CardPanel").duplicate() as StyleBoxFlat
+		if style:
+			style.set_content_margin_all(12)
+			add_theme_stylebox_override("panel", style)
 	_ui = dashboard.ui
 	Economy.missions_changed.connect(_render)
 	_render()
@@ -104,7 +109,7 @@ func _row(mission: Dictionary, rerolls: int) -> PanelContainer:
 
 	var side := AppTheme.vbox(4)
 	side.alignment = BoxContainer.ALIGNMENT_CENTER
-	side.custom_minimum_size.x = 96
+	side.custom_minimum_size.x = 80 if ProfileUi.narrow else 96
 	var reward := AppTheme.hbox(4)
 	reward.alignment = BoxContainer.ALIGNMENT_CENTER
 	reward.add_child(CoinIcon.new(18))

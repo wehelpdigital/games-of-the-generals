@@ -64,7 +64,7 @@ func _render() -> void:
 	_body.add_child(_title_card(board))
 
 	var grid := GridContainer.new()
-	grid.columns = 2 if _portrait else 3
+	grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	var items: Array = board.get("data", []).duplicate()
@@ -79,7 +79,7 @@ func _render() -> void:
 
 func _title_card(board: Dictionary) -> PanelContainer:
 	var card := AppTheme.card("Row")
-	var row := AppTheme.hbox(12)
+	var row := ProfileUi.flex(12)  # Phones: the title picker goes under the explanation.
 	card.add_child(row)
 	row.add_child(EconomyUi.emoji("1f396", 40))
 	var text := AppTheme.vbox(2)

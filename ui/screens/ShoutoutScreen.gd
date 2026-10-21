@@ -80,12 +80,18 @@ func _ready() -> void:
 	_grid.add_theme_constant_override("v_separation", 8)
 	box.add_child(_grid)
 
-	var actions := AppTheme.hbox(12)
+	var actions := BoxContainer.new()
+	actions.vertical = UiScale.narrow(self)  # Phones: Send above Back, both full width.
+	actions.add_theme_constant_override("separation", 12)
 	var back := AppTheme.button("Back", "Ghost", _go_back, 56)
 	_send = AppTheme.button("Send Shoutout", "Primary", _confirm_send, 56)
 	_send.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(back)
-	actions.add_child(_send)
+	if actions.vertical:
+		actions.add_child(_send)
+		actions.add_child(back)
+	else:
+		actions.add_child(back)
+		actions.add_child(_send)
 	box.add_child(actions)
 
 	add_child(_page(_card, 760))
@@ -259,22 +265,7 @@ func _send_now() -> void:
 
 ## The card centred on screen; it scrolls when taller than the screen (phones, short windows).
 func _page(card: Control, max_width: float) -> ScrollContainer:
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var center := CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var margin := MarginContainer.new()
-	for side: String in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
-	margin.add_child(card)
-	center.add_child(margin)
-	scroll.add_child(center)
-	var fit := func() -> void: card.custom_minimum_size.x = minf(max_width, get_viewport_rect().size.x - 32.0)
-	resized.connect(fit)
-	fit.call_deferred()
-	return scroll
+	return AppTheme.page_scroll(self, card, max_width)
 
 
 func _go_back() -> void:

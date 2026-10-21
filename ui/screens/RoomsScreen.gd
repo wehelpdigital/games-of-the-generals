@@ -24,9 +24,12 @@ func _ready() -> void:
 	var box := AppTheme.vbox(14)
 	_card.add_child(box)
 
-	var header := AppTheme.hbox(10)
-	header.add_child(AppTheme.label("Custom Rooms", "HeadingLabel"))
-	header.add_child(AppTheme.spacer())
+	var header := HFlowContainer.new()  # Title and live pill; the pill wraps under on phones.
+	header.add_theme_constant_override("h_separation", 10)
+	header.add_theme_constant_override("v_separation", 6)
+	var heading := AppTheme.label("Custom Rooms", "HeadingLabel")
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(heading)
 	_live = AppTheme.pill("CONNECTING", AppTheme.MUTED)
 	_live.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(_live)
@@ -38,7 +41,9 @@ func _ready() -> void:
 	_name = AppTheme.field("Room name (e.g. Friday Night Generals)")
 	_name.max_length = 40
 	host_box.add_child(_name)
-	var host_row := AppTheme.hbox(10)
+	var host_row := BoxContainer.new()
+	host_row.vertical = UiScale.narrow(self)  # Phones: the Host button goes under the password.
+	host_row.add_theme_constant_override("separation", 10)
 	_password = AppTheme.field("Password (optional)", true)
 	_password.max_length = 40
 	_password.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -132,7 +137,7 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	var line := AppTheme.hbox(12)
 	row.add_child(line)
 	var host: Dictionary = room.get("host") if room.get("host") is Dictionary else {}
-	var avatar := AvatarView.new(46.0)
+	var avatar := AvatarView.new(36.0 if UiScale.narrow(self) else 46.0)
 	avatar.set_user(host)
 	line.add_child(avatar)
 	var info := AppTheme.vbox(0)
@@ -152,16 +157,22 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	sub.clip_text = true
 	info.add_child(sub)
 	line.add_child(info)
-	line.add_child(GameOptions.mode_pill(str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT))))
+	var rules := GameOptions.mode_pill(str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT)))
+	if UiScale.narrow(self):
+		rules.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		info.add_child(rules)  # Phones: the rules sit under the room's name.
+	else:
+		line.add_child(rules)
 	if room.get("has_password", false):
 		var lock := _icon("lock", 28.0)
 		lock.tooltip_text = "Password required"
 		lock.mouse_filter = Control.MOUSE_FILTER_PASS
 		line.add_child(lock)
-	if room.get("is_yours", false):
-		line.add_child(AppTheme.button("Open", "Accent", _open_own.bind(int(room.get("id", 0))), 46))
-	else:
-		line.add_child(AppTheme.button("Join", "Success", join_room.bind(room), 46))
+	var action := AppTheme.button("Open", "Accent", _open_own.bind(int(room.get("id", 0))), 46) if room.get("is_yours", false) 		else AppTheme.button("Join", "Success", join_room.bind(room), 46)
+	if UiScale.narrow(self):
+		action.add_theme_font_size_override("font_size", 19)
+	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(action)
 	return row
 
 
@@ -264,22 +275,7 @@ func _resume(id: int) -> void:
 
 ## The card centred on screen; it scrolls when taller than the screen (phones, short windows).
 func _page(card: Control, max_width: float) -> ScrollContainer:
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var center := CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var margin := MarginContainer.new()
-	for side: String in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
-	margin.add_child(card)
-	center.add_child(margin)
-	scroll.add_child(center)
-	var fit := func() -> void: card.custom_minimum_size.x = minf(max_width, get_viewport_rect().size.x - 32.0)
-	resized.connect(fit)
-	fit.call_deferred()
-	return scroll
+	return AppTheme.page_scroll(self, card, max_width)
 
 
 func _go_back() -> void:

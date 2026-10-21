@@ -272,22 +272,7 @@ func _after_open(res: Dictionary) -> void:
 
 ## The card centred on screen; it scrolls when taller than the screen (phones, short windows).
 func _page(card: Control, max_width: float) -> ScrollContainer:
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var center := CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var margin := MarginContainer.new()
-	for side: String in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 16)
-	margin.add_child(card)
-	center.add_child(margin)
-	scroll.add_child(center)
-	var fit := func() -> void: card.custom_minimum_size.x = minf(max_width, get_viewport_rect().size.x - 32.0)
-	resized.connect(fit)
-	fit.call_deferred()
-	return scroll
+	return AppTheme.page_scroll(self, card, max_width)
 
 
 func _go_back() -> void:

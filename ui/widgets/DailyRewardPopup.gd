@@ -29,7 +29,7 @@ static func open(ui: UIRoot) -> void:
 	var portrait := ui.get_viewport().get_visible_rect().size.y > ui.get_viewport().get_visible_rect().size.x
 	var grid := GridContainer.new()
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.columns = 4 if portrait else 7
+	grid.columns = (3 if UiScale.narrow(ui) else 4) if portrait else 7
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 8)
 	var today_card: Control = null
@@ -65,7 +65,7 @@ static func _day_card(day: Dictionary) -> PanelContainer:
 	if today:
 		style.border_width_bottom = 6
 	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(78, 112)
+	panel.custom_minimum_size = Vector2(70, 104)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column := AppTheme.vbox(4)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER

@@ -212,6 +212,10 @@ func _widget(hud: Screen, path: String) -> Control:
 
 func _shot(file: String, wait := 0.6) -> void:
 	await get_tree().create_timer(wait).timeout
+	if "--audit" in OS.get_cmdline_user_args():
+		LayoutAudit.report(get_tree().root, file)
+	wait = 0.0
+	await get_tree().create_timer(wait).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("%s/%s%s.png" % [_out, _prefix, file])
 	print("saved ", _prefix, file)

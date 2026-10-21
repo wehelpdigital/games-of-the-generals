@@ -34,6 +34,8 @@ func _on_resize() -> void:
 
 func _layout() -> void:
 	_portrait = ProfileUi.fit_page(_page, get_viewport().get_visible_rect().size)
+	if not _portrait and (_page["frame"] as Control).size.x < 1100.0:
+		_portrait = true  # Re-render as a narrower grid on landscape phones and tablets.
 
 
 func _back() -> void:
@@ -64,7 +66,9 @@ func _render() -> void:
 	_body.add_child(_title_card(board))
 
 	var grid := GridContainer.new()
-	grid.columns = 1 if ProfileUi.narrow else (2 if _portrait else 3)
+	# As many ~300 px badge cards as fit across the page (1 on phones, up to 3 on wide screens).
+	var room := (_page["frame"] as Control).size.x - 80.0
+	grid.columns = clampi(int(room / 310.0), 1, 3)
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	var items: Array = board.get("data", []).duplicate()

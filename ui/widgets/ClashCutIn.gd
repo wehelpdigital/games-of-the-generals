@@ -11,7 +11,9 @@ extends Control
 
 signal finished
 
-const BADGE := 196.0
+const BADGE_MAX := 196.0
+
+var BADGE := BADGE_MAX  # Badge size for this clip: smaller on phone-width screens.
 const TEAM_COLORS := {Ranks.WHITE: AppTheme.BLUE, Ranks.BLACK: AppTheme.PINK}
 
 var _shade: ColorRect
@@ -76,6 +78,7 @@ func play(data: Dictionary) -> void:
 	visible = true
 	_clear_stage()
 	var view := get_viewport_rect().size
+	BADGE = minf(BADGE_MAX, view.x * 0.38)
 	var center := view * 0.5
 	var viewer: String = data.get("viewer", Ranks.WHITE)
 	var reveal: bool = data.get("reveal", false)
@@ -89,13 +92,13 @@ func play(data: Dictionary) -> void:
 	_right = _fighter(defender, def_rank, viewer)
 	_stage.add_child(_left)
 	_stage.add_child(_right)
-	var gap := minf(view.x * 0.26, 300.0)
+	var gap := minf(maxf(view.x * 0.26, BADGE * 0.62), 300.0)
 	var left_home := Vector2(center.x - gap - BADGE * 0.5, center.y - BADGE * 0.62)
 	var right_home := Vector2(center.x + gap - BADGE * 0.5, center.y - BADGE * 0.62)
 	_left.position = Vector2(-BADGE * 1.5, left_home.y)
 	_right.position = Vector2(view.x + BADGE * 0.5, right_home.y)
 
-	_vs = AppTheme.label("VS", "TitleLabel", 92)
+	_vs = AppTheme.label("VS", "TitleLabel", int(92 * BADGE / BADGE_MAX))
 	_vs.add_theme_color_override("font_color", AppTheme.PINK)
 	_stage.add_child(_vs)
 	_vs.position = center - Vector2(70, 66)
@@ -200,7 +203,7 @@ func _resolve(outcome: String, attacker: Dictionary, defender: Dictionary, viewe
 			_flip_to(fighter, known)
 	for loser in losers:
 		var badge: TextureRect = loser.get_node("Badge")
-		var x := AppTheme.label("X", "TitleLabel", 150)
+		var x := AppTheme.label("X", "TitleLabel", int(150 * BADGE / BADGE_MAX))
 		x.add_theme_color_override("font_color", AppTheme.RED)
 		x.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		x.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -223,9 +226,10 @@ func _resolve(outcome: String, attacker: Dictionary, defender: Dictionary, viewe
 		t.tween_property(badge, "scale", Vector2.ONE * 1.18, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		t.tween_property(badge, "scale", Vector2.ONE, 0.16)
 		# A tilted "WINS!" sticker slapped onto the winner's badge.
-		var wins := AppTheme.pill("WINS!", AppTheme.MINT, Color.WHITE, 30)
+		var k := BADGE / BADGE_MAX
+		var wins := AppTheme.pill("WINS!", AppTheme.MINT, Color.WHITE, int(30 * k))
 		badge.add_child(wins)
-		wins.position = Vector2(BADGE * 0.5 - 62.0, BADGE - 46.0)
+		wins.position = Vector2(BADGE * 0.5 - 62.0 * k, BADGE - 46.0 * k)
 		wins.rotation = deg_to_rad(-8.0)
 		AppTheme.pop_in(wins)
 	# Long captions wrap on narrow (phone) screens instead of running off both edges.

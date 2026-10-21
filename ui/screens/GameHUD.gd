@@ -206,7 +206,8 @@ func _layout() -> void:
 		var label := pill.get_child(0) as Label
 		label.clip_text = _portrait or short
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if _portrait or short else TextServer.OVERRUN_NO_TRIMMING
-		label.custom_minimum_size.x = 64.0 if _portrait else (120.0 if short else 0.0)
+		label.custom_minimum_size.x = 56.0 if _portrait else (120.0 if short else 0.0)
+		label.add_theme_font_size_override("font_size", 15 if _portrait else 18)
 		pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL if _portrait else Control.SIZE_SHRINK_BEGIN
 	_menu_button.add_theme_font_size_override("font_size", 20 if _portrait else 24)
 	for b: Control in [_taunt_button, _resign] + _setup_row.get_children():

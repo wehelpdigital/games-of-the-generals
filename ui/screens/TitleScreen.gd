@@ -81,7 +81,7 @@ func _ready() -> void:
 	ApiManager.auth_changed.connect(func(_logged_in: bool) -> void: _refresh_account())
 	ApiManager.user_updated.connect(func(_user: Dictionary) -> void: _refresh_account())
 	_refresh_account()
-	get_viewport().size_changed.connect(_layout)
+	get_viewport().size_changed.connect(_refresh_account)  # Rebuilds the account chip, then lays out.
 	_layout()
 	_notify_web_loader()
 
@@ -182,8 +182,10 @@ func _refresh_account() -> void:
 	if not guest:
 		var user := ApiManager.user
 		_account.add_child(AppTheme.pill(str(user.get("username", "General")), AppTheme.PURPLE))
-		_account.add_child(AppTheme.pill("ELO %s" % AppTheme.num(user.get("elo", 1200)), AppTheme.BLUE))
-		_account.add_child(AppTheme.pill("%s credits" % AppTheme.num(user.get("credits", 0)), AppTheme.GOLD, AppTheme.INK))
+		var view := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
+		if view.x >= 700.0 and view.y >= 560.0:  # Phones keep just the name, gear and log-out.
+			_account.add_child(AppTheme.pill("ELO %s" % AppTheme.num(user.get("elo", 1200)), AppTheme.BLUE))
+			_account.add_child(AppTheme.pill("%s credits" % AppTheme.num(user.get("credits", 0)), AppTheme.GOLD, AppTheme.INK))
 		_account.add_child(AppTheme.button("Log out", "Ghost", _logout, 44))
 	else:
 		_account.add_child(AppTheme.button("Log in", "Ghost", func() -> void: ui.show_screen("auth", {"next": "title"}), 44))

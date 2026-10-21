@@ -6,6 +6,8 @@ extends Screen
 
 const LOGO_PATH := "res://ui/widgets/GameLogo.gd"
 const LEFT_WIDTH := 410.0
+const WIDE_MIN := 1100.0  ## Below this width the dashboard is one scrolling column.
+const COLUMN_MAX := 680.0
 const SIDE_WIDTH := 330.0
 
 var _theme: Dictionary = DashboardThemes.get_theme("classic")
@@ -366,18 +368,31 @@ func _build_layouts() -> void:
 func _layout() -> void:
 	if not is_inside_tree():
 		return
-	_portrait = ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)
+	var phone_portrait := ProfileUi.fit(_frame, get_viewport().get_visible_rect().size)
+	var view := _frame.size
+	# The three-column layout needs about 1100 px; narrower screens (landscape phones, tablets)
+	# get the single scrolling column too, centred and at most COLUMN_MAX wide.
+	_portrait = phone_portrait or view.x < WIDE_MIN
+	var short := view.y < 560.0  # Landscape phones: the logo is dropped and the header scrolls too.
 	_wide.visible = not _portrait
 	_tall.visible = _portrait
+	var side_margin := maxf(8.0, (view.x - COLUMN_MAX) / 2.0)
+	_tall.add_theme_constant_override("margin_left", int(side_margin))
+	_tall.add_theme_constant_override("margin_right", int(side_margin))
 	_fit_tiles()
 	_arrange_header()
 	if _portrait:
+		_logo_holder.visible = not short
 		_put(_logo_holder, _tall_top, 0)
-		_put(_header, _tall_top, 1)
+		if short:
+			_put(_header, _tall_list, 0)
+		else:
+			_put(_header, _tall_top, 1)
 		for part: Control in [_banners, _play_card, _tiles_card, _main_box, _next_card, _side_box]:
 			_put(part, _tall_list)
 		_side_box.custom_minimum_size.y = 460.0 if _has_side else 0.0
 	else:
+		_logo_holder.visible = true
 		_put(_header, _wide_top, 0)
 		_put(_banners, _wide_top, 1)
 		_put(_play_card, _left_list)

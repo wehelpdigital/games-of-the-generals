@@ -157,7 +157,7 @@ func _room_row(room: Dictionary) -> PanelContainer:
 	sub.clip_text = true
 	info.add_child(sub)
 	line.add_child(info)
-	var rules := GameOptions.mode_pill(str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT)))
+	var rules := GameOptions.mode_pill(str(room.get("powerup_mode", PowerupLibrary.MODE_SELECT)), 13, UiScale.narrow(self))
 	if UiScale.narrow(self):
 		rules.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 		info.add_child(rules)  # Phones: the rules sit under the room's name.

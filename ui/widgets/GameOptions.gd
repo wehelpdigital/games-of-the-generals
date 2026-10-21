@@ -97,13 +97,13 @@ static func ask(ui: UIRoot, opts: Dictionary, on_confirm: Callable) -> void:
 
 
 ## A small pill naming a game's powerup rules (room and lobby lists).
-static func mode_pill(mode: String, size := 13) -> PanelContainer:
+static func mode_pill(mode: String, size := 13, short := false) -> PanelContainer:
 	match mode:
 		PowerupLibrary.MODE_OFF:
 			return AppTheme.pill("NO POWERUPS", AppTheme.MUTED, Color.WHITE, size)
 		PowerupLibrary.MODE_RANDOM:
-			return AppTheme.pill("RANDOM POWERUPS", AppTheme.PINK, Color.WHITE, size)
-	return AppTheme.pill("PICK 5 POWERUPS", AppTheme.PURPLE, Color.WHITE, size)
+			return AppTheme.pill("RANDOM 5" if short else "RANDOM POWERUPS", AppTheme.PINK, Color.WHITE, size)
+	return AppTheme.pill("PICK 5" if short else "PICK 5 POWERUPS", AppTheme.PURPLE, Color.WHITE, size)
 
 
 func _build() -> void:

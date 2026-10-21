@@ -1,7 +1,7 @@
 extends Node
 ## Frames from kill effects: a white piece attacks the black piece in front of it and wins, so the
 ## white side's kill effect plays. Needs a real renderer:
-##   godot --path . --rendering-driver opengl3 --resolution 960x600 res://tests/KillShots.tscn -- --out=<dir> [--only=slug] [--actions]
+##   godot --path . --rendering-driver opengl3 --resolution 960x600 res://tests/KillShots.tscn -- --out=<dir> [--only=slug[,slug...]] [--actions]
 
 var _out := "user://kill_shots"
 var _only := ""
@@ -24,7 +24,7 @@ func _ready() -> void:
 	game.set_showcase(Loadout.complete({}), Loadout.complete({}))
 	var board := game.board
 	for slug: String in CosmeticCatalog.slugs("kill"):
-		if (_only != "" and slug != _only) or (_actions_only and not KillFX.is_action(slug)):
+		if (_only != "" and not (slug in _only.split(","))) or (_actions_only and not KillFX.is_action(slug)):
 			continue
 		board.sync_pieces([
 			{"id": "hero", "side": Ranks.WHITE, "x": 3, "y": 4, "rank": "G5"},
@@ -39,7 +39,7 @@ func _ready() -> void:
 			"clash": {"defender_id": "foe", "outcome": "attacker", "eliminated": ["foe"]}})
 		var impact: float = KillFX.ACTIONS.get(slug, {}).get("impact", 0.0)
 		var times := [0.32 + 0.12, 0.32 + maxf(0.15, impact - 0.08), 0.32 + impact + 0.15, 0.32 + impact + 0.6]
-		if _only != "":
+		if _only != "" and not _only.contains(","):
 			times = [0.42, 0.6, 0.75, 0.9, 1.1, 1.35, 1.6, 1.85]
 		var start := Time.get_ticks_msec() / 1000.0
 		for i in times.size():

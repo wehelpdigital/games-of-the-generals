@@ -5,6 +5,7 @@ extends Node3D
 ## simple meshes, CPUParticles3D and tweens (WebGL 2 safe), and frees itself when done.
 
 const LIFETIME := 1.6
+const WORD_FONT := "res://assets/fonts/LilitaOne-Regular.ttf"
 
 const STYLES := {
 	"classic": {"name": "Comic Burst", "rarity": "common", "desc": "The classic POW! burst.",
@@ -79,6 +80,44 @@ const STYLES := {
 		"swatch": [Color("ffcf3f"), Color("ff2f5f"), Color("ffe3ec")]},
 	"kill_lion_dance": {"name": "Lion Dance", "rarity": "legendary", "season": "lunar_new_year", "desc": "A lion-dance head bounds over, chomps twice and sends the loser flying in a shower of coins.",
 		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("27c98f")]},
+	"kill_wave_crash": {"name": "Wave Crash", "rarity": "legendary", "collection": "great_wave", "desc": "A towering woodblock wave curls in and crashes down on the loser.",
+		"swatch": [Color("2a4a8a"), Color("f4ead2"), Color("3f6aae")]},
+	"kill_katana_draw": {"name": "Katana Draw", "rarity": "epic", "collection": "samurai_ronin", "desc": "One swift draw, one clean cut, and a flurry of red maple leaves.",
+		"swatch": [Color("eef4ff"), Color("c8303a"), Color("ffcf3f")]},
+	"kill_shuriken": {"name": "Shuriken Volley", "rarity": "rare", "collection": "ninja_clan", "desc": "Three throwing stars whistle out of the shadows.",
+		"swatch": [Color("c9d2de"), Color("2a2350"), Color("8b5cf6")]},
+	"kill_glitch_out": {"name": "Glitch Out", "rarity": "epic", "collection": "cyber_neon", "desc": "Scanlines, flicker, then the loser breaks into glowing pixels.",
+		"swatch": [Color("2ef6ff"), Color("ff2bd6"), Color("141a33")]},
+	"kill_rocket_punch": {"name": "Rocket Punch", "rarity": "legendary", "collection": "giant_robots", "desc": "A metal fist blasts off on jet flames. Direct hit!",
+		"swatch": [Color("e8eef8"), Color("2f6bd8"), Color("3a8aff")]},
+	"kill_giant_stomp": {"name": "Giant Stomp", "rarity": "legendary", "collection": "kaiju_attack", "desc": "A huge clawed foot comes down from the sky. STOMP.",
+		"swatch": [Color("5a8a3a"), Color("f4ead2"), Color("7a7a7a")]},
+	"kill_plasma_blade": {"name": "Plasma Blade", "rarity": "epic", "collection": "space_opera", "desc": "A humming blade of light swings once, bright as a star.",
+		"swatch": [Color("9cf6ff"), Color("c9d2de"), Color("2a2d40")]},
+	"kill_laser_disc": {"name": "Laser Disc", "rarity": "rare", "collection": "synthwave", "desc": "A chrome disc with a pink neon rim spins across the board.",
+		"swatch": [Color("e8ecf5"), Color("ff4fa8"), Color("3ad6ff")]},
+	"kill_game_over": {"name": "Game Over", "rarity": "epic", "collection": "arcade_8bit", "desc": "The loser bursts into pixels under a big GAME OVER.",
+		"swatch": [Color("ff4d6d"), Color("ffd23f"), Color("4dffb0")]},
+	"kill_quick_draw": {"name": "Quick Draw", "rarity": "epic", "collection": "wild_west", "desc": "High noon: a revolver, a BANG! and a puff of smoke.",
+		"swatch": [Color("8a94a6"), Color("8a5a2a"), Color("ffcf3f")]},
+	"kill_steam_cannon": {"name": "Steam Cannon", "rarity": "epic", "collection": "steampunk", "desc": "A brass cannon hisses and fires a ball wrapped in steam.",
+		"swatch": [Color("c8743a"), Color("e8b850"), Color("f2ece2")]},
+	"kill_thunder_hammer": {"name": "Thunder Hammer", "rarity": "legendary", "collection": "norse_vikings", "desc": "A rune-marked hammer swings and calls lightning down.",
+		"swatch": [Color("8a909a"), Color("7fd6ff"), Color("8a5a2a")]},
+	"kill_mummy_wrap": {"name": "Mummy Wrap", "rarity": "epic", "collection": "ancient_egypt", "desc": "Bandages spiral up and whisk the loser away in a puff of sand.",
+		"swatch": [Color("f4ead2"), Color("e8c078"), Color("ffcf3f")]},
+	"kill_balete_roots": {"name": "Balete Roots", "rarity": "legendary", "collection": "philippine_myths", "desc": "The ground cracks and old balete roots pull the loser under.",
+		"swatch": [Color("6b5a3a"), Color("5a8a3a"), Color("e8ffa0")]},
+	"kill_ka_boom": {"name": "KA-BOOM!", "rarity": "rare", "collection": "comic_hero", "desc": "A full-page comic explosion with the words to match.",
+		"swatch": [Color("fff36b"), Color("ff5a3a"), Color("1d1736")]},
+	"kill_grave_grab": {"name": "Grave Grab", "rarity": "epic", "collection": "zombie_outbreak", "desc": "Green hands burst from the ground and drag the loser down.",
+		"swatch": [Color("7aa83a"), Color("6a4a3a"), Color("d4ff3a")]},
+	"kill_wand_twinkle": {"name": "Wand Twinkle", "rarity": "rare", "collection": "magical_sparkle", "desc": "A wave of the wand, a twinkling star, and poof: hearts everywhere.",
+		"swatch": [Color("ff8ec0"), Color("ffffff"), Color("b84dff")]},
+	"kill_mic_drop": {"name": "Mic Drop", "rarity": "epic", "collection": "concert_stage", "desc": "The mic drops from the rafters. Confetti. The crowd goes wild.",
+		"swatch": [Color("c9d2de"), Color("1d1736"), Color("ff2bd6")]},
+	"kill_skate_ollie": {"name": "Skate Ollie", "rarity": "rare", "collection": "street_graffiti", "desc": "A flying skateboard and a splash of spray paint.",
+		"swatch": [Color("ff6a1a"), Color("3ad6ff"), Color("4dffb0")]},
 }
 
 ## Action kills: `impact` is when the loser goes down (seconds after the effect starts), `death`
@@ -108,6 +147,25 @@ const ACTIONS := {
 	"kill_firecracker": {"impact": 0.55, "death": "burn"},
 	"kill_cupid_arrow": {"impact": 0.35, "death": "lift"},
 	"kill_lion_dance": {"impact": 0.5, "death": "fly"},
+	"kill_wave_crash": {"impact": 0.55, "death": "sink"},
+	"kill_katana_draw": {"impact": 0.32, "death": "split"},
+	"kill_shuriken": {"impact": 0.45, "death": "fly"},
+	"kill_glitch_out": {"impact": 0.3, "death": "vanish"},
+	"kill_rocket_punch": {"impact": 0.45, "death": "fly"},
+	"kill_giant_stomp": {"impact": 0.5, "death": "squash"},
+	"kill_plasma_blade": {"impact": 0.32, "death": "split"},
+	"kill_laser_disc": {"impact": 0.45, "death": "fly"},
+	"kill_game_over": {"impact": 0.22, "death": "vanish"},
+	"kill_quick_draw": {"impact": 0.4, "death": "fly"},
+	"kill_steam_cannon": {"impact": 0.5, "death": "burn"},
+	"kill_thunder_hammer": {"impact": 0.55, "death": "burn"},
+	"kill_mummy_wrap": {"impact": 0.6, "death": "vanish"},
+	"kill_balete_roots": {"impact": 0.55, "death": "sink"},
+	"kill_ka_boom": {"impact": 0.25, "death": "burn"},
+	"kill_grave_grab": {"impact": 0.5, "death": "sink"},
+	"kill_wand_twinkle": {"impact": 0.45, "death": "vanish"},
+	"kill_mic_drop": {"impact": 0.5, "death": "squash"},
+	"kill_skate_ollie": {"impact": 0.4, "death": "fly"},
 }
 const ACTION_LIFETIME := 1.8
 const PROP_SCALE := 1.7  ## Action props are drawn bigger than life so they read from the play camera.
@@ -420,6 +478,44 @@ func _act(style: String) -> void:
 			_cupid_arrow()
 		"kill_lion_dance":
 			_lion_dance()
+		"kill_wave_crash":
+			_wave_crash()
+		"kill_katana_draw":
+			_katana_draw()
+		"kill_shuriken":
+			_shuriken()
+		"kill_glitch_out":
+			_glitch_out()
+		"kill_rocket_punch":
+			_rocket_punch()
+		"kill_giant_stomp":
+			_giant_stomp()
+		"kill_plasma_blade":
+			_plasma_blade()
+		"kill_laser_disc":
+			_laser_disc()
+		"kill_game_over":
+			_game_over()
+		"kill_quick_draw":
+			_quick_draw()
+		"kill_steam_cannon":
+			_steam_cannon()
+		"kill_thunder_hammer":
+			_thunder_hammer()
+		"kill_mummy_wrap":
+			_mummy_wrap()
+		"kill_balete_roots":
+			_balete_roots()
+		"kill_ka_boom":
+			_ka_boom()
+		"kill_grave_grab":
+			_grave_grab()
+		"kill_wand_twinkle":
+			_wand_twinkle()
+		"kill_mic_drop":
+			_mic_drop()
+		"kill_skate_ollie":
+			_skate_ollie()
 
 
 func _bazooka() -> void:
@@ -1186,6 +1282,461 @@ func _lion_dance() -> void:
 # --- Action building blocks ---------------------------------------------------------------------
 
 ## Horizontal unit vector from the winner toward the loser.
+# --- Themed collections ------------------------------------------------------------------------
+
+func _wave_crash() -> void:
+	# A curling woodblock wave rolls in from the winner's side and crashes down on the loser.
+	var hook := [Vector3(0, 0.08, 0.42), Vector3(0, 0.26, 0.3), Vector3(0, 0.45, 0.15), Vector3(0, 0.6, -0.02),
+		Vector3(0, 0.64, -0.2), Vector3(0, 0.54, -0.34), Vector3(0, 0.38, -0.4)]
+	var radii := [0.17, 0.16, 0.15, 0.13, 0.11, 0.09, 0.07]
+	var parts := []
+	for i in hook.size():
+		parts.append(PropKit.pt("2a4a8a" if i % 2 == 0 else "3f6aae", ShapeKit.capsule(radii[i], 0.8, 12), hook[i], Vector3(0, 0, PI / 2.0)))
+	for i in range(3, hook.size()):
+		parts.append(PropKit.pt("f4ead2", ShapeKit.capsule(radii[i] * 0.55, 0.86, 10), hook[i] + Vector3(0, radii[i] * 0.85, 0.0), Vector3(0, 0, PI / 2.0), 0.0))
+	var wave := PropKit.model("wave_crash", parts)
+	add_child(wave)
+	var aim := Basis.looking_at(_toward(), Vector3.UP)
+	wave.position = _src * 0.8 + Vector3(0.0, -0.3, 0.0)
+	wave.basis = aim.scaled(Vector3.ONE * 0.3)
+	var t := create_tween().set_parallel(true)
+	t.tween_property(wave, "position", Vector3(0.0, -0.3, 0.0) - _toward() * 0.25, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_method(_scale_basis.bind(wave, aim), 0.3 / PROP_SCALE, 1.3 / PROP_SCALE, 0.5)
+	var ground := Vector3(0.0, -position.y + 0.035, 0.0)
+	_after(0.55, func() -> void:
+		var drop := create_tween().set_parallel(true)
+		drop.tween_property(wave, "scale", Vector3(1.6, 0.05, 1.6), 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		drop.tween_callback(wave.queue_free).set_delay(0.2)
+		var water := _water_disc()
+		water.position = ground
+		water.scale = Vector3(0.05, 1.0, 0.05)
+		var wt := create_tween()
+		wt.tween_property(water, "scale", Vector3(1.3, 1.0, 1.3), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		wt.tween_interval(0.6)
+		wt.tween_property(water, "scale", Vector3(0.01, 1.0, 0.01), 0.25)
+		var splash := _burst("dot", false, 30, 0.8, 0.14, [Color("ffffff"), Color("f4ead2"), Color("3f6aae")], 2.2, 4.0, Vector3(0, -8.5, 0), 0.4)
+		splash.position = ground
+		var spray := _burst("puff", false, 10, 0.7, 0.45, [Color("ffffff", 0.0), Color("f4ead2", 0.85), Color("dfe6ea", 0.0)], 0.5, 1.2, Vector3(0, 0.4, 0), 0.4)
+		spray.position = ground
+		_flash(Color("9fd8ff"), 1.6))
+
+
+func _katana_draw() -> void:
+	var sword := _prop_on_winner("katana", [
+		PropKit.pt("eef4ff|g0.3", ShapeKit.box(Vector3(0.025, 0.045, 0.66), 0.01, 0.004), Vector3(0.0, 0.0, -0.34)),
+		PropKit.pt("ffcf3f", ShapeKit.cylinder(0.075, 0.075, 0.02, 16), Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("1d1416", ShapeKit.box(Vector3(0.04, 0.05, 0.22), 0.01, 0.004), Vector3(0.0, 0.0, 0.12)),
+		PropKit.pt("c8303a", ShapeKit.box(Vector3(0.045, 0.055, 0.04), 0.01, 0.004), Vector3(0.0, 0.0, 0.2)),
+	], 0.32, 0.55)
+	_after(0.16, func() -> void:
+		create_tween().tween_property(sword, "rotation:y", sword.rotation.y + 1.5, 0.12).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT))
+	var across := _toward().cross(Vector3.UP).normalized()
+	_after(0.3, func() -> void:
+		_streak(-across * 0.65 + Vector3(0.0, 0.32, 0.0), across * 0.65 + Vector3(0.0, 0.18, 0.0), 0.12, Color(1.0, 1.0, 1.0, 0.95), 0.35)
+		_flash(Color("fff4e8"), 2.2)
+		_burst("leaf", false, 16, 1.0, 0.24, [Color("ff6a3a"), Color("e8341c"), Color("a81f1a")], 1.0, 2.2, Vector3(0, -1.2, 0), 0.2)
+		_burst("sparkle", true, 10, 0.4, 0.2, [Color("ffffff"), Color("fff4e8"), Color("ffd8a0")], 2.0, 3.0, Vector3.ZERO, 0.05))
+
+
+func _shuriken() -> void:
+	_prop_on_winner("ninja_hood", [
+		PropKit.pt("2a2350", ShapeKit.torus(0.2, 0.25, 22, 5), Vector3.ZERO),
+		PropKit.pt("8b5cf6", ShapeKit.box(Vector3(0.05, 0.18, 0.02), 0.01, 0.005), Vector3(0.05, -0.06, 0.24), Vector3(0.4, 0.0, 0.3)),
+	], 0.22, 0.7)
+	var star := ShapeKit.prism(InsigniaFactory.star_polygon(4, 0.13, 0.035), 0.02, 0.004)
+	for i in 3:
+		var blade := PropKit.model("shuriken", [
+			PropKit.pt("c9d2de", star, Vector3.ZERO, Vector3(PI / 2.0, 0.0, 0.0), 0.012),
+			PropKit.pt("2a2d40", ShapeKit.cylinder(0.025, 0.025, 0.025, 10), Vector3.ZERO),
+		])
+		add_child(blade)
+		blade.scale = Vector3.ONE * PROP_SCALE
+		blade.visible = false
+		var delay := 0.05 + i * 0.1
+		var offset := _toward().cross(Vector3.UP).normalized() * (i - 1) * 0.12
+		_after(delay, func() -> void: blade.visible = true)
+		_fly(blade, _src + Vector3(0.0, 0.62, 0.0), Vector3(0.0, 0.2, 0.0) + offset, 0.3, 0.12, delay, true)
+		_after(delay + 0.3, func() -> void:
+			blade.queue_free()
+			_burst("sparkle", true, 8, 0.35, 0.16, [Color("ffffff"), Color("d6c2ff"), Color("8b5cf6")], 1.5, 3.0, Vector3.ZERO, 0.05))
+
+
+func _glitch_out() -> void:
+	var across := _toward().cross(Vector3.UP).normalized()
+	for i in 5:
+		var y := 0.05 + i * 0.1
+		var color := Color("2ef6ff") if i % 2 == 0 else Color("ff2bd6")
+		_after(i * 0.055, func() -> void:
+			_streak(-across * 0.7 + Vector3(0.0, y, 0.0), across * 0.7 + Vector3(0.0, y, 0.0), 0.07, color, 0.06))
+	_after(0.12, func() -> void:
+		_burst("square", true, 14, 0.25, 0.1, [Color("2ef6ff"), Color("ff2bd6"), Color("ffffff")], 0.4, 0.9, Vector3.ZERO, 0.25))
+	_after(0.3, func() -> void:
+		_burst("square", true, 34, 0.7, 0.13, [Color("ffffff"), Color("2ef6ff"), Color("ff2bd6")], 1.6, 3.2, Vector3(0, -2.0, 0), 0.25)
+		_flash(Color("2ef6ff"), 2.4)
+		_word("GLITCH", Color("2ef6ff"), Vector3(0.0, 0.95, 0.0), 80))
+
+
+func _rocket_punch() -> void:
+	var fist := PropKit.model("rocket_fist", [
+		PropKit.pt("e8eef8", ShapeKit.box(Vector3(0.24, 0.2, 0.18), 0.04, 0.015), Vector3(0.0, 0.0, -0.02)),
+		PropKit.pt("c9d2de", ShapeKit.box(Vector3(0.22, 0.07, 0.07), 0.025, 0.01), Vector3(0.0, 0.06, -0.12)),
+		PropKit.pt("c9d2de", ShapeKit.box(Vector3(0.22, 0.07, 0.07), 0.025, 0.01), Vector3(0.0, -0.02, -0.12)),
+		PropKit.pt("2f6bd8", ShapeKit.cylinder(0.08, 0.1, 0.18, 14), Vector3(0.0, 0.0, 0.16), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("ff3d4a", ShapeKit.box(Vector3(0.06, 0.06, 0.06), 0.015, 0.006), Vector3(0.0, 0.1, 0.0)),
+	])
+	add_child(fist)
+	fist.scale = Vector3.ONE * PROP_SCALE
+	fist.visible = false
+	_after(0.1, func() -> void: fist.visible = true)
+	var thrust := FxTextures.particles("flame", true, 30, 0.35, 0.3)
+	thrust.local_coords = false
+	thrust.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	thrust.emission_sphere_radius = 0.05
+	thrust.spread = 180.0
+	thrust.initial_velocity_max = 0.2
+	thrust.gravity = Vector3.ZERO
+	thrust.color_ramp = FxTextures.gradient([Color("ffffff"), Color("aef9ff"), Color("3a8aff")])
+	thrust.position = Vector3(0.0, 0.0, 0.28)
+	thrust.emitting = true
+	fist.add_child(thrust)
+	_fly(fist, _src + Vector3(0.0, 0.62, 0.0), Vector3(0.0, 0.15, 0.0), 0.33, 0.2, 0.1)
+	_after(0.45, func() -> void:
+		fist.queue_free()
+		_fire()
+		_burst("star", false, 10, 0.8, 0.18, [Color("fff1b0"), Color("ffd24a"), Color("ff9f1c")], 1.2, 2.4, Vector3(0, -2.0, 0), 0.2)
+		_flash(Color("aef9ff"), 2.2))
+
+
+func _giant_stomp() -> void:
+	var foot := PropKit.model("kaiju_foot", [
+		PropKit.pt("5a8a3a", ShapeKit.box(Vector3(0.62, 0.22, 0.8), 0.1, 0.03), Vector3.ZERO),
+		PropKit.pt("5a8a3a", ShapeKit.cylinder(0.24, 0.3, 0.6, 14), Vector3(0.0, 0.38, 0.12)),
+		PropKit.pt("f4ead2", ShapeKit.cone(0.06, 0.18, 8), Vector3(0.18, -0.05, -0.44), Vector3(-PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("f4ead2", ShapeKit.cone(0.06, 0.18, 8), Vector3(0.0, -0.05, -0.46), Vector3(-PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("f4ead2", ShapeKit.cone(0.06, 0.18, 8), Vector3(-0.18, -0.05, -0.44), Vector3(-PI / 2.0, 0.0, 0.0)),
+	])
+	add_child(foot)
+	foot.scale = Vector3.ONE * 2.0
+	foot.basis = Basis.looking_at(_toward(), Vector3.UP).scaled(Vector3.ONE * 2.0)
+	foot.position = Vector3(0.0, 5.0, 0.0)
+	var ground := Vector3(0.0, -position.y + 0.03, 0.0)
+	var shadow := _decal("dot", Color(0.0, 0.0, 0.0, 0.45), ground)
+	shadow.scale = Vector3(0.1, 1.0, 0.1)
+	create_tween().tween_property(shadow, "scale", Vector3(1.8, 1.0, 1.8), 0.5)
+	var t := create_tween()
+	t.tween_property(foot, "position", Vector3(0.0, 0.1, 0.0), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(func() -> void:
+		_dust_puff(ground, 2.0)
+		var rubble := _burst("square", false, 22, 0.9, 0.12, [Color("a8a8a8"), Color("7a7a7a"), Color("5a5a5a")], 1.6, 3.2, Vector3(0, -9.0, 0), 0.4)
+		rubble.position = ground
+		_ground_ring(Color("8a6a4a"), 3.0, "glow_ring")
+		var crack := _decal("crack", Color(0.15, 0.12, 0.1, 0.9), ground + Vector3(0.0, 0.005, 0.0))
+		crack.scale = Vector3(2.0, 1.0, 2.0))
+	t.tween_interval(0.45)
+	t.tween_property(foot, "position:y", 5.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(shadow, "scale", Vector3(0.01, 1.0, 0.01), 0.35)
+
+
+func _plasma_blade() -> void:
+	var blade := _prop_on_winner("plasma_blade", [
+		PropKit.pt("9cf6ff|g2.6", ShapeKit.cylinder(0.03, 0.035, 0.7, 12), Vector3(0.0, 0.0, -0.38), Vector3(PI / 2.0, 0.0, 0.0), 0.0),
+		PropKit.pt("c9d2de", ShapeKit.cylinder(0.045, 0.045, 0.2, 12), Vector3(0.0, 0.0, 0.08), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("2a2d40", ShapeKit.torus(0.035, 0.055, 12, 5), Vector3(0.0, 0.0, -0.02), Vector3(PI / 2.0, 0.0, 0.0)),
+	], 0.34, 0.6)
+	_after(0.16, func() -> void:
+		create_tween().tween_property(blade, "rotation:x", blade.rotation.x - 1.4, 0.13).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT))
+	var across := _toward().cross(Vector3.UP).normalized()
+	_after(0.32, func() -> void:
+		_streak(-across * 0.6 + Vector3(0.0, 0.55, 0.0), across * 0.6 + Vector3(0.0, -0.05, 0.0), 0.14, Color("9cf6ff"), 0.35)
+		_flash(Color("9cf6ff"), 2.6)
+		_burst("sparkle", true, 18, 0.5, 0.2, [Color("ffffff"), Color("c8f6ff"), Color("3ad6ff")], 2.0, 3.5, Vector3(0, -3.0, 0), 0.05))
+
+
+func _laser_disc() -> void:
+	var disc := PropKit.model("laser_disc", [
+		PropKit.pt("e8ecf5", ShapeKit.cylinder(0.16, 0.16, 0.02, 24), Vector3.ZERO),
+		PropKit.pt("ff4fa8|g2.0", ShapeKit.torus(0.15, 0.18, 24, 5), Vector3.ZERO, Vector3.ZERO, 0.0),
+		PropKit.pt("3ad6ff|g1.6", ShapeKit.cylinder(0.04, 0.04, 0.025, 12), Vector3.ZERO, Vector3.ZERO, 0.0),
+	])
+	add_child(disc)
+	disc.scale = Vector3.ONE * PROP_SCALE
+	disc.visible = false
+	_after(0.1, func() -> void: disc.visible = true)
+	_trail_puffs(disc, Color("ff4fa8"), 0.1)
+	_fly(disc, _src + Vector3(0.0, 0.62, 0.0), Vector3(0.0, 0.2, 0.0), 0.35, 0.3, 0.1, true)
+	_after(0.45, func() -> void:
+		disc.queue_free()
+		_burst("sparkle", true, 22, 0.6, 0.2, [Color("ffffff"), Color("ff8fd0"), Color("3ad6ff")], 1.6, 3.4, Vector3(0, -2.0, 0), 0.1)
+		_ground_ring(Color("ff4fa8"), 2.2, "glow_ring", true)
+		_flash(Color("ff4fa8"), 2.2))
+
+
+func _game_over() -> void:
+	_after(0.22, func() -> void:
+		_pixels()
+		_burst("square", false, 24, 0.8, 0.14, [Color("ff4d6d"), Color("ffd23f"), Color("4dffb0")], 1.4, 2.8, Vector3(0, -4.0, 0), 0.2)
+		_word("GAME OVER", Color("ff4d6d"), Vector3(0.0, 1.0, 0.0), 72))
+
+
+func _quick_draw() -> void:
+	var gun := _prop_on_winner("revolver", [
+		PropKit.pt("8a94a6", ShapeKit.cylinder(0.035, 0.035, 0.3, 12), Vector3(0.0, 0.03, -0.14), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("6a7488", ShapeKit.cylinder(0.07, 0.07, 0.1, 12), Vector3(0.0, 0.03, 0.04), Vector3(PI / 2.0, 0.0, 0.0)),
+		PropKit.pt("8a5a2a", ShapeKit.box(Vector3(0.06, 0.18, 0.08), 0.02, 0.008), Vector3(0.0, -0.08, 0.12), Vector3(-0.35, 0.0, 0.0)),
+		PropKit.pt("4a4f5e", ShapeKit.box(Vector3(0.05, 0.05, 0.14), 0.015, 0.006), Vector3(0.0, 0.06, 0.08)),
+	], 0.34, 0.65)
+	_recoil(gun, 0.28)
+	var muzzle := _src + Vector3(0.0, 0.62, 0.0) + _toward() * 0.6
+	_after(0.28, func() -> void:
+		var bang := _glow_ball(Color("ffd23f"), 0.12)
+		bang.position = muzzle
+		create_tween().tween_property(bang, "scale", Vector3.ONE * 0.01, 0.15).set_delay(0.05)
+		var smoke := _burst("puff", false, 8, 0.7, 0.3, [Color("f2f2f2", 0.0), Color("e6e6e6", 0.85), Color("c8c8c8", 0.0)], 0.3, 0.7, Vector3(0, 0.5, 0), 0.05)
+		smoke.position = muzzle
+		_streak(muzzle, Vector3(0.0, 0.25, 0.0), 0.05, Color("fff1b0"), 0.08)
+		_word("BANG!", Color("ffcf3f"), muzzle + Vector3(0.0, 0.45, 0.0), 80))
+	_after(0.4, func() -> void:
+		_burst("sparkle", true, 12, 0.4, 0.18, [Color("ffffff"), Color("fff1b0"), Color("ffb020")], 1.5, 3.0, Vector3.ZERO, 0.05)
+		_dust_puff(Vector3(0.0, -position.y + 0.05, 0.0), 1.0))
+
+
+func _steam_cannon() -> void:
+	var cannon := _prop_on_winner("steam_cannon", [
+		PropKit.pt("c8743a", ShapeKit.cylinder(0.1, 0.08, 0.44, 16), Vector3(0.0, 0.06, -0.06), Vector3(PI / 2.0 + 0.15, 0.0, 0.0)),
+		PropKit.pt("e8b850", ShapeKit.torus(0.08, 0.12, 16, 5), Vector3(0.0, 0.08, -0.22), Vector3(PI / 2.0 + 0.15, 0.0, 0.0)),
+		PropKit.pt("e8b850", ShapeKit.torus(0.09, 0.13, 16, 5), Vector3(0.0, 0.05, 0.06), Vector3(PI / 2.0 + 0.15, 0.0, 0.0)),
+		PropKit.pt("4a2a1a", ShapeKit.box(Vector3(0.2, 0.08, 0.3), 0.02, 0.01), Vector3(0.0, -0.05, 0.02)),
+		PropKit.pt("e8b850", ShapeKit.cylinder(0.03, 0.03, 0.14, 8), Vector3(0.0, 0.18, 0.08)),
+	], 0.36, 1.0)
+	_recoil(cannon, 0.12)
+	var mouth := _src + Vector3(0.0, 0.66, 0.0) + _toward() * 0.6
+	_after(0.12, func() -> void:
+		var steam := _burst("puff", false, 12, 0.9, 0.38, [Color("ffffff", 0.0), Color("f2ece2", 0.9), Color("d8d0c4", 0.0)], 0.4, 1.0, Vector3(0, 0.8, 0), 0.08)
+		steam.position = mouth)
+	var ball := PropKit.model("brass_ball", [PropKit.pt("e8b850", ShapeKit.sphere(0.08, 0.16, 12), Vector3.ZERO)])
+	add_child(ball)
+	ball.scale = Vector3.ONE * PROP_SCALE
+	ball.visible = false
+	_after(0.12, func() -> void: ball.visible = true)
+	_trail_puffs(ball, Color("f2ece2"), 0.12)
+	_fly(ball, mouth, Vector3.ZERO, 0.36, 0.4, 0.12)
+	_after(0.5, func() -> void:
+		ball.queue_free()
+		_fire()
+		_burst("gear", false, 10, 0.9, 0.2, [Color("ffe0a0"), Color("e8b850"), Color("a8742a")], 1.2, 2.6, Vector3(0, -4.0, 0), 0.2))
+
+
+func _thunder_hammer() -> void:
+	var hammer := _prop_on_winner("thunder_hammer", [
+		PropKit.pt("8a909a", ShapeKit.box(Vector3(0.3, 0.16, 0.16), 0.03, 0.012), Vector3(0.0, 0.32, 0.0)),
+		PropKit.pt("7fd6ff|g1.8", ShapeKit.box(Vector3(0.02, 0.1, 0.17), 0.005, 0.002), Vector3(0.0, 0.32, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("8a5a2a", ShapeKit.cylinder(0.025, 0.03, 0.42, 10), Vector3(0.0, 0.08, 0.0)),
+		PropKit.pt("c8a070", ShapeKit.torus(0.02, 0.04, 10, 4), Vector3(0.0, -0.13, 0.0)),
+	], 0.32, 0.8)
+	_after(0.2, func() -> void:
+		create_tween().tween_property(hammer, "rotation:x", hammer.rotation.x - 1.6, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN))
+	_after(0.42, _lightning)
+	_after(0.55, func() -> void:
+		_burst("rune", true, 10, 0.9, 0.22, [Color("ffffff"), Color("c8f2ff"), Color("7fc8ef")], 1.0, 2.0, Vector3(0, 1.0, 0), 0.3))
+
+
+func _mummy_wrap() -> void:
+	var group := Node3D.new()
+	add_child(group)
+	for k in 5:
+		var ring := PropKit.model("bandage", [PropKit.pt("f4ead2", ShapeKit.torus(0.2, 0.25, 22, 4), Vector3.ZERO, Vector3.ZERO, 0.01)])
+		group.add_child(ring)
+		ring.position = Vector3(0.0, -0.25 + k * 0.14, 0.0)
+		ring.rotation = Vector3(0.18 * (1 if k % 2 == 0 else -1), 0.0, 0.12)
+		ring.scale = Vector3.ONE * 0.01
+		var t := create_tween()
+		t.tween_interval(0.05 + k * 0.07)
+		t.tween_property(ring, "scale", Vector3.ONE * 1.4, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		t.tween_property(ring, "scale", Vector3.ONE * 0.85, 0.2)
+	create_tween().tween_property(group, "rotation:y", TAU * 1.5, 0.9)
+	_after(0.6, func() -> void:
+		var t := create_tween().set_parallel(true)
+		t.tween_property(group, "position:y", 1.4, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		t.tween_property(group, "scale", Vector3.ONE * 0.2, 0.4)
+		_burst("dot", false, 26, 0.9, 0.08, [Color("fff1b0"), Color("e8c078"), Color("c8944a")], 1.0, 2.2, Vector3(0, -3.0, 0), 0.3)
+		_burst("sparkle", true, 10, 0.6, 0.18, [Color("ffffff"), Color("fff1b0"), Color("ffcf3f")], 1.0, 2.0, Vector3.ZERO, 0.2))
+	_after(1.05, group.queue_free)
+
+
+func _balete_roots() -> void:
+	var ground := Vector3(0.0, -position.y + 0.04, 0.0)
+	var crack := _decal("crack", Color(0.2, 0.15, 0.08, 0.95), ground)
+	crack.scale = Vector3(0.1, 1.0, 0.1)
+	var ct := create_tween()
+	ct.tween_property(crack, "scale", Vector3(1.8, 1.0, 1.8), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	ct.tween_interval(0.9)
+	ct.tween_property(crack, "scale", Vector3(0.05, 1.0, 0.05), 0.25)
+	var group := Node3D.new()
+	group.position = ground + Vector3(0.0, -1.0, 0.0)
+	add_child(group)
+	for k in 5:
+		var a := TAU * k / 5.0 + 0.3
+		var root := PropKit.model("balete_root", [
+			PropKit.pt("6b5a3a", ShapeKit.cylinder(0.02, 0.07, 0.8, 8), Vector3(0.0, 0.4, 0.0)),
+			PropKit.pt("5a8a3a", ShapeKit.sphere(0.04), Vector3(0.0, 0.78, 0.0), Vector3.ZERO, 0.0),
+		])
+		group.add_child(root)
+		root.position = Vector3(cos(a), 0.0, sin(a)) * 0.42
+		root.basis = Basis(Vector3(sin(a), 0.0, -cos(a)), 0.55).scaled(Vector3.ONE * 1.3)
+	var t := create_tween()
+	t.tween_interval(0.12)
+	t.tween_property(group, "position:y", ground.y, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.15)
+	t.tween_property(group, "position:y", ground.y - 1.2, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.tween_callback(group.queue_free)
+	_after(0.5, func() -> void:
+		var flies := _burst("dot", true, 16, 1.2, 0.12, [Color("ffffff"), Color("e8ffa0"), Color("9be15d")], 0.4, 1.0, Vector3(0, 0.4, 0), 0.4)
+		flies.position = ground + Vector3(0.0, 0.3, 0.0)
+		_dust_puff(ground, 1.0))
+
+
+func _ka_boom() -> void:
+	_after(0.25, func() -> void:
+		_fire()
+		_burst("star", false, 14, 0.9, 0.24, [Color("fff36b"), Color("ffd23f"), Color("ff5a3a")], 1.4, 2.8, Vector3(0, -2.0, 0), 0.2)
+		_ground_ring(Color("ffd23f"), 2.6)
+		_word("KA-BOOM!", Color("ffe14d"), Vector3(0.0, 1.0, 0.0), 96))
+
+
+func _grave_grab() -> void:
+	var ground := Vector3(0.0, -position.y + 0.04, 0.0)
+	var dirt := _decal("crack", Color(0.12, 0.16, 0.08, 0.95), ground)
+	dirt.scale = Vector3(1.6, 1.0, 1.6)
+	var across := _toward().cross(Vector3.UP).normalized()
+	var group := Node3D.new()
+	group.position = ground + Vector3(0.0, -0.9, 0.0)
+	add_child(group)
+	for side: float in [-1.0, 1.0]:
+		var hand := PropKit.model("zombie_hand", [
+			PropKit.pt("7aa83a", ShapeKit.box(Vector3(0.16, 0.18, 0.06), 0.03, 0.01), Vector3(0.0, 0.42, 0.0)),
+			PropKit.pt("7aa83a", ShapeKit.cylinder(0.05, 0.06, 0.34, 8), Vector3(0.0, 0.18, 0.0)),
+			PropKit.pt("7aa83a", ShapeKit.capsule(0.022, 0.13, 6), Vector3(-0.05, 0.56, 0.0)),
+			PropKit.pt("7aa83a", ShapeKit.capsule(0.022, 0.15, 6), Vector3(0.0, 0.57, 0.0)),
+			PropKit.pt("7aa83a", ShapeKit.capsule(0.022, 0.13, 6), Vector3(0.05, 0.56, 0.0)),
+			PropKit.pt("6a4a3a", ShapeKit.cylinder(0.07, 0.07, 0.08, 8), Vector3(0.0, 0.05, 0.0)),
+		])
+		group.add_child(hand)
+		hand.position = across * side * 0.3
+		hand.basis = Basis(_toward(), side * 0.4).scaled(Vector3.ONE * 1.4)
+	var t := create_tween()
+	t.tween_interval(0.08)
+	t.tween_property(group, "position:y", ground.y - 0.05, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.12)
+	t.tween_property(group, "position:y", ground.y - 1.1, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.tween_callback(group.queue_free)
+	_after(0.45, func() -> void:
+		var goo := _burst("bubble", false, 16, 0.8, 0.14, [Color("d4ff3a"), Color("9be15d"), Color("3a8a1f")], 1.0, 2.0, Vector3(0, -3.0, 0), 0.3)
+		goo.position = ground
+		_dust_puff(ground, 1.0))
+	create_tween().tween_property(dirt.material_override, "albedo_color:a", 0.0, 0.4).set_delay(1.1)
+
+
+func _wand_twinkle() -> void:
+	var star := ShapeKit.prism(InsigniaFactory.star_polygon(5, 0.08, 0.035), 0.03, 0.006)
+	_prop_on_winner("magic_wand", [
+		PropKit.pt("ffffff", ShapeKit.cylinder(0.015, 0.015, 0.4, 8), Vector3(0.0, 0.0, 0.0), Vector3(-0.5, 0.0, 0.0)),
+		PropKit.pt("ff8ec0|g1.4", star, Vector3(0.0, 0.19, -0.1), Vector3.ZERO, 0.012),
+		PropKit.pt("b84dff", ShapeKit.torus(0.015, 0.03, 10, 4), Vector3(0.0, -0.1, 0.05), Vector3(-0.5, 0.0, 0.0)),
+	], 0.36, 0.8)
+	var orb := _glow_ball(Color("ff8ec0"), 0.12)
+	orb.visible = false
+	_after(0.15, func() -> void: orb.visible = true)
+	var trail := FxTextures.particles("star", false, 24, 0.5, 0.16)
+	trail.local_coords = false
+	trail.color_ramp = FxTextures.gradient([Color("ffffff"), Color("ffc2e0"), Color("b84dff")])
+	trail.initial_velocity_max = 0.2
+	trail.gravity = Vector3(0.0, -0.5, 0.0)
+	trail.emitting = true
+	orb.add_child(trail)
+	_fly(orb, _src + Vector3(0.0, 0.85, 0.0), Vector3(0.0, 0.2, 0.0), 0.3, 0.4, 0.15)
+	_after(0.45, func() -> void:
+		orb.queue_free()
+		_burst("heart", false, 14, 0.9, 0.2, [Color("ffffff"), Color("ffc2e0"), Color("ff8ec0")], 1.0, 2.2, Vector3(0, 0.6, 0), 0.2)
+		_burst("star", true, 16, 0.7, 0.18, [Color("ffffff"), Color("fff1b0"), Color("c9a8ff")], 1.4, 2.8, Vector3.ZERO, 0.1)
+		_flash(Color("ff8ec0"), 2.0))
+
+
+func _mic_drop() -> void:
+	var mic := PropKit.model("microphone", [
+		PropKit.pt("c9d2de", ShapeKit.sphere(0.12, 0.24, 16), Vector3(0.0, 0.32, 0.0)),
+		PropKit.pt("8a94a6", ShapeKit.torus(0.1, 0.13, 16, 5), Vector3(0.0, 0.26, 0.0)),
+		PropKit.pt("1d1736", ShapeKit.cylinder(0.05, 0.035, 0.42, 12), Vector3(0.0, 0.02, 0.0)),
+		PropKit.pt("ff2bd6|g1.4", ShapeKit.torus(0.035, 0.055, 12, 4), Vector3(0.0, -0.08, 0.0), Vector3.ZERO, 0.0),
+	])
+	mic.scale = Vector3.ONE * 2.0
+	add_child(mic)
+	mic.position = Vector3(0.0, 4.5, 0.0)
+	mic.rotation = Vector3(0.3, 0.0, 0.2)
+	var ground := Vector3(0.0, -position.y + 0.03, 0.0)
+	var spot := _decal("glow_ring", Color("ff8ff0"), ground)
+	spot.scale = Vector3(1.6, 1.0, 1.6)
+	var t := create_tween()
+	t.tween_property(mic, "position", Vector3(0.0, -0.1, 0.0), 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(func() -> void:
+		_confetti()
+		_dust_puff(ground, 1.2)
+		_word("MIC DROP!", Color("ff8ff0"), Vector3(0.0, 1.1, 0.0), 80))
+	t.tween_property(mic, "rotation:z", 1.4, 0.25).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.4)
+	t.tween_property(mic, "scale", Vector3.ONE * 0.01, 0.2)
+	create_tween().tween_property(spot.material_override, "albedo_color:a", 0.0, 0.5).set_delay(1.0)
+
+
+func _skate_ollie() -> void:
+	var board := PropKit.model("skateboard", [
+		PropKit.pt("ff6a1a", ShapeKit.box(Vector3(0.16, 0.025, 0.46), 0.07, 0.01), Vector3.ZERO),
+		PropKit.pt("3ad6ff", ShapeKit.box(Vector3(0.1, 0.027, 0.2), 0.04, 0.005), Vector3(0.0, 0.0, 0.0), Vector3.ZERO, 0.0),
+		PropKit.pt("f4f4f4", ShapeKit.sphere(0.03), Vector3(0.06, -0.035, 0.15)),
+		PropKit.pt("f4f4f4", ShapeKit.sphere(0.03), Vector3(-0.06, -0.035, 0.15)),
+		PropKit.pt("f4f4f4", ShapeKit.sphere(0.03), Vector3(0.06, -0.035, -0.15)),
+		PropKit.pt("f4f4f4", ShapeKit.sphere(0.03), Vector3(-0.06, -0.035, -0.15)),
+	])
+	add_child(board)
+	board.scale = Vector3.ONE * PROP_SCALE
+	board.visible = false
+	_after(0.08, func() -> void: board.visible = true)
+	_fly(board, _src + Vector3(0.0, 0.1, 0.0), Vector3(0.0, 0.15, 0.0), 0.32, 0.55, 0.08, true)
+	var ground := Vector3(0.0, -position.y + 0.035, 0.0)
+	_after(0.4, func() -> void:
+		board.queue_free()
+		var paint := _burst("dot", false, 28, 0.8, 0.14, [Color.WHITE, Color.WHITE, Color.WHITE], 1.4, 2.8, Vector3(0, -5.0, 0), 0.25)
+		paint.color_initial_ramp = FxTextures.rainbow()
+		var colors := [Color("ff3bd6"), Color("4dffb0"), Color("3ad6ff"), Color("ffd23f")]
+		for k in 4:
+			var a := TAU * k / 4.0 + 0.4
+			var splat := _decal("dot", colors[k], ground + Vector3(cos(a), 0.0, sin(a)) * 0.35)
+			splat.scale = Vector3.ONE * randf_range(0.35, 0.6)
+			create_tween().tween_property(splat.material_override, "albedo_color:a", 0.0, 0.4).set_delay(1.0)
+		_dust_puff(ground, 0.8))
+
+
+## A comic word that pops up over the effect (BANG!, KA-BOOM!...), always on top, then fades.
+func _word(text: String, color: Color, at: Vector3, size := 80) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.font = load(WORD_FONT)
+	label.font_size = size
+	label.pixel_size = 0.004
+	label.modulate = color
+	label.outline_modulate = Color("1d1736")
+	label.outline_size = 22
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.render_priority = 4
+	label.position = at
+	add_child(label)
+	label.scale = Vector3.ONE * 0.2
+	var t := create_tween()
+	t.tween_property(label, "scale", Vector3.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.6)
+	t.tween_property(label, "modulate:a", 0.0, 0.25)
+
+
 func _toward() -> Vector3:
 	var flat := Vector3(-_src.x, 0.0, -_src.z)
 	return flat.normalized() if flat.length() > 0.01 else Vector3.FORWARD

@@ -148,22 +148,29 @@ func begin(observation: Dictionary) -> void:
 
 # --- Learning from the arbiter's announcements -----------------------------------------------
 
-## Feed every MoveResult (ours and theirs). Clashes narrow down the enemy piece's rank because we
-## know the rank of our own piece in the fight.
+## Feed every MoveResult (ours and theirs), as this side may see it (LocalArbiter.redact). Clashes
+## narrow down the enemy piece's rank because we know the rank of our own piece in the fight.
+## Powerup twists carry no rank information: a bounce off a Fortify, a mine, a smoke-screened
+## move (no mover), and a Rally Cry win, which was really a tie.
 func observe(result: Dictionary) -> void:
-	var mover := str(result.get("piece_id", ""))
+	var mover := str(result.get("piece_id", "")) if result.get("piece_id") != null else ""
 	var mover_is_mine := _my_ranks.has(mover)
-	if not mover_is_mine:
+	if mover != "" and not mover_is_mine:
 		_enemy_moved[mover] = true
+		if result.get("bounced", false):
+			_enemy_attacked[mover] = true
 	var clash: Variant = result.get("clash")
 	if not clash is Dictionary:
 		return
 
-	var defender := str(clash["defender_id"])
+	var defender := str(clash["defender_id"]) if clash.get("defender_id") != null else ""
 	var mine_id := mover if mover_is_mine else defender
 	var enemy_id := defender if mover_is_mine else mover
-	var outcome: int = {"attacker": ATTACKER_WINS, "defender": DEFENDER_WINS}.get(clash["outcome"], BOTH_OUT)
-	if _my_ranks.has(mine_id) and _enemy_mask.has(enemy_id):
+	var outcome: int = {"attacker": ATTACKER_WINS, "defender": DEFENDER_WINS}.get(clash.get("outcome"), BOTH_OUT)
+	if clash.has("rally"):
+		outcome = BOTH_OUT  # Equal ranks; the Rally Cry only changed who survived.
+	var informative: bool = mover != "" and defender != "" and str(clash.get("outcome")) in ["attacker", "defender", "both"]
+	if informative and _my_ranks.has(mine_id) and _enemy_mask.has(enemy_id):
 		var mine: int = _my_ranks[mine_id]
 		var allowed := 0
 		for r in RANK_COUNT:
@@ -184,6 +191,73 @@ func observe(result: Dictionary) -> void:
 			var mask: int = _enemy_mask[key] & ~FLAG_BIT
 			_dead_masks.append(mask if mask != 0 else ALL_RANKS & ~FLAG_BIT)
 			_enemy_mask.erase(key)
+
+
+## Intel from powerups (Spy Card, Intel Leak, Recon Drone, Scout Report): {rank}, {group} or
+## {is_flag}. A Decoy may have fed us a lie; when it contradicts what clashes showed, the newest
+## word wins.
+func learn(enemy_id: String, facts: Dictionary) -> void:
+	if not _enemy_mask.has(enemy_id):
+		return
+	var allowed := ALL_RANKS
+	if facts.get("rank") is String:
+		allowed = 1 << _rank_index(facts["rank"])
+	elif facts.get("group") is String:
+		allowed = 0
+		for code: String in PowerupLibrary.GROUPS.get(facts["group"], []):
+			allowed |= 1 << _rank_index(code)
+	if facts.get("is_flag") is bool:
+		allowed &= FLAG_BIT if facts["is_flag"] else ALL_RANKS & ~FLAG_BIT
+	if allowed == 0:
+		return
+	var narrowed: int = _enemy_mask[enemy_id] & allowed
+	_enemy_mask[enemy_id] = narrowed if narrowed != 0 else allowed
+
+
+## Flag Hunter: the enemy flag stands in `column`. `enemy_columns`: living enemy id -> x.
+func learn_flag_column(column: int, enemy_columns: Dictionary) -> void:
+	for id: String in enemy_columns:
+		if _enemy_mask.has(id) and int(enemy_columns[id]) != column:
+			var mask: int = _enemy_mask[id] & ~FLAG_BIT
+			if mask != 0:
+				_enemy_mask[id] = mask
+
+
+## Shuffle: what we had worked out about these enemy pieces no longer holds.
+func forget(enemy_ids: Array) -> void:
+	for id: Variant in enemy_ids:
+		if _enemy_mask.has(str(id)):
+			_enemy_mask[str(id)] = ALL_RANKS
+			_enemy_moved.erase(str(id))
+			_enemy_attacked.erase(str(id))
+
+
+## Reinforcement: a fallen enemy Private is back as `new_id`.
+func enemy_reinforced(new_id: String) -> void:
+	var private := 1 << _rank_index("PVT")
+	_enemy_mask[new_id] = private
+	var best := -1
+	for i in _dead_masks.size():
+		if _dead_masks[i] & private and (best < 0 or _bit_count(_dead_masks[i]) < _bit_count(_dead_masks[best])):
+			best = i
+	if best >= 0:
+		_dead_masks.remove_at(best)
+
+
+## Re-reads our own ranks after a powerup changed them (Shuffle, Reinforcement).
+func sync_own(observation: Dictionary) -> void:
+	_my_ranks.clear()
+	for p: Dictionary in observation["mine"]:
+		_my_ranks[p["id"]] = _rank_index(p["rank"])
+
+
+## Bitmask of ranks an enemy piece could still be (0 when unknown id).
+func enemy_mask(enemy_id: String) -> int:
+	return _enemy_mask.get(enemy_id, 0)
+
+
+func has_moved(enemy_id: String) -> bool:
+	return _enemy_moved.has(enemy_id) or _enemy_attacked.has(enemy_id)
 
 
 ## What the AI currently believes a piece can be (for debugging or a "scouting report" UI).
@@ -225,6 +299,13 @@ func choose_move(observation: Dictionary) -> Dictionary:
 			_enemy_mask[e["id"]] = ALL_RANKS
 
 	var moves := _moves(sides, ME)
+	var frozen: Array = observation.get("frozen", [])
+	if not frozen.is_empty():
+		var free: Array[Vector2i] = []
+		for move in moves:
+			if not frozen.has(my_ids[move.x]):
+				free.append(move)
+		moves = free
 	if moves.is_empty():
 		return {}
 	var chosen := -1

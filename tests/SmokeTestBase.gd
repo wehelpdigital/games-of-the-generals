@@ -92,6 +92,17 @@ func drag_move(from: Vector2i, to: Vector2i) -> void:
 ## toward the enemy, else any quiet move. Returns {from, to} or {}.
 func find_legal_move(aggressive := false) -> Dictionary:
 	var forward := 1 if board.my_side == Ranks.WHITE else -1
+	# In practice the arbiter knows what powerups forbid (frozen pieces, roadblocks, a ceasefire).
+	var allowed := {}
+	var arbiter: Variant = GameSession.get("_arbiter")
+	if arbiter is LocalArbiter:
+		for legal: Dictionary in (arbiter as LocalArbiter).legal_moves(board.my_side):
+			allowed[[legal["from"], legal["to"]]] = true
+	# Squares under the powerup hand can't be tapped (a player would pan the camera first).
+	var covered: Array[Rect2] = []
+	for node in get_tree().root.find_children("*", "VBoxContainer", true, false):
+		if node.has_method("_activate") and (node as Control).is_visible_in_tree():
+			covered.append((node as Control).get_global_rect().grow(12.0))
 	var attacks: Array = []
 	var advances: Array = []
 	var quiet: Array = []
@@ -99,6 +110,10 @@ func find_legal_move(aggressive := false) -> Dictionary:
 		if piece.side != board.my_side or piece.rank == "FLG":
 			continue
 		for cell in Ranks.neighbors(piece.cell):
+			if not allowed.is_empty() and not allowed.has([piece.cell, cell]):
+				continue
+			if covered.any(func(r: Rect2) -> bool: return r.has_point(screen_of(piece.cell, 0.4)) or r.has_point(screen_of(cell)) 					or r.has_point(screen_of(cell, Piece3D.LIFT_HEIGHT))):
+				continue
 			var occupant := board.piece_at(cell)
 			var move := {"from": piece.cell, "to": cell}
 			if occupant != null and occupant.side != piece.side:

@@ -28,6 +28,7 @@ var used := false: set = set_used
 var compact := false
 var interactive := true
 var hover_lift := true
+var lift_direction := Vector2.UP  ## Where a raised card moves (a vertical cascade raises it sideways).
 
 var face: Control
 var _name: Label
@@ -53,6 +54,7 @@ func _init(powerup_id := "", width := 180.0, down := false) -> void:
 	add_child(face)
 	face.draw.connect(_draw_face)
 	_name = _label(AppTheme.heading_font(), AppTheme.INK)
+	_name.add_theme_constant_override("line_spacing", -1)  # Two-line names on small cards.
 	_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_type = _label(AppTheme.heading_font(), Color.WHITE)
@@ -101,9 +103,10 @@ func card_size() -> Vector2:
 
 func set_selected(value: bool) -> void:
 	selected = value
+	_restack()
 	if face:
 		face.queue_redraw()
-		_animate_to(-_lift() if selected else 0.0, 1.06 if selected else 1.0)
+		_animate_to(_lift() if selected else 0.0, 1.06 if selected else 1.0)
 
 
 func set_used(value: bool) -> void:
@@ -113,9 +116,9 @@ func set_used(value: bool) -> void:
 		_holo.visible = _shows_holo()
 
 
-## Turns the card over (face down shows the card back).
+## Turns the card over (face down shows the card back); a zero duration turns it at once.
 func flip(down: bool, duration := 0.32) -> void:
-	if down == face_down or face == null:
+	if down == face_down or face == null or duration <= 0.0:
 		face_down = down
 		_layout()
 		return
@@ -155,18 +158,24 @@ func _on_hover(inside: bool) -> void:
 	_hovered = inside
 	if not interactive or not hover_lift or selected or DisplayServer.is_touchscreen_available():
 		return
-	_animate_to(-_lift() * 0.6 if inside else 0.0, 1.04 if inside else 1.0, deg_to_rad(-1.5) if inside else 0.0)
+	_restack()
+	_animate_to(_lift() * 0.6 if inside else 0.0, 1.04 if inside else 1.0, deg_to_rad(-1.5) if inside else 0.0)
+
+
+## A raised or hovered card draws over its neighbours (fans and cascades overlap).
+func _restack() -> void:
+	z_index = 1 if selected or (_hovered and interactive and hover_lift) else 0
 
 
 func _lift() -> float:
 	return card_size().y * 0.08
 
 
-func _animate_to(y: float, scale_to: float, angle := 0.0) -> void:
+func _animate_to(lift: float, scale_to: float, angle := 0.0) -> void:
 	if _tween:
 		_tween.kill()
 	_tween = create_tween().set_parallel()
-	_tween.tween_property(face, "position:y", _base.y + y, 0.16).set_trans(Tween.TRANS_SINE)
+	_tween.tween_property(face, "position", _base + lift_direction * lift, 0.16).set_trans(Tween.TRANS_SINE)
 	_tween.tween_property(face, "scale", Vector2.ONE * scale_to, 0.16).set_trans(Tween.TRANS_SINE)
 	_tween.tween_property(face, "rotation", angle, 0.16).set_trans(Tween.TRANS_SINE)
 
@@ -199,7 +208,7 @@ func _regions() -> Dictionary:
 	var radius := w * 0.075
 	if compact:
 		# Small hands: the art fills the card and the name sits on a plate along the bottom.
-		var plate_h := h * 0.25
+		var plate_h := h * 0.29
 		var plate := Rect2(inner.position.x + pad, inner.end.y - pad - plate_h, inner.size.x - pad * 2.0, plate_h)
 		var top := inner.position.y + pad
 		var window := Rect2(plate.position.x, top, plate.size.x, plate.position.y - pad * 0.8 - top)
@@ -220,7 +229,7 @@ func _layout() -> void:
 	_base = ((size - cs) / 2.0).floor()
 	face.size = cs
 	face.pivot_offset = cs / 2.0
-	face.position = _base + Vector2(0, -_lift() if selected else 0.0)
+	face.position = _base + lift_direction * (_lift() if selected else 0.0)
 	_holo.size = cs
 	_flash.size = cs
 	var r := _regions()
@@ -234,7 +243,7 @@ func _layout() -> void:
 		_name.text = str(info.get("name", id))
 		if compact:
 			_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			_fit_block(_name, int(clampf(cs.x * 0.13, 7.0, 18.0)), Rect2(banner.position + banner.size * Vector2(0.05, 0.06), banner.size * Vector2(0.9, 0.88)), 6)
+			_fit_block(_name, int(clampf(cs.x * 0.16, 7.0, 18.0)), Rect2(banner.position + banner.size * Vector2(0.04, 0.04), banner.size * Vector2(0.92, 0.92)), 6)
 		else:
 			_name.autowrap_mode = TextServer.AUTOWRAP_OFF
 			var gem_room := banner.size.y * 0.9
@@ -322,7 +331,7 @@ func _draw_face() -> void:
 	var art: Rect2 = r["art"]
 	var art_radius := radius * 0.45
 	var shape := _rounded(art, art_radius)
-	var tex := _art(id)
+	var tex := art(id)
 	if tex:
 		var uv := _crop(art.size, Vector2(tex.get_size()))
 		var uvs := PackedVector2Array()
@@ -412,7 +421,8 @@ static func _rounded(rect: Rect2, radius: float) -> PackedVector2Array:
 	return points
 
 
-static func _art(powerup_id: String) -> Texture2D:
+## The card's illustration (assets/powerups/art), or null.
+static func art(powerup_id: String) -> Texture2D:
 	if not _art_cache.has(powerup_id):
 		var path := "res://assets/powerups/art/%s.webp" % powerup_id
 		_art_cache[powerup_id] = load(path) if ResourceLoader.exists(path) else null

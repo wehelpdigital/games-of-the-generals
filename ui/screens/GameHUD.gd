@@ -252,6 +252,18 @@ func _layout() -> void:
 	_stack_bottom.call_deferred()
 
 
+## How far down the top bar and the turn banner (with the clock under it) reach, in HUD
+## coordinates: overlays that must not hide them start below this.
+func top_reserved() -> float:
+	return maxf(_top.get_global_rect().end.y, _center.get_global_rect().end.y)
+
+
+## Landscape: how far down the action column in the top-right corner reaches (0 in portrait, where
+## the actions are rows along the bottom).
+func right_reserved() -> float:
+	return _column.get_global_rect().end.y if _column.visible and not _portrait else 0.0
+
+
 ## Width of the match chat's buttons in the bottom-right corner (MatchChat places itself there).
 func _chat_buttons_width() -> float:
 	var holder: Control = _slots.get("bottom_left")

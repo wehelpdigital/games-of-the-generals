@@ -410,6 +410,8 @@ func _reason_text(reason: String, won: bool) -> String:
 			return "Your opponent resigned." if won else "You resigned."
 		"no_moves":
 			return "Your opponent ran out of moves." if won else "You ran out of moves."
+		"timeout":
+			return "Your opponent ran out of time three turns in a row." if won else "You ran out of time three turns in a row."
 	return ""
 
 
@@ -441,11 +443,17 @@ func _build_taunt_menu() -> void:
 	grid.add_theme_constant_override("v_separation", 6)
 	var taunts := CosmeticCatalog.items("taunt")
 	for slug: String in CosmeticCatalog.slugs("taunt"):
+		if not Loadout.owns("taunt", slug):
+			continue  # Only the taunts in the player's locker.
 		var b := AppTheme.button(str(taunts[slug].get("name", slug)), "Ghost", _throw.bind(slug), 40)
 		b.add_theme_font_size_override("font_size", 16)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(b)
 	box.add_child(grid)
+	if grid.get_child_count() < CosmeticCatalog.slugs("taunt").size():
+		var more := AppTheme.label("More taunts in the Shop!", "", 14, AppTheme.MUTED)
+		more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(more)
 	var muted: bool = ui.setting("mute_taunts", false)
 	var mute := AppTheme.button("Unmute their taunts" if muted else "Mute their taunts", "Ghost", _toggle_mute, 38)
 	mute.add_theme_font_size_override("font_size", 15)

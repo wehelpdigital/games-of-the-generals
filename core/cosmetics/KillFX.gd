@@ -68,6 +68,17 @@ const STYLES := {
 		"swatch": [Color("bfefff"), Color("ffb3ec"), Color("ffffff")]},
 	"kill_meteor_call": {"name": "Meteor Call", "rarity": "epic", "desc": "Your chip calls down a meteor from the sky.",
 		"swatch": [Color("ff8a1f"), Color("fff36b"), Color("4a3a3a")]},
+	# Holiday action kills.
+	"kill_ghost_pop": {"name": "BOO!", "rarity": "epic", "season": "halloween", "desc": "A cheeky ghost swoops out and spooks the loser right off the board.",
+		"swatch": [Color("ffffff"), Color("b8c6ff"), Color("8b5cf6")]},
+	"kill_gift_box": {"name": "Surprise Present", "rarity": "epic", "season": "christmas", "desc": "A present drops on the loser. Pop goes the lid: ribbons and confetti!",
+		"swatch": [Color("d62f3a"), Color("ffcf3f"), Color("2f8f4e")]},
+	"kill_firecracker": {"name": "Firecracker String", "rarity": "rare", "season": "new_year", "desc": "Your chip tosses a string of firecrackers. Pop-pop-pop-BANG!",
+		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("e6e6e6")]},
+	"kill_cupid_arrow": {"name": "Cupid's Arrow", "rarity": "rare", "season": "valentines", "desc": "One arrow, and the loser floats away lovestruck.",
+		"swatch": [Color("ffcf3f"), Color("ff2f5f"), Color("ffe3ec")]},
+	"kill_lion_dance": {"name": "Lion Dance", "rarity": "legendary", "season": "lunar_new_year", "desc": "A lion-dance head bounds over, chomps twice and sends the loser flying in a shower of coins.",
+		"swatch": [Color("e8282e"), Color("ffcf3f"), Color("27c98f")]},
 }
 
 ## Action kills: `impact` is when the loser goes down (seconds after the effect starts), `death`
@@ -92,6 +103,11 @@ const ACTIONS := {
 	"kill_dragon_breath": {"impact": 0.5, "death": "burn"},
 	"kill_bubble_trap": {"impact": 0.35, "death": "lift"},
 	"kill_meteor_call": {"impact": 0.6, "death": "burn"},
+	"kill_ghost_pop": {"impact": 0.45, "death": "vanish"},
+	"kill_gift_box": {"impact": 0.4, "death": "shatter"},
+	"kill_firecracker": {"impact": 0.55, "death": "burn"},
+	"kill_cupid_arrow": {"impact": 0.35, "death": "lift"},
+	"kill_lion_dance": {"impact": 0.5, "death": "fly"},
 }
 const ACTION_LIFETIME := 1.8
 const PROP_SCALE := 1.7  ## Action props are drawn bigger than life so they read from the play camera.
@@ -394,6 +410,16 @@ func _act(style: String) -> void:
 			_bubble_trap()
 		"kill_meteor_call":
 			_meteor_call()
+		"kill_ghost_pop":
+			_ghost_pop()
+		"kill_gift_box":
+			_gift_box()
+		"kill_firecracker":
+			_firecracker()
+		"kill_cupid_arrow":
+			_cupid_arrow()
+		"kill_lion_dance":
+			_lion_dance()
 
 
 func _bazooka() -> void:
@@ -992,6 +1018,169 @@ func _meteor_call() -> void:
 		_fire()
 		var crater := _decal("crack", Color(0.15, 0.1, 0.08, 0.9), Vector3(0.0, -position.y + 0.04, 0.0))
 		crater.scale = Vector3(1.5, 1.0, 1.5))
+
+
+# --- Holiday action kills --------------------------------------------------------------------------
+
+func _ghost_pop() -> void:
+	var ghost := PropKit.model("boo_ghost", [
+		PropKit.pt("ffffff|a0.9", ShapeKit.sphere(0.16, 0.26, 18), Vector3(0, 0.05, 0)),
+		PropKit.pt("ffffff|a0.9", ShapeKit.cone(0.16, 0.16, 16), Vector3(0, -0.13, 0), Vector3(PI, 0, 0)),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.03, 0.04, 8), Vector3(-0.055, 0.08, -0.14), Vector3.ZERO, 0.0),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.03, 0.04, 8), Vector3(0.055, 0.08, -0.14), Vector3.ZERO, 0.0),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.04, 0.05, 8), Vector3(0, -0.01, -0.15), Vector3.ZERO, 0.0),
+	])
+	add_child(ghost)
+	ghost.scale = Vector3.ONE * 0.05
+	ghost.position = _src + Vector3(0.0, 0.3, 0.0)
+	ghost.basis = Basis.looking_at(_toward(), Vector3.UP)
+	var t := create_tween()
+	t.tween_method(_scale_basis.bind(ghost, ghost.basis), 0.05, 1.0, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_fly(ghost, _src + Vector3(0.0, 0.75, 0.0), Vector3(0.0, 0.3, 0.0), 0.3, 0.6, 0.15)
+	_after(0.45, func() -> void:
+		_burst("dot", true, 18, 0.7, 0.16, [Color("e6ecff"), Color("b8c6ff"), Color("8b5cf6")], 1.2, 2.4, Vector3(0, 0.6, 0), 0.2)
+		_ground_ring(Color("8b5cf6"), 2.4)
+		_flash(Color("b8c6ff"), 2.0)
+		var rise := create_tween()
+		rise.tween_property(ghost, "position:y", 2.4, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		rise.parallel().tween_method(_scale_basis.bind(ghost, ghost.basis.orthonormalized()), 1.0, 0.01, 0.9).set_delay(0.3))
+
+
+func _gift_box() -> void:
+	var box := PropKit.model("gift_box", [
+		PropKit.pt("d62f3a", ShapeKit.box(Vector3(0.62, 0.5, 0.62), 0.04, 0.02), Vector3.ZERO),
+		PropKit.pt("ffcf3f", ShapeKit.box(Vector3(0.1, 0.52, 0.64), 0.02, 0.01), Vector3.ZERO, Vector3.ZERO, 0.0),
+		PropKit.pt("ffcf3f", ShapeKit.box(Vector3(0.64, 0.52, 0.1), 0.02, 0.01), Vector3.ZERO, Vector3.ZERO, 0.0),
+	])
+	var lid := PropKit.model("gift_lid", [
+		PropKit.pt("e8443e", ShapeKit.box(Vector3(0.68, 0.68, 0.1), 0.04, 0.02), Vector3.ZERO, Vector3(PI / 2.0, 0, 0)),
+		PropKit.pt("ffcf3f", ShapeKit.sphere(0.09, 0.07, 12), Vector3(-0.08, 0.08, 0), Vector3(0, 0, 0.5)),
+		PropKit.pt("ffcf3f", ShapeKit.sphere(0.09, 0.07, 12), Vector3(0.08, 0.08, 0), Vector3(0, 0, -0.5)),
+	])
+	add_child(box)
+	box.add_child(lid)
+	lid.position = Vector3(0, 0.3, 0)
+	box.position = Vector3(0.0, 3.2, 0.0)
+	var t := create_tween()
+	t.tween_property(box, "position", Vector3(0.0, -0.18, 0.0), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_property(box, "scale", Vector3(1.15, 0.85, 1.15), 0.05)
+	t.tween_property(box, "scale", Vector3.ONE, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_after(0.38, _dust_puff.bind(Vector3(0.0, -position.y + 0.05, 0.0), 1.2))
+	_after(0.5, func() -> void:
+		var pop := create_tween().set_parallel(true)
+		pop.tween_property(lid, "position", Vector3(0.3, 1.4, 0.0), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		pop.tween_property(lid, "rotation", Vector3(1.5, 0.6, 2.4), 0.4)
+		var confetti := _burst("square", false, 40, 1.2, 0.12, [Color.WHITE, Color.WHITE, Color.WHITE], 2.5, 4.5, Vector3(0, -4.0, 0), 0.15)
+		confetti.color_initial_ramp = FxTextures.rainbow()
+		confetti.direction = Vector3.UP
+		confetti.spread = 40.0
+		confetti.position.y = 0.1
+		var ribbons := _burst("streak", false, 10, 0.9, 0.3, [Color("ffcf3f"), Color("ff4f5a"), Color("2f8f4e")], 2.0, 3.5, Vector3(0, -3.0, 0), 0.1)
+		ribbons.position.y = 0.1
+		_flash(Color("fff1b0"), 2.0))
+	var gone := create_tween()
+	gone.tween_interval(1.05)
+	gone.tween_property(box, "scale", Vector3.ONE * 0.01, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+
+
+func _firecracker() -> void:
+	var string := Node3D.new()
+	add_child(string)
+	for i in 6:
+		var cracker := PropKit.model("firecracker", [
+			PropKit.pt("e8282e", ShapeKit.cylinder(0.035, 0.035, 0.14, 10), Vector3.ZERO),
+			PropKit.pt("ffcf3f", ShapeKit.torus(0.03, 0.04, 10, 4), Vector3(0, 0.05, 0), Vector3.ZERO, 0.0),
+			PropKit.pt("8a5a2a", ShapeKit.cylinder(0.006, 0.006, 0.06, 4), Vector3(0, 0.1, 0), Vector3.ZERO, 0.0),
+		])
+		var a := TAU * i / 6.0
+		cracker.position = Vector3(cos(a) * 0.32, -0.3, sin(a) * 0.32)
+		cracker.rotation = Vector3(0, 0, PI / 2.0 + randf_range(-0.3, 0.3))
+		string.add_child(cracker)
+	string.scale = Vector3.ONE * PROP_SCALE * 0.8
+	_fly(string, _src + Vector3(0.0, 0.6, 0.0), Vector3.ZERO, 0.3, 0.8, 0.0, true)
+	for i in 6:
+		var when := 0.32 + i * 0.045
+		_after(when, _crack.bind(string.get_child(i)))
+	_after(0.55, func() -> void:
+		_strength *= 0.9
+		_fire()
+		var paper := _burst("square", false, 20, 1.0, 0.08, [Color("ff3d3d"), Color("e8282e"), Color("ffcf3f")], 1.5, 3.0, Vector3(0, -3.0, 0), 0.3)
+		paper.position.y = -0.2)
+
+
+func _crack(cracker: Node3D) -> void:
+	if not is_instance_valid(cracker):
+		return
+	var at := cracker.global_position - global_position
+	cracker.visible = false
+	var spark := _burst("sparkle", true, 8, 0.3, 0.14, [Color("ffffff"), Color("fff1b0"), Color("ffb020")], 1.0, 2.0, Vector3.ZERO, 0.05)
+	spark.position = at
+	var puff := _burst("puff", false, 4, 0.6, 0.18, [Color("e6e6e6", 0.0), Color("d8d8d8", 0.8), Color("c8c8c8", 0.0)], 0.2, 0.5, Vector3(0, 0.5, 0), 0.05)
+	puff.position = at
+
+
+func _cupid_arrow() -> void:
+	var bow := _prop_on_winner("cupid_bow", [
+		PropKit.pt("ffcf3f", ShapeKit.torus(0.2, 0.23, 24, 5), Vector3(0, 0, 0.06), Vector3(0, PI / 2.0, 0)),
+		PropKit.pt("ffffff", ShapeKit.cylinder(0.004, 0.004, 0.42, 4), Vector3(0, 0, 0.18), Vector3.ZERO, 0.0),
+		PropKit.pt("ff7aa0", ShapeKit.sphere(0.035, -1.0, 8), Vector3(0, 0.21, 0.06), Vector3.ZERO, 0.0),
+		PropKit.pt("ff7aa0", ShapeKit.sphere(0.035, -1.0, 8), Vector3(0, -0.21, 0.06), Vector3.ZERO, 0.0),
+	], 0.42, 0.8)
+	_recoil(bow, 0.12)
+	var arrow := PropKit.model("cupid_arrow", [
+		PropKit.pt("c8956a", ShapeKit.cylinder(0.012, 0.012, 0.42, 6), Vector3.ZERO, Vector3(PI / 2.0, 0, 0)),
+		PropKit.pt("ff2f5f", ShapeKit.sphere(0.04, 0.05, 10), Vector3(-0.03, 0.0, -0.22)),
+		PropKit.pt("ff2f5f", ShapeKit.sphere(0.04, 0.05, 10), Vector3(0.03, 0.0, -0.22)),
+		PropKit.pt("ff2f5f", ShapeKit.cone(0.055, 0.07, 10), Vector3(0, 0.0, -0.27), Vector3(-PI / 2.0, 0, 0)),
+		PropKit.pt("ffffff", ShapeKit.box(Vector3(0.08, 0.05, 0.01), 0.01, 0.003), Vector3(0, 0, 0.2), Vector3(0, PI / 2.0, 0), 0.0),
+	])
+	add_child(arrow)
+	arrow.scale = Vector3.ONE * PROP_SCALE
+	arrow.visible = false
+	_after(0.12, func() -> void: arrow.visible = true)
+	_fly(arrow, _src + Vector3(0.0, 0.63, 0.0) + _toward() * 0.4, Vector3(0.0, 0.1, 0.0), 0.23, 0.2, 0.12)
+	_after(0.35, func() -> void:
+		arrow.queue_free()
+		_burst("heart", false, 22, 1.2, 0.26, [Color("ffe3ec"), Color("ff7aa0"), Color("ff2f5f")], 1.0, 2.2, Vector3(0, 0.8, 0), 0.2)
+		_ground_ring(Color("ff4f7b"), 2.2)
+		_flash(Color("ff9ec0"), 2.2))
+
+
+func _lion_dance() -> void:
+	var lion := PropKit.model("lion_head", [
+		PropKit.pt("e8282e", ShapeKit.sphere(0.24, 0.36, 18), Vector3.ZERO),
+		PropKit.pt("ffcf3f", ShapeKit.torus(0.2, 0.26, 24, 6), Vector3(0, 0.02, 0.02), Vector3(PI / 2.0, 0, 0)),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.07, -1.0, 12), Vector3(-0.09, 0.1, -0.2)),
+		PropKit.pt("ffffff", ShapeKit.sphere(0.07, -1.0, 12), Vector3(0.09, 0.1, -0.2)),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.035, -1.0, 8), Vector3(-0.09, 0.1, -0.265), Vector3.ZERO, 0.0),
+		PropKit.pt("1d1736", ShapeKit.sphere(0.035, -1.0, 8), Vector3(0.09, 0.1, -0.265), Vector3.ZERO, 0.0),
+		PropKit.pt("27c98f", ShapeKit.sphere(0.04, -1.0, 8), Vector3(0, 0.27, -0.06)),
+		PropKit.pt("ffcf3f", ShapeKit.cone(0.04, 0.12, 8), Vector3(0, 0.3, 0.02)),
+		PropKit.pt("ffffff", ShapeKit.box(Vector3(0.24, 0.05, 0.06), 0.02, 0.01), Vector3(0, -0.1, -0.21), Vector3.ZERO, 0.0),
+	])
+	var jaw := PropKit.model("lion_jaw", [PropKit.pt("ffcf3f", ShapeKit.box(Vector3(0.3, 0.06, 0.22), 0.03, 0.01), Vector3(0, 0, -0.1), Vector3(PI / 2.0, 0, 0))])
+	lion.add_child(jaw)
+	jaw.position = Vector3(0, -0.17, -0.02)
+	var cloth := PropKit.model("lion_cloth", [PropKit.pt("ff3d3d", ShapeKit.capsule(0.16, 0.5, 12), Vector3(0, -0.05, 0.28), Vector3(PI / 2.0, 0, 0))])
+	lion.add_child(cloth)
+	add_child(lion)
+	lion.basis = Basis.looking_at(_toward(), Vector3.UP).scaled(Vector3.ONE * 1.4)
+	var hop1 := _src.lerp(Vector3.ZERO, 0.45) + Vector3(0.0, 0.2, 0.0)
+	_fly(lion, _src + Vector3(0.0, 0.4, 0.0), hop1, 0.22, 0.5, 0.0)
+	_fly(lion, hop1, Vector3(0.0, 0.2, 0.0), 0.22, 0.6, 0.23)
+	var chomp := create_tween()
+	chomp.tween_interval(0.42)
+	chomp.tween_property(jaw, "rotation:x", 0.7, 0.06)
+	chomp.tween_property(jaw, "rotation:x", 0.0, 0.08)
+	chomp.tween_property(jaw, "rotation:x", 0.7, 0.06)
+	chomp.tween_property(jaw, "rotation:x", 0.0, 0.08)
+	_after(0.5, func() -> void:
+		_burst("coin", false, 18, 1.0, 0.2, [Color("fff1b0"), Color("ffcf3f"), Color("d4a017")], 1.8, 3.2, Vector3(0, -6.0, 0), 0.2)
+		_burst("sparkle", true, 14, 0.5, 0.18, [Color("ffffff"), Color("fff1b0"), Color("ff3d3d")], 1.5, 3.0, Vector3.ZERO, 0.1)
+		_flash(Color("ffcf3f"), 2.2))
+	var leave := create_tween()
+	leave.tween_interval(1.1)
+	leave.tween_property(lion, "scale", Vector3.ONE * 0.01, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 
 
 # --- Action building blocks ---------------------------------------------------------------------

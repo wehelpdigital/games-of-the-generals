@@ -4,6 +4,8 @@ extends CanvasLayer
 ## Flow: title → (Play vs AI → difficulty) | (Play Online → login → lobby) | leaderboard | shop.
 ## Whenever GameSession loads a match the in-game HUD takes over; leaving returns to the title.
 
+signal screen_changed(screen_name: String)  ## After a screen opens (e.g. Audio picks the music).
+
 const SCREENS := {
 	"title": preload("res://ui/screens/TitleScreen.gd"),
 	"ai_setup": preload("res://ui/screens/AiSetupScreen.gd"),
@@ -78,6 +80,7 @@ func show_screen(screen_name: String, args := {}) -> void:
 	var screen: Screen = _screens[screen_name]
 	screen.visible = true
 	screen.open(args)
+	screen_changed.emit(screen_name)
 
 
 func screen(screen_name: String) -> Screen:

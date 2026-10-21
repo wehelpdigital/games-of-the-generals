@@ -30,6 +30,7 @@ Loadout="*res://autoload/Loadout.gd"
 Profile="*res://autoload/Profile.gd"
 Social="*res://autoload/Social.gd"
 Economy="*res://autoload/Economy.gd"
+Audio="*res://core/audio/Audio.gd"
 
 [display]
 

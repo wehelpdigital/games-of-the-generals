@@ -1,7 +1,8 @@
 extends Screen
-## Settings: graphics quality, text size, battle clips, opponent taunts, ambience and sound. Every
-## choice is saved in user://settings.cfg and applies right away. Opened from the gear button on
-## the title screen and the dashboard; Back returns to wherever it was opened from.
+## Settings: graphics quality, text size, battle clips, opponent taunts, ambience, sound and volume
+## (plus a Sound test page with every sound). Every choice is saved in user://settings.cfg and
+## applies right away. Opened from the gear button on the title screen and the dashboard; Back
+## returns to wherever it was opened from.
 
 const GRAPHICS := [["auto", "Auto"], ["low", "Low"], ["high", "High"]]
 const TEXT_SIZES := [["small", "Small"], ["normal", "Normal"], ["large", "Large"]]
@@ -30,7 +31,11 @@ func _ready() -> void:
 	body.add_child(_toggle("Reduce ambience effects (lighter on phones)", "reduce_ambience", false, false, _on_ambience))
 
 	body.add_child(ProfileUi.eyebrow("Sound"))
-	body.add_child(_toggle("Sound effects", "sound_off", false, true, _on_sound))
+	body.add_child(_toggle("Sound on", "sound_off", false, true, _on_sound))
+	for bus: Array in [["Music", "Music"], ["SFX", "Effects"], ["Ambience", "Ambience"]]:
+		body.add_child(_volume_row(bus[0], bus[1]))
+	var test := AppTheme.button("Sound test: hear every sound", "Ghost", func() -> void: ui.show_screen("sound_test", {"back": "settings"}), 48)
+	body.add_child(test)
 
 	get_viewport().size_changed.connect(_layout)
 	_layout()
@@ -113,6 +118,28 @@ func _on_ambience(on: bool) -> void:
 	AmbienceFX.reduced = on or Graphics.is_low()
 	if ui.game:
 		ui.game.board.rebuild_ambience()
+
+
+## A volume slider for one audio bus, saved in the settings file.
+func _volume_row(bus: String, text: String) -> HBoxContainer:
+	var row := AppTheme.hbox(12)
+	var label := AppTheme.label(text, "", 18, AppTheme.INK)
+	label.custom_minimum_size.x = 110
+	row.add_child(label)
+	var slider := HSlider.new()
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = Audio.volume(bus)
+	slider.custom_minimum_size = Vector2(0, 44)
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	slider.value_changed.connect(func(value: float) -> void:
+		Audio.set_volume(bus, value)
+		ui.set_setting(str(Audio.VOLUME_KEYS[bus]), value))
+	slider.drag_ended.connect(func(_changed: bool) -> void: Audio.play("ui_click" if bus != "Music" else "coins"))
+	row.add_child(slider)
+	return row
 
 
 func _on_sound(off: bool) -> void:

@@ -40,6 +40,7 @@ func _ready() -> void:
 			game.show_attract()
 			game.rig.attract = false
 			game.set_showcase(look, plain)
+			game.rig.frame(Game3D.PREVIEW_SHOTS.get(category, "half"))
 			await get_tree().create_timer(0.6).timeout
 			var wait := 1.4
 			match category:
